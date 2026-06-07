@@ -1,0 +1,90 @@
+import type { BatchDTO } from "@/services/qr";
+import { formatSerial } from "@/lib/qr";
+
+function PdfLink({ id }: { id: string }) {
+  return (
+    <a
+      href={`/admin/qr/${id}/pdf`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="rounded px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-light"
+    >
+      PDF
+    </a>
+  );
+}
+
+export function BatchesTable({ batches }: { batches: BatchDTO[] }) {
+  if (batches.length === 0) {
+    return <p className="text-sm text-gray-500">No batches yet.</p>;
+  }
+
+  return (
+    <>
+      {/* Mobile: cards */}
+      <div className="space-y-3 sm:hidden">
+        {batches.map((b) => (
+          <div key={b.id} className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-xs">{b.productSku}</span>
+              <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
+                {b.status}
+              </span>
+            </div>
+            <p className="mt-1 text-sm">
+              {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall} ·{" "}
+              <span className="font-medium">{b.total} codes</span>
+            </p>
+            <p className="font-mono text-xs text-gray-500">
+              {formatSerial(b.serialStart)} – {formatSerial(b.serialEnd)}
+            </p>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs text-gray-400">{b.createdAt.slice(0, 10)}</span>
+              <PdfLink id={b.id} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white sm:block">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
+            <tr>
+              <th className="px-4 py-2">Date</th>
+              <th className="px-4 py-2">Product</th>
+              <th className="px-4 py-2">Structure (M×S×P)</th>
+              <th className="px-4 py-2 text-right">Total</th>
+              <th className="px-4 py-2">Serial range</th>
+              <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2 text-right">Print</th>
+            </tr>
+          </thead>
+          <tbody>
+            {batches.map((b) => (
+              <tr key={b.id} className="border-b border-gray-100 last:border-0">
+                <td className="px-4 py-2">{b.createdAt.slice(0, 10)}</td>
+                <td className="px-4 py-2 font-mono text-xs">{b.productSku}</td>
+                <td className="px-4 py-2">
+                  {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall}
+                </td>
+                <td className="px-4 py-2 text-right font-medium">{b.total}</td>
+                <td className="px-4 py-2 font-mono text-xs">
+                  {formatSerial(b.serialStart)} – {formatSerial(b.serialEnd)}
+                </td>
+                <td className="px-4 py-2">
+                  <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
+                    {b.status}
+                  </span>
+                </td>
+                <td className="px-4 py-2 text-right">
+                  <PdfLink id={b.id} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}

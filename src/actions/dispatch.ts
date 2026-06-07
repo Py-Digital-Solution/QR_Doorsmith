@@ -1,0 +1,39 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import { createDispatch } from "@/services/dispatch";
+
+export type ActionState = {
+  error?: string;
+  ok?: boolean;
+  billNo?: string;
+  dispatchId?: string;
+  total?: number;
+};
+
+export async function createDispatchAction(input: {
+  counterId: string;
+  masterSerials: string[];
+}): Promise<ActionState> {
+  const session = await auth();
+  if (session?.user?.role !== "admin") return { error: "Not authorized." };
+
+  try {
+    const res = await createDispatch({
+      createdBy: session.user.id,
+      counterId: input.counterId,
+      masterSerials: input.masterSerials,
+    });
+    revalidatePath("/admin/dispatch");
+    revalidatePath("/admin/qr");
+    return {
+      ok: true,
+      billNo: res.billNo,
+      dispatchId: res.dispatchId,
+      total: res.totalCodes,
+    };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Dispatch failed." };
+  }
+}
