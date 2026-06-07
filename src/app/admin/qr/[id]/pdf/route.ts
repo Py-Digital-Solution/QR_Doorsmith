@@ -83,7 +83,7 @@ export async function GET(
   }
 
   const bytes = await pdf.save();
-  return new Response(Buffer.from(bytes), {
+  return new Response(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="qr-batch-${id}.pdf"`,

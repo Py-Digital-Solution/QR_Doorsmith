@@ -81,7 +81,7 @@ export async function GET(
   text(`Total codes: ${bill.totalCodes}`, M + 200, y, 10, bold);
 
   const bytes = await pdf.save();
-  return new Response(Buffer.from(bytes), {
+  return new Response(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="${bill.billNo}.pdf"`,

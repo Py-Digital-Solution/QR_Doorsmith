@@ -1,0 +1,16 @@
+# Netlify deploy config for the DoorSmith Next.js app.
+# Deploy the REPO ROOT — Netlify builds it and serves via the Next.js runtime.
+# (There is no static folder to publish; this is a dynamic server app.)
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Don't fail the BUILD on env validation; runtime still validates with the
+  # real env vars set in the Netlify dashboard.
+  SKIP_ENV_VALIDATION = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

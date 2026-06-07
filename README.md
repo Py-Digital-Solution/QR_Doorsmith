@@ -34,4 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Deploy on Netlify
+
+This project uses Next.js server features including authentication, API routes, route handlers, and server actions, so it should be deployed as a Next.js SSR/hybrid app on Netlify instead of uploading a single root `index.html` file.
+
+Use these Netlify build settings:
+
+```txt
+Build command: npm run build
+Publish directory: .next
+Node version: 20
+```
+
+Netlify will generate and serve the correct HTML output during the build. For this app, forcing `output: "export"` to create `out/index.html` would break the dynamic features listed above.
 # QR_Doorsmith

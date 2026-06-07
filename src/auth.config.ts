@@ -8,6 +8,8 @@ import { ROLE_HOME, canAccessPath } from "@/lib/rbac";
  * which runs in the Node runtime where Mongoose/bcrypt are available.
  */
 export const authConfig = {
+  // Required on non-Vercel hosts (Netlify) so Auth.js trusts the request host.
+  trustHost: true,
   pages: { signIn: "/login" },
   session: { strategy: "jwt" },
   providers: [],

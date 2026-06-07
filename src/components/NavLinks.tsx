@@ -11,7 +11,7 @@ export function NavLinks({
   items: NavItem[];
   onNavigate?: () => void;
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   return (
     <nav className="space-y-1">
       {items.map((it) => {
