@@ -57,27 +57,29 @@ export async function GET(
 
   // Table header
   text("#", M, y, 9, bold, gray);
-  text("MASTER BOX SERIAL", M + 30, y, 9, bold, gray);
-  text("SKU", M + 230, y, 9, bold, gray);
+  text("SERIAL", M + 30, y, 9, bold, gray);
+  text("TYPE", M + 200, y, 9, bold, gray);
+  text("SKU", M + 290, y, 9, bold, gray);
   y -= 6;
   page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 0.5, color: gray });
   y -= 16;
 
-  bill.masters.forEach((m, i) => {
+  bill.units.forEach((u, i) => {
     if (y < M + 60) {
       page = pdf.addPage([W, H]);
       y = H - M;
     }
     text(String(i + 1), M, y, 10);
-    text(m.serialNo, M + 30, y, 10);
-    text(m.sku || "—", M + 230, y, 10);
+    text(u.serialNo, M + 30, y, 10);
+    text(u.type.toUpperCase(), M + 200, y, 10);
+    text(u.sku || "—", M + 290, y, 10);
     y -= 16;
   });
 
   y -= 10;
   page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 0.5, color: gray });
   y -= 18;
-  text(`Master boxes: ${bill.masterCount}`, M, y, 10, bold);
+  text(`Scanned units: ${bill.unitCount}`, M, y, 10, bold);
   text(`Total codes: ${bill.totalCodes}`, M + 200, y, 10, bold);
 
   const bytes = await pdf.save();

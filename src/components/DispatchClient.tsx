@@ -36,7 +36,7 @@ export function DispatchClient({
   async function submit() {
     setPending(true);
     setState({});
-    const res = await createDispatchAction({ counterId, masterSerials: serials });
+    const res = await createDispatchAction({ counterId, serials });
     setState(res);
     if (res.ok) setSerials([]);
     setPending(false);
@@ -75,7 +75,7 @@ export function DispatchClient({
       {/* Scan / add masters */}
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-600">
-          Master box QR
+          Scan QR — master box, small box, or unique product code
         </label>
         <div className="flex gap-2">
           <input
@@ -87,7 +87,7 @@ export function DispatchClient({
                 addManual();
               }
             }}
-            placeholder="Scan with a scanner or type the serial (DS-…)"
+            placeholder="Scan or type any serial (DS-…)"
             className={field}
           />
           <button
@@ -153,7 +153,7 @@ export function DispatchClient({
         disabled={pending || serials.length === 0}
         className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
       >
-        {pending ? "Dispatching…" : `Dispatch ${serials.length} box(es)`}
+        {pending ? "Dispatching…" : `Dispatch ${serials.length} item(s)`}
       </button>
     </div>
   );

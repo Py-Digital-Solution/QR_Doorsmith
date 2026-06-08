@@ -21,7 +21,8 @@ export default async function DispatchPage({
       <div>
         <h1 className="text-lg font-semibold">Dispatch</h1>
         <p className="text-sm text-gray-500">
-          Scan master boxes and send stock to a counter (auto-activates the codes).
+          Scan any unit — master box, small box, or a unique product code — and send
+          stock to a counter (auto-activates the codes).
         </p>
       </div>
 

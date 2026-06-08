@@ -1,4 +1,5 @@
 import "server-only";
+import { Types } from "mongoose";
 import { connectDB } from "@/db/mongoose";
 import { QrCode } from "@/models/QrCode";
 import { Dispatch } from "@/models/Dispatch";
@@ -29,16 +30,44 @@ export type CreateDispatchResult = {
   totalCodes: number;
 };
 
+/** Collect ids of every undispatched descendant under the given root ids (BFS). */
+async function collectUndispatchedDescendants(
+  rootIds: Types.ObjectId[],
+  seen: Set<string>,
+): Promise<Types.ObjectId[]> {
+  const collected: Types.ObjectId[] = [];
+  let frontier = rootIds;
+  while (frontier.length) {
+    const children = await QrCode.find({
+      parentQrId: { $in: frontier },
+      counterId: null, // never steal a code already dispatched elsewhere
+    })
+      .select("_id")
+      .lean();
+    frontier = [];
+    for (const c of children) {
+      const idStr = String(c._id);
+      if (seen.has(idStr)) continue;
+      seen.add(idStr);
+      const oid = c._id as Types.ObjectId;
+      collected.push(oid);
+      frontier.push(oid);
+    }
+  }
+  return collected;
+}
+
 /**
- * Create a dispatch bill: validate the scanned master serials, link every
- * master + its small + product descendants to the chosen counter, activate
- * them, and record the bill. (Should become transactional once the Mongo
- * replica set is configured — see Docs/SECURITY.md.)
+ * Create a dispatch bill: validate the scanned serials (any level — master box,
+ * small box, or a single unique product code), link each scanned unit plus all
+ * of its descendants to the chosen counter, activate them, and record the bill.
+ * (Should become transactional once the Mongo replica set is configured — see
+ * Docs/SECURITY.md.)
  */
 export async function createDispatch(input: {
   createdBy: string;
   counterId: string;
-  masterSerials: string[];
+  serials: string[];
 }): Promise<CreateDispatchResult> {
   await connectDB();
 
@@ -46,36 +75,42 @@ export async function createDispatch(input: {
   if (!counter) throw new Error("Select a valid counter.");
 
   const serials = Array.from(
-    new Set(input.masterSerials.map((s) => s.trim()).filter(Boolean)),
+    new Set(input.serials.map((s) => s.trim()).filter(Boolean)),
   );
-  if (serials.length === 0) throw new Error("Scan at least one master box QR.");
+  if (serials.length === 0) throw new Error("Scan at least one QR code.");
 
-  const masters = await QrCode.find({ serialNo: { $in: serials }, type: "master" });
-  const found = new Set(masters.map((m) => m.serialNo));
+  // Roots can be ANY type: master, small, or product (unique code).
+  const roots = await QrCode.find({ serialNo: { $in: serials } });
+  const found = new Set(roots.map((r) => r.serialNo));
   const missing = serials.filter((s) => !found.has(s));
   if (missing.length) {
-    throw new Error(`Not a master box QR or not found: ${missing.join(", ")}`);
+    throw new Error(`Not found: ${missing.join(", ")}`);
   }
 
-  const already = masters.filter((m) => m.counterId);
+  const already = roots.filter((r) => r.counterId);
   if (already.length) {
-    throw new Error(`Already dispatched: ${already.map((m) => m.serialNo).join(", ")}`);
+    throw new Error(`Already dispatched: ${already.map((r) => r.serialNo).join(", ")}`);
   }
 
-  const masterIds = masters.map((m) => m._id);
-  const smalls = await QrCode.find({ parentQrId: { $in: masterIds } }).select("_id");
-  const smallIds = smalls.map((s) => s._id);
-  const products = await QrCode.find({ parentQrId: { $in: smallIds } }).select("_id");
-  const productIds = products.map((p) => p._id);
-  const allIds = [...masterIds, ...smallIds, ...productIds];
+  const seen = new Set<string>();
+  const rootIds: Types.ObjectId[] = [];
+  for (const r of roots) {
+    const oid = r._id as Types.ObjectId;
+    seen.add(String(oid));
+    rootIds.push(oid);
+  }
+  const descendantIds = await collectUndispatchedDescendants(rootIds, seen);
+  const allIds = [...rootIds, ...descendantIds];
 
   const billNo = await nextBillNo();
   const dispatch = await Dispatch.create({
     billNo,
     counterId: counter._id,
     createdBy: input.createdBy,
-    masterQrIds: masterIds,
-    masterCount: masterIds.length,
+    rootQrIds: rootIds,
+    rootCount: rootIds.length,
+    masterQrIds: rootIds, // mirror for backward compatibility
+    masterCount: rootIds.length,
     totalCodes: allIds.length,
     status: "dispatched",
   });
@@ -94,7 +129,7 @@ export type DispatchDTO = {
   id: string;
   billNo: string;
   counterLabel: string;
-  masterCount: number;
+  unitCount: number;
   totalCodes: number;
   status: string;
   createdAt: string;
@@ -121,7 +156,7 @@ export async function listDispatches(
     id: String(d._id),
     billNo: d.billNo,
     counterLabel: counterLabel(d.counterId as { name?: string; email?: string } | null),
-    masterCount: d.masterCount ?? 0,
+    unitCount: d.rootCount ?? d.masterCount ?? 0,
     totalCodes: d.totalCodes ?? 0,
     status: String(d.status),
     createdAt: (d.createdAt as Date)?.toISOString() ?? "",
@@ -134,9 +169,9 @@ export type DispatchBill = {
   counterName: string;
   counterContact: string;
   createdAt: string;
-  masterCount: number;
+  unitCount: number;
   totalCodes: number;
-  masters: { serialNo: string; sku: string }[];
+  units: { serialNo: string; type: string; sku: string }[];
 };
 
 export async function getDispatchBill(id: string): Promise<DispatchBill | null> {
@@ -149,8 +184,10 @@ export async function getDispatchBill(id: string): Promise<DispatchBill | null> 
     .lean();
   if (!d) return null;
 
-  const masters = await QrCode.find({ _id: { $in: d.masterQrIds } })
-    .select("serialNo sku")
+  const rootIds = d.rootQrIds?.length ? d.rootQrIds : d.masterQrIds;
+  const units = await QrCode.find({ _id: { $in: rootIds } })
+    .select("serialNo type sku")
+    .sort({ serialNo: 1 })
     .lean();
 
   const c = d.counterId as { name?: string; email?: string; phone?: string } | null;
@@ -159,9 +196,13 @@ export async function getDispatchBill(id: string): Promise<DispatchBill | null> 
     counterName: c?.name || "—",
     counterContact: c?.email || c?.phone || "",
     createdAt: (d.createdAt as Date)?.toISOString() ?? "",
-    masterCount: d.masterCount ?? 0,
+    unitCount: d.rootCount ?? d.masterCount ?? 0,
     totalCodes: d.totalCodes ?? 0,
-    masters: masters.map((m) => ({ serialNo: m.serialNo, sku: m.sku ?? "" })),
+    units: units.map((m) => ({
+      serialNo: m.serialNo,
+      type: String(m.type),
+      sku: m.sku ?? "",
+    })),
   };
 }
 

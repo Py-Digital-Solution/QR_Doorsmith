@@ -33,7 +33,7 @@ export default async function QrPage({
         <GenerateBatchPanel products={productOptions} />
       </div>
 
-      <BatchesTable batches={result.items} />
+      <BatchesTable batches={result.items} products={productOptions} />
 
       <Pagination
         page={result.page}

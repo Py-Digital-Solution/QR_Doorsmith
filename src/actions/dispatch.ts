@@ -14,7 +14,7 @@ export type ActionState = {
 
 export async function createDispatchAction(input: {
   counterId: string;
-  masterSerials: string[];
+  serials: string[];
 }): Promise<ActionState> {
   const session = await auth();
   if (session?.user?.role !== "admin") return { error: "Not authorized." };
@@ -23,7 +23,7 @@ export async function createDispatchAction(input: {
     const res = await createDispatch({
       createdBy: session.user.id,
       counterId: input.counterId,
-      masterSerials: input.masterSerials,
+      serials: input.serials,
     });
     revalidatePath("/admin/dispatch");
     revalidatePath("/admin/qr");

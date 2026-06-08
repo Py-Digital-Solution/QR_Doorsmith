@@ -1,5 +1,8 @@
+import Link from "next/link";
 import type { BatchDTO } from "@/services/qr";
 import { formatSerial } from "@/lib/qr";
+import { BatchActions } from "./BatchActions";
+import type { ProductOption } from "./GenerateBatchForm";
 
 function PdfLink({ id }: { id: string }) {
   return (
@@ -14,7 +17,24 @@ function PdfLink({ id }: { id: string }) {
   );
 }
 
-export function BatchesTable({ batches }: { batches: BatchDTO[] }) {
+function ManageLink({ id }: { id: string }) {
+  return (
+    <Link
+      href={`/admin/qr/${id}`}
+      className="rounded px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-light"
+    >
+      Manage
+    </Link>
+  );
+}
+
+export function BatchesTable({
+  batches,
+  products,
+}: {
+  batches: BatchDTO[];
+  products: ProductOption[];
+}) {
   if (batches.length === 0) {
     return <p className="text-sm text-gray-500">No batches yet.</p>;
   }
@@ -35,12 +55,23 @@ export function BatchesTable({ batches }: { batches: BatchDTO[] }) {
               {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall} ·{" "}
               <span className="font-medium">{b.total} codes</span>
             </p>
+            <p className="mt-0.5 text-xs">
+              <span className="text-amber-700">{b.warehouseCount} in warehouse</span>
+              {" · "}
+              <span className="text-green-700">{b.dispatchedCount} dispatched</span>
+            </p>
             <p className="font-mono text-xs text-gray-500">
               {formatSerial(b.serialStart)} – {formatSerial(b.serialEnd)}
             </p>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs text-gray-400">{b.createdAt.slice(0, 10)}</span>
-              <PdfLink id={b.id} />
+              <div className="flex items-center gap-1">
+                <ManageLink id={b.id} />
+                <PdfLink id={b.id} />
+              </div>
+            </div>
+            <div className="mt-1 border-t border-gray-100 pt-2">
+              <BatchActions batch={b} products={products} />
             </div>
           </div>
         ))}
@@ -55,9 +86,10 @@ export function BatchesTable({ batches }: { batches: BatchDTO[] }) {
               <th className="px-4 py-2">Product</th>
               <th className="px-4 py-2">Structure (M×S×P)</th>
               <th className="px-4 py-2 text-right">Total</th>
+              <th className="px-4 py-2 text-right">Warehouse / Sent</th>
               <th className="px-4 py-2">Serial range</th>
               <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2 text-right">Print</th>
+              <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -69,6 +101,11 @@ export function BatchesTable({ batches }: { batches: BatchDTO[] }) {
                   {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall}
                 </td>
                 <td className="px-4 py-2 text-right font-medium">{b.total}</td>
+                <td className="px-4 py-2 text-right text-xs">
+                  <span className="text-amber-700">{b.warehouseCount}</span>
+                  {" / "}
+                  <span className="text-green-700">{b.dispatchedCount}</span>
+                </td>
                 <td className="px-4 py-2 font-mono text-xs">
                   {formatSerial(b.serialStart)} – {formatSerial(b.serialEnd)}
                 </td>
@@ -77,8 +114,12 @@ export function BatchesTable({ batches }: { batches: BatchDTO[] }) {
                     {b.status}
                   </span>
                 </td>
-                <td className="px-4 py-2 text-right">
-                  <PdfLink id={b.id} />
+                <td className="px-4 py-2">
+                  <div className="flex items-center justify-end gap-1">
+                    <ManageLink id={b.id} />
+                    <PdfLink id={b.id} />
+                    <BatchActions batch={b} products={products} />
+                  </div>
                 </td>
               </tr>
             ))}

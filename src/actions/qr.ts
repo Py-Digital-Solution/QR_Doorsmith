@@ -2,9 +2,84 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { generateBatch } from "@/services/qr";
+import {
+  generateBatch,
+  updateBatch,
+  deleteBatch,
+  updateQrCode,
+  deleteQrCode,
+} from "@/services/qr";
 
 export type ActionState = { error?: string; ok?: boolean; total?: number };
+
+async function requireAdmin() {
+  const session = await auth();
+  if (session?.user?.role !== "admin") return null;
+  return session;
+}
+
+export async function updateBatchAction(
+  batchId: string,
+  input: {
+    productId?: string;
+    labelWidthMm?: number;
+    labelHeightMm?: number;
+    columns?: number;
+  },
+): Promise<{ error?: string; ok?: boolean }> {
+  if (!(await requireAdmin())) return { error: "Not authorized." };
+  try {
+    await updateBatch(batchId, input);
+    revalidatePath("/admin/qr");
+    revalidatePath(`/admin/qr/${batchId}`);
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to update batch." };
+  }
+}
+
+export async function deleteBatchAction(
+  batchId: string,
+): Promise<{ error?: string; ok?: boolean }> {
+  if (!(await requireAdmin())) return { error: "Not authorized." };
+  try {
+    await deleteBatch(batchId);
+    revalidatePath("/admin/qr");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to delete batch." };
+  }
+}
+
+export async function updateQrCodeAction(
+  codeId: string,
+  input: { status?: "inactive" | "disabled"; productId?: string },
+  batchId: string,
+): Promise<{ error?: string; ok?: boolean }> {
+  if (!(await requireAdmin())) return { error: "Not authorized." };
+  try {
+    await updateQrCode(codeId, input);
+    revalidatePath(`/admin/qr/${batchId}`);
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to update code." };
+  }
+}
+
+export async function deleteQrCodeAction(
+  codeId: string,
+  batchId: string,
+): Promise<{ error?: string; ok?: boolean }> {
+  if (!(await requireAdmin())) return { error: "Not authorized." };
+  try {
+    await deleteQrCode(codeId);
+    revalidatePath(`/admin/qr/${batchId}`);
+    revalidatePath("/admin/qr");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to delete code." };
+  }
+}
 
 export async function generateBatchAction(
   _prev: ActionState,

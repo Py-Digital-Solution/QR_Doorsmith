@@ -30,7 +30,7 @@ export function DispatchesTable({ dispatches }: { dispatches: DispatchDTO[] }) {
             </div>
             <p className="mt-1 text-sm">→ {d.counterLabel}</p>
             <p className="text-sm text-gray-500">
-              {d.masterCount} box(es) · {d.totalCodes} codes
+              {d.unitCount} item(s) · {d.totalCodes} codes
             </p>
             <p className="text-xs text-gray-400">{d.createdAt.slice(0, 10)}</p>
           </div>
@@ -44,7 +44,7 @@ export function DispatchesTable({ dispatches }: { dispatches: DispatchDTO[] }) {
             <tr>
               <th className="px-4 py-2">Bill</th>
               <th className="px-4 py-2">Counter</th>
-              <th className="px-4 py-2 text-right">Boxes</th>
+              <th className="px-4 py-2 text-right">Items</th>
               <th className="px-4 py-2 text-right">Codes</th>
               <th className="px-4 py-2">Date</th>
               <th className="px-4 py-2 text-right">Print</th>
@@ -55,7 +55,7 @@ export function DispatchesTable({ dispatches }: { dispatches: DispatchDTO[] }) {
               <tr key={d.id} className="border-b border-gray-100 last:border-0">
                 <td className="px-4 py-2 font-mono">{d.billNo}</td>
                 <td className="px-4 py-2">{d.counterLabel}</td>
-                <td className="px-4 py-2 text-right">{d.masterCount}</td>
+                <td className="px-4 py-2 text-right">{d.unitCount}</td>
                 <td className="px-4 py-2 text-right font-medium">{d.totalCodes}</td>
                 <td className="px-4 py-2">{d.createdAt.slice(0, 10)}</td>
                 <td className="px-4 py-2 text-right">
