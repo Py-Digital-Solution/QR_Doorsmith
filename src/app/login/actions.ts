@@ -11,15 +11,19 @@ export async function staffLogin(
   formData: FormData,
 ): Promise<ActionState> {
   try {
+    // `redirect: false` → set the session cookie but DON'T redirect from inside
+    // the Server Action. A server-action redirect isn't reliably applied
+    // client-side behind Netlify's runtime (cookie is set but the browser stays
+    // on /login until a manual reload). The client navigates on `ok` instead.
     await signIn("staff", {
       email: String(formData.get("email") ?? ""),
       password: String(formData.get("password") ?? ""),
-      redirectTo: "/",
+      redirect: false,
     });
-    return {};
+    return { ok: true };
   } catch (error) {
     if (error instanceof AuthError) return { error: "Invalid email or password." };
-    throw error; // re-throw the NEXT_REDIRECT
+    throw error;
   }
 }
 
@@ -41,9 +45,9 @@ export async function khatiLogin(
     await signIn("khati-otp", {
       phone: String(formData.get("phone") ?? ""),
       code: String(formData.get("code") ?? ""),
-      redirectTo: "/",
+      redirect: false,
     });
-    return {};
+    return { ok: true };
   } catch (error) {
     if (error instanceof AuthError) return { error: "Invalid or expired code." };
     throw error;

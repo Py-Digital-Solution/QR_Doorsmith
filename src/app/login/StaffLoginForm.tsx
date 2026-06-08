@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { staffLogin, type ActionState } from "./actions";
 
 const field =
@@ -11,6 +11,13 @@ export function StaffLoginForm() {
     staffLogin,
     {},
   );
+
+  // On success, do a FULL navigation to "/" so the freshly-set session cookie is
+  // read server-side and the user is routed to their role home. A hard
+  // navigation (not router.push) reliably picks up the new auth cookie on Netlify.
+  useEffect(() => {
+    if (state.ok) window.location.href = "/";
+  }, [state.ok]);
 
   return (
     <form action={action} className="space-y-4">

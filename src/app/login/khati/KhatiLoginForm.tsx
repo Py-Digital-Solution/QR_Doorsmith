@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { sendKhatiOtp, khatiLogin, type ActionState } from "../actions";
 
 const field =
@@ -18,6 +18,12 @@ export function KhatiLoginForm() {
   );
 
   const sent = !!otpState.ok;
+
+  // On successful OTP verification, full-navigate so the new session cookie is
+  // picked up server-side (reliable on Netlify; see staff login for rationale).
+  useEffect(() => {
+    if (loginState.ok) window.location.href = "/";
+  }, [loginState.ok]);
 
   return (
     <div className="space-y-4">
