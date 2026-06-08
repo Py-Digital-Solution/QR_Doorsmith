@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createDispatchAction, type ActionState } from "@/actions/dispatch";
+import { QR_TYPES, type QrType } from "@/lib/qr";
 import { QrScanner } from "./QrScanner";
 
 const field =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
+
+type CodeHit = { id: string; serialNo: string; type: string; sku: string };
+
+const TYPE_LABEL: Record<QrType, string> = {
+  master: "Master box",
+  small: "Small box",
+  product: "Product",
+};
 
 export function DispatchClient({
   counters,
@@ -15,10 +24,15 @@ export function DispatchClient({
 }) {
   const [serials, setSerials] = useState<string[]>([]);
   const [counterId, setCounterId] = useState(counters[0]?.id ?? "");
-  const [manual, setManual] = useState("");
+  const [type, setType] = useState<QrType>("master");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<CodeHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [open, setOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [state, setState] = useState<ActionState>({});
   const [pending, setPending] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
 
   function add(s: string) {
     const v = s.trim();
@@ -28,9 +42,48 @@ export function DispatchClient({
   function remove(s: string) {
     setSerials((prev) => prev.filter((x) => x !== s));
   }
-  function addManual() {
-    add(manual);
-    setManual("");
+
+  // Live search of undispatched codes by type (REST route, debounced + abortable).
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/qr/search?type=${type}&q=${encodeURIComponent(query)}`,
+          { signal: controller.signal },
+        );
+        const data = await res.json().catch(() => ({ items: [] }));
+        if (active) setResults(Array.isArray(data.items) ? data.items : []);
+      } catch {
+        if (active) setResults([]);
+      } finally {
+        if (active) setSearching(false);
+      }
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(t);
+      controller.abort();
+    };
+  }, [type, query]);
+
+  // Close the dropdown on outside click.
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  function pick(hit: CodeHit) {
+    add(hit.serialNo);
+    setQuery("");
+    setOpen(false);
   }
 
   async function submit() {
@@ -49,6 +102,8 @@ export function DispatchClient({
       </p>
     );
   }
+
+  const available = results.filter((r) => !serials.includes(r.serialNo));
 
   return (
     <div className="max-w-2xl space-y-4 rounded-lg border border-gray-200 bg-white p-4">
@@ -72,31 +127,64 @@ export function DispatchClient({
         </select>
       </div>
 
-      {/* Scan / add masters */}
+      {/* Type + searchable picker */}
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-600">
-          Scan QR — master box, small box, or unique product code
+          Add QR codes
         </label>
         <div className="flex gap-2">
-          <input
-            value={manual}
-            onChange={(e) => setManual(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addManual();
-              }
+          <select
+            value={type}
+            onChange={(e) => {
+              setType(e.target.value as QrType);
+              setOpen(true);
             }}
-            placeholder="Scan or type any serial (DS-…)"
-            className={field}
-          />
-          <button
-            type="button"
-            onClick={addManual}
-            className="rounded-md border border-gray-300 px-3 text-sm hover:bg-gray-50"
+            className="rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
           >
-            Add
-          </button>
+            {QR_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {TYPE_LABEL[t]}
+              </option>
+            ))}
+          </select>
+
+          <div ref={boxRef} className="relative flex-1">
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setOpen(true);
+              }}
+              onFocus={() => setOpen(true)}
+              placeholder={`Search ${TYPE_LABEL[type].toLowerCase()} serial (DS-…)`}
+              className={field}
+            />
+
+            {open && (
+              <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+                {searching && (
+                  <p className="px-3 py-2 text-xs text-gray-400">Searching…</p>
+                )}
+                {!searching && available.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-gray-400">
+                    No undispatched {TYPE_LABEL[type].toLowerCase()} codes found.
+                  </p>
+                )}
+                {available.map((hit) => (
+                  <button
+                    key={hit.id}
+                    type="button"
+                    onClick={() => pick(hit)}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-brand-light"
+                  >
+                    <span className="font-mono">{hit.serialNo}</span>
+                    <span className="text-xs text-gray-500">{hit.sku || "—"}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => setScanning((s) => !s)}
@@ -105,6 +193,10 @@ export function DispatchClient({
             {scanning ? "Stop" : "Camera"}
           </button>
         </div>
+        <p className="mt-1 text-xs text-gray-400">
+          Showing only undispatched {TYPE_LABEL[type].toLowerCase()} codes. Its contents
+          are dispatched along with it.
+        </p>
         {scanning && (
           <div className="mt-3">
             <QrScanner onScan={(t) => add(t)} />
@@ -112,7 +204,7 @@ export function DispatchClient({
         )}
       </div>
 
-      {/* Scanned list */}
+      {/* Selected list */}
       {serials.length > 0 && (
         <div className="rounded-md border border-gray-200">
           {serials.map((s) => (

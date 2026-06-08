@@ -5,7 +5,7 @@ import { QrCode } from "@/models/QrCode";
 import { Dispatch } from "@/models/Dispatch";
 import { Sequence } from "@/models/Sequence";
 import { User } from "@/models/User";
-import { formatBillNo } from "@/lib/qr";
+import { formatBillNo, type QrType } from "@/lib/qr";
 import {
   DEFAULT_PAGE_SIZE,
   paginated,
@@ -204,6 +204,50 @@ export async function getDispatchBill(id: string): Promise<DispatchBill | null> 
       sku: m.sku ?? "",
     })),
   };
+}
+
+// ---- dispatch picker search (type-filtered, undispatched only) ----
+
+export type DispatchableCodeDTO = {
+  id: string;
+  serialNo: string;
+  type: string;
+  sku: string;
+};
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Search codes available to dispatch (still in the warehouse — counterId null),
+ * optionally filtered by type and a serial-number substring. Powers the
+ * Dispatch screen's searchable Type dropdown.
+ */
+export async function searchDispatchableCodes(input: {
+  type?: QrType;
+  query?: string;
+  limit?: number;
+}): Promise<DispatchableCodeDTO[]> {
+  await connectDB();
+  const q: Record<string, unknown> = { counterId: null };
+  if (input.type) q.type = input.type;
+  const query = (input.query ?? "").trim();
+  if (query) q.serialNo = { $regex: escapeRegex(query), $options: "i" };
+
+  const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
+  const docs = await QrCode.find(q)
+    .sort({ serialNo: 1 })
+    .limit(limit)
+    .select("serialNo type sku")
+    .lean();
+
+  return docs.map((d) => ({
+    id: String(d._id),
+    serialNo: d.serialNo,
+    type: String(d.type),
+    sku: d.sku ?? "",
+  }));
 }
 
 export type CounterInventory = {
