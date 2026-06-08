@@ -39,7 +39,11 @@ export async function connectDB(): Promise<typeof mongoose> {
     cached.conn = await cached.promise;
   } catch (err) {
     cached.promise = null;
-    throw err;
+    // Re-throw as a plain Error so it serializes cleanly to the error boundary
+    // (Mongoose errors carry non-serializable class/Map props that crash the
+    // server→client error handoff with "Only plain objects can be passed").
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`Database unavailable. ${reason}`);
   }
 
   return cached.conn;
