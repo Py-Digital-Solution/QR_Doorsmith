@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { Avatar } from "./Avatar";
-import { logout } from "@/app/login/actions";
 import type { UserRole } from "@/lib/roles";
 
 export function UserMenu({
@@ -50,11 +50,12 @@ export function UserMenu({
                 Settings
               </Link>
             )}
-            <form action={logout}>
-              <button className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50">
-                Sign out
-              </button>
-            </form>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+            >
+              Sign out
+            </button>
           </div>
         </>
       )}

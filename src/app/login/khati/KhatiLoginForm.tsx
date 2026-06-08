@@ -1,34 +1,68 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { sendKhatiOtp, khatiLogin, type ActionState } from "../actions";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 
 const field =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
 
 export function KhatiLoginForm() {
   const [phone, setPhone] = useState("");
-  const [otpState, sendAction, sending] = useActionState<ActionState, FormData>(
-    sendKhatiOtp,
-    {},
-  );
-  const [loginState, loginAction, verifying] = useActionState<ActionState, FormData>(
-    khatiLogin,
-    {},
-  );
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
-  const sent = !!otpState.ok;
+  async function sendOtp(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setOtpError(null);
+    if (!phone.trim()) {
+      setOtpError("Enter your phone number.");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch("/api/otp/request", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setOtpError(data?.error ?? "Could not send code.");
+      } else {
+        setSent(true);
+      }
+    } catch {
+      setOtpError("Could not send code. Try again.");
+    } finally {
+      setSending(false);
+    }
+  }
 
-  // On successful OTP verification, full-navigate so the new session cookie is
-  // picked up server-side (reliable on Netlify; see staff login for rationale).
-  useEffect(() => {
-    if (loginState.ok) window.location.href = "/";
-  }, [loginState.ok]);
+  async function verify(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoginError(null);
+    setVerifying(true);
+    const form = new FormData(e.currentTarget);
+    const res = await signIn("khati-otp", {
+      phone: phone.trim(),
+      code: String(form.get("code") ?? "").trim(),
+      redirect: false,
+    });
+    if (!res || res.error) {
+      setLoginError("Invalid or expired code.");
+      setVerifying(false);
+      return;
+    }
+    window.location.href = "/";
+  }
 
   return (
     <div className="space-y-4">
       {!sent && (
-        <form action={sendAction} className="space-y-4">
+        <form onSubmit={sendOtp} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Phone number</label>
             <input
@@ -41,7 +75,7 @@ export function KhatiLoginForm() {
               autoComplete="tel"
             />
           </div>
-          {otpState.error && <p className="text-sm text-red-600">{otpState.error}</p>}
+          {otpError && <p className="text-sm text-red-600">{otpError}</p>}
           <button
             type="submit"
             disabled={sending}
@@ -53,11 +87,10 @@ export function KhatiLoginForm() {
       )}
 
       {sent && (
-        <form action={loginAction} className="space-y-4">
+        <form onSubmit={verify} className="space-y-4">
           <p className="text-sm text-green-600">
             Code sent to {phone}. Enter it below.
           </p>
-          <input type="hidden" name="phone" value={phone} />
           <div>
             <label className="mb-1 block text-sm font-medium">6-digit code</label>
             <input
@@ -69,7 +102,7 @@ export function KhatiLoginForm() {
               className={field}
             />
           </div>
-          {loginState.error && <p className="text-sm text-red-600">{loginState.error}</p>}
+          {loginError && <p className="text-sm text-red-600">{loginError}</p>}
           <button
             type="submit"
             disabled={verifying}
