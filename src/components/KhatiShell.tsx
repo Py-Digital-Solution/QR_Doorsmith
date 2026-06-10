@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -129,6 +129,21 @@ function IconBack() {
   );
 }
 
+function IconDownload() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="7,10 12,15 17,10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 // ─── Bottom tabs ──────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -150,6 +165,28 @@ export function KhatiShell({
   const pathname = usePathname() ?? "";
   const [moreOpen, setMoreOpen] = useState(false);
   const [subPanel, setSubPanel] = useState<"help" | "about" | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    setIsStandalone(
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone === true,
+    );
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === "accepted") setInstallPrompt(null);
+  }
 
   function closeMore() {
     setMoreOpen(false);
@@ -256,6 +293,15 @@ export function KhatiShell({
                     <span className="flex-1 text-left font-medium">About App</span>
                     <span className="text-gray-300"><IconChevron /></span>
                   </button>
+
+                  {!isStandalone && installPrompt && (
+                    <button onClick={installApp}
+                      className="flex w-full items-center gap-3 px-5 py-3.5 text-sm text-brand hover:bg-orange-50">
+                      <IconDownload />
+                      <span className="flex-1 text-left font-semibold">Install App</span>
+                      <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white">NEW</span>
+                    </button>
+                  )}
 
                   <div className="mx-5 my-1 border-t border-gray-100" />
 
