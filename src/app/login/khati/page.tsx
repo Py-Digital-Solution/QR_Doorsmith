@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { KhatiLoginForm } from "./KhatiLoginForm";
+import { PwaInstallBanner } from "@/components/PwaInstallBanner";
 
 export default function KhatiLoginPage() {
   return (
@@ -13,6 +14,9 @@ export default function KhatiLoginPage() {
         priority
         className="mb-4 h-6 w-auto lg:hidden"
       />
+
+      <PwaInstallBanner />
+
       <p className="mb-6 text-sm text-gray-500">Khati sign in</p>
 
       <KhatiLoginForm />
