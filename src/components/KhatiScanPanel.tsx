@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { QrScanner } from "./QrScanner";
 
 type ScanState =
@@ -11,12 +11,15 @@ type ScanState =
 
 export function KhatiScanPanel() {
   const [state, setState] = useState<ScanState>({ phase: "scanning" });
+  // Ref-based guard prevents duplicate API calls regardless of React re-renders.
+  const isProcessing = useRef(false);
 
   const handleScan = useCallback(async (text: string) => {
-    if (state.phase === "loading") return;
+    if (isProcessing.current) return;
     const serialNo = text.trim();
     if (!serialNo) return;
 
+    isProcessing.current = true;
     setState({ phase: "loading", serialNo });
 
     try {
@@ -40,9 +43,11 @@ export function KhatiScanPanel() {
     } catch {
       setState({ phase: "error", message: "Network error. Please try again." });
     }
-  }, [state.phase]);
+    // Keep isProcessing true — only reset when user taps "Scan next" / "Try again".
+  }, []);
 
   function reset() {
+    isProcessing.current = false;
     setState({ phase: "scanning" });
   }
 

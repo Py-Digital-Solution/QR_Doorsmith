@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
 
 /**
- * Camera QR scanner. Calls onScan with the decoded text. Requires a secure
- * context (HTTPS or localhost) for camera access. Best-effort — if the camera
- * isn't available, the manual serial input is the fallback.
+ * Camera QR scanner. Calls onScan with the decoded text once per code.
+ * Requires HTTPS or localhost for camera access.
  */
 export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
   const id = useId().replace(/:/g, "");
-  const cb = useRef(onScan);
+  const onScanRef = useRef(onScan);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
+  // Always keep the callback ref up to date without recreating the scanner.
   useEffect(() => {
-    cb.current = onScan;
+    onScanRef.current = onScan;
   }, [onScan]);
 
   useEffect(() => {
@@ -22,17 +23,22 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
     const startPromise = scanner
       .start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: 220 },
-        (decoded) => cb.current(decoded),
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        (decoded) => onScanRef.current(decoded),
         undefined,
       )
-      .catch(() => {
-        /* camera unavailable / permission denied — manual input still works */
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.toLowerCase().includes("permission")) {
+          setCameraError("Camera permission denied. Allow camera access and reload.");
+        } else if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no cameras")) {
+          setCameraError("No camera found on this device.");
+        } else {
+          setCameraError("Camera unavailable.");
+        }
       });
 
     return () => {
-      // Wait for start() to settle, then stop only if actually scanning.
-      // html5-qrcode's stop() THROWS synchronously if it isn't running.
       startPromise.finally(() => {
         try {
           const state = scanner.getState();
@@ -40,22 +46,27 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
             state === Html5QrcodeScannerState.SCANNING ||
             state === Html5QrcodeScannerState.PAUSED
           ) {
-            scanner
-              .stop()
-              .then(() => scanner.clear())
-              .catch(() => {});
+            scanner.stop().then(() => scanner.clear()).catch(() => {});
           }
         } catch {
-          /* already stopped / never started — ignore */
+          // already stopped
         }
       });
     };
   }, [id]);
 
+  if (cameraError) {
+    return (
+      <div className="flex min-h-[280px] w-full max-w-xs items-center justify-center rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+        <p className="text-sm text-red-600">{cameraError}</p>
+      </div>
+    );
+  }
+
   return (
     <div
       id={id}
-      className="w-full max-w-xs overflow-hidden rounded-lg border border-gray-200"
+      className="min-h-[280px] w-full max-w-xs overflow-hidden rounded-lg border border-gray-200 bg-black"
     />
   );
 }
