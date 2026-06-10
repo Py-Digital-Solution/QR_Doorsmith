@@ -61,7 +61,7 @@ export function BatchesTable({
               <span className="text-green-700">{b.dispatchedCount} dispatched</span>
             </p>
             <p className="font-mono text-xs text-gray-500">
-              {formatSerial(b.serialStart)} – {formatSerial(b.serialEnd)}
+              {formatSerial("master", b.serialStart)} – {formatSerial("master", b.serialEnd)}
             </p>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs text-gray-400">{b.createdAt.slice(0, 10)}</span>
@@ -107,7 +107,7 @@ export function BatchesTable({
                   <span className="text-green-700">{b.dispatchedCount}</span>
                 </td>
                 <td className="px-4 py-2 font-mono text-xs">
-                  {formatSerial(b.serialStart)} – {formatSerial(b.serialEnd)}
+                  {formatSerial("master", b.serialStart)} – {formatSerial("master", b.serialEnd)}
                 </td>
                 <td className="px-4 py-2">
                   <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">

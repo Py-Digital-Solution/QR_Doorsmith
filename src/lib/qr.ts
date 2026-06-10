@@ -17,11 +17,28 @@ export type QrStatus = (typeof QR_STATUSES)[number];
 export const QR_BATCH_STATUSES = ["in_warehouse", "active", "archived"] as const;
 export type QrBatchStatus = (typeof QR_BATCH_STATUSES)[number];
 
-export const SERIAL_PREFIX = "DS";
+/** Type-specific serial prefixes: MS-DS (master), SM-DS (small), PD-DS (product). */
+export const QR_TYPE_PREFIXES: Record<QrType, string> = {
+  master: "MS-DS",
+  small: "SM-DS",
+  product: "PD-DS",
+};
 
-/** Stable serial format, e.g. 42 → "DS-0000042". */
-export function formatSerial(n: number): string {
-  return `${SERIAL_PREFIX}-${String(n).padStart(7, "0")}`;
+/** Type-prefixed serial, e.g. ("master", 42) → "MS-DS-0000042". */
+export function formatSerial(type: QrType, n: number): string {
+  return `${QR_TYPE_PREFIXES[type]}-${String(n).padStart(7, "0")}`;
+}
+
+/**
+ * Infer QrType from a serial/query prefix.
+ * "MS" or "MS-DS-..." → "master", "SM" → "small", "PD" → "product".
+ */
+export function inferTypeFromPrefix(q: string): QrType | undefined {
+  const up = q.toUpperCase();
+  if (up.startsWith("MS")) return "master";
+  if (up.startsWith("SM")) return "small";
+  if (up.startsWith("PD")) return "product";
+  return undefined;
 }
 
 /** Dispatch bill number, e.g. 42 → "DSP-000042". */

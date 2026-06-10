@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createDispatchAction, type ActionState } from "@/actions/dispatch";
-import { QR_TYPES, type QrType } from "@/lib/qr";
+import { QR_TYPES, inferTypeFromPrefix, type QrType } from "@/lib/qr";
 import { QrScanner } from "./QrScanner";
 
 const field =
@@ -152,11 +152,14 @@ export function DispatchClient({
             <input
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value);
+                const val = e.target.value;
+                setQuery(val);
                 setOpen(true);
+                const inferred = inferTypeFromPrefix(val);
+                if (inferred) setType(inferred);
               }}
               onFocus={() => setOpen(true)}
-              placeholder={`Search ${TYPE_LABEL[type].toLowerCase()} serial (DS-…)`}
+              placeholder="MS- master · SM- small · PD- product"
               className={field}
             />
 
@@ -194,8 +197,7 @@ export function DispatchClient({
           </button>
         </div>
         <p className="mt-1 text-xs text-gray-400">
-          Showing only undispatched {TYPE_LABEL[type].toLowerCase()} codes. Its contents
-          are dispatched along with it.
+          Type MS- for master box, SM- for small box, PD- for product. Contents dispatched along with it.
         </p>
         {scanning && (
           <div className="mt-3">

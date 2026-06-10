@@ -13,17 +13,24 @@ import {
   type Paginated,
 } from "@/lib/pagination";
 
-const SERIAL_SEQ = "qr_serial";
 const MAX_BATCH = 5000; // safety ceiling (SOW targets ~2,000/day)
 
-/** Atomically reserve a contiguous block of `count` serials; returns the start. */
-async function reserveSerials(count: number): Promise<number> {
+/** Separate atomic sequence per type so each type numbers from 1 independently. */
+const TYPE_SEQ: Record<QrType, string> = {
+  master: "qr_serial_master",
+  small: "qr_serial_small",
+  product: "qr_serial_product",
+};
+
+/** Reserve a contiguous block of `count` serials for the given type; returns the start. */
+async function reserveSerials(type: QrType, count: number): Promise<number> {
+  if (count === 0) return 0;
   const doc = await Sequence.findByIdAndUpdate(
-    SERIAL_SEQ,
+    TYPE_SEQ[type],
     { $inc: { value: count } },
     { upsert: true, returnDocument: "after" },
   ).lean();
-  const end = doc!.value; // value AFTER increment
+  const end = doc!.value;
   return end - count + 1;
 }
 
@@ -69,7 +76,12 @@ export async function generateBatch(input: GenerateBatchInput) {
   const product = await Product.findById(input.productId);
   if (!product) throw new Error("Product not found.");
 
-  const start = await reserveSerials(total);
+  // Reserve separate serial ranges per type (each type counts independently).
+  const [masterStart, smallStart, productStart] = await Promise.all([
+    reserveSerials("master", masters),
+    reserveSerials("small", smalls),
+    reserveSerials("product", products),
+  ]);
 
   const batch = await QrBatch.create({
     productId: product._id,
@@ -78,8 +90,8 @@ export async function generateBatch(input: GenerateBatchInput) {
     smallPerMaster,
     productPerSmall,
     totalCodes: total,
-    serialStart: start,
-    serialEnd: start + total - 1,
+    serialStart: masterStart,
+    serialEnd: masterStart + masterCount - 1,
     sheetConfig: input.sheetConfig,
     status: "in_warehouse",
   });
@@ -95,14 +107,16 @@ export async function generateBatch(input: GenerateBatchInput) {
   };
 
   // Pre-generate ObjectIds so children can reference their parent before insert.
-  let serial = start;
+  let mSerial = masterStart;
+  let sSerial = smallStart;
+  let pSerial = productStart;
   const docs: Record<string, unknown>[] = [];
 
   for (let m = 0; m < masterCount; m++) {
     const masterId = new Types.ObjectId();
     docs.push({
       _id: masterId,
-      serialNo: formatSerial(serial++),
+      serialNo: formatSerial("master", mSerial++),
       type: "master" as QrType,
       parentQrId: null,
       ...meta,
@@ -112,7 +126,7 @@ export async function generateBatch(input: GenerateBatchInput) {
       const smallId = new Types.ObjectId();
       docs.push({
         _id: smallId,
-        serialNo: formatSerial(serial++),
+        serialNo: formatSerial("small", sSerial++),
         type: "small" as QrType,
         parentQrId: masterId,
         ...meta,
@@ -121,7 +135,7 @@ export async function generateBatch(input: GenerateBatchInput) {
       for (let p = 0; p < productPerSmall; p++) {
         docs.push({
           _id: new Types.ObjectId(),
-          serialNo: formatSerial(serial++),
+          serialNo: formatSerial("product", pSerial++),
           type: "product" as QrType,
           parentQrId: smallId,
           ...meta,
@@ -132,7 +146,7 @@ export async function generateBatch(input: GenerateBatchInput) {
 
   await QrCode.insertMany(docs as unknown as QrCodeDoc[], { ordered: true });
 
-  return { batchId: String(batch._id), total, serialStart: start, serialEnd: start + total - 1 };
+  return { batchId: String(batch._id), total, serialStart: masterStart, serialEnd: masterStart + masterCount - 1 };
 }
 
 // ---- read models ----
