@@ -164,15 +164,20 @@ export function KhatiShell({
 }) {
   const pathname = usePathname() ?? "";
   const [moreOpen, setMoreOpen] = useState(false);
-  const [subPanel, setSubPanel] = useState<"help" | "about" | null>(null);
+  const [subPanel, setSubPanel] = useState<"help" | "about" | "ios-install" | null>(null);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    setIsStandalone(
+    const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as { standalone?: boolean }).standalone === true,
-    );
+      (navigator as { standalone?: boolean }).standalone === true;
+    setIsStandalone(standalone);
+
+    const ua = navigator.userAgent;
+    setIsIOS(/iPad|iPhone|iPod/.test(ua));
+
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
@@ -303,6 +308,15 @@ export function KhatiShell({
                     </button>
                   )}
 
+                  {!isStandalone && isIOS && (
+                    <button onClick={() => setSubPanel("ios-install")}
+                      className="flex w-full items-center gap-3 px-5 py-3.5 text-sm text-brand hover:bg-orange-50">
+                      <IconDownload />
+                      <span className="flex-1 text-left font-semibold">Add to Home Screen</span>
+                      <span className="text-gray-300"><IconChevron /></span>
+                    </button>
+                  )}
+
                   <div className="mx-5 my-1 border-t border-gray-100" />
 
                   <button onClick={() => signOut({ callbackUrl: "/login/khati" })}
@@ -381,6 +395,69 @@ export function KhatiShell({
                   <p className="text-center text-xs leading-relaxed text-gray-400">
                     Scan product QR codes to earn reward points. Redeem your points through your counter supervisor.
                   </p>
+                </div>
+                <div className="pb-8" />
+              </>
+            )}
+
+            {/* ── iOS Add to Home Screen instructions ── */}
+            {subPanel === "ios-install" && (
+              <>
+                <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+                  <button onClick={() => setSubPanel(null)} className="p-1 text-gray-400 hover:text-gray-700">
+                    <IconBack />
+                  </button>
+                  <h2 className="text-sm font-semibold text-gray-900">Add to Home Screen</h2>
+                </div>
+                <div className="space-y-3 px-5 py-4">
+                  <p className="text-sm text-gray-500">
+                    Install this app on your iPhone for quick access — no App Store needed.
+                  </p>
+
+                  {[
+                    {
+                      step: "1",
+                      icon: (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-brand">
+                          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                          <polyline points="16,6 12,2 8,6" />
+                          <line x1="12" y1="2" x2="12" y2="15" />
+                        </svg>
+                      ),
+                      text: "Tap the Share button at the bottom of Safari",
+                      sub: "It looks like a box with an arrow pointing up",
+                    },
+                    {
+                      step: "2",
+                      icon: (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-brand">
+                          <rect x="2" y="3" width="20" height="14" rx="2" />
+                          <line x1="8" y1="21" x2="16" y2="21" />
+                          <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
+                      ),
+                      text: 'Scroll down and tap "Add to Home Screen"',
+                      sub: "You may need to scroll the share sheet to find it",
+                    },
+                    {
+                      step: "3",
+                      icon: (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-brand">
+                          <polyline points="20,6 9,17 4,12" />
+                        </svg>
+                      ),
+                      text: 'Tap "Add" in the top right corner',
+                      sub: "The app icon will appear on your home screen",
+                    },
+                  ].map(({ step, icon, text, sub }) => (
+                    <div key={step} className="flex gap-3 rounded-xl bg-gray-50 p-3">
+                      <div className="mt-0.5">{icon}</div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{text}</p>
+                        <p className="mt-0.5 text-xs text-gray-400">{sub}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 <div className="pb-8" />
               </>
