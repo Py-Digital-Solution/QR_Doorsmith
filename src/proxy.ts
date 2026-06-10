@@ -1,11 +1,10 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 
-// Edge-safe middleware: uses only the JWT (no DB) to gate routes via the
-// `authorized` callback in authConfig.
-export const { auth: middleware } = NextAuth(authConfig);
+const { auth } = NextAuth(authConfig);
 
-export default middleware;
+// Next.js 16 renamed middleware → proxy. Export as named `proxy` (or default).
+export const proxy = auth;
 
 export const config = {
   matcher: [
