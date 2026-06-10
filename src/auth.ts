@@ -4,7 +4,7 @@ import { authConfig } from "@/auth.config";
 import { connectDB } from "@/db/mongoose";
 import { User, type UserRole } from "@/models/User";
 import { verifyPassword } from "@/lib/password";
-import { verifyOtp } from "@/services/otp";
+import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { isDistributorEnabled } from "@/services/settings";
 
 /**
@@ -49,14 +49,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       id: "khati-otp",
       name: "Khati OTP",
-      credentials: { phone: {}, code: {} },
+      credentials: { idToken: {} },
       authorize: async (creds) => {
-        const phone = String(creds.phone ?? "").trim();
-        const code = String(creds.code ?? "").trim();
-        if (!phone || !code) return null;
+        const idToken = String(creds.idToken ?? "").trim();
+        if (!idToken) return null;
 
-        const ok = await verifyOtp(phone, code);
-        if (!ok) return null;
+        let phone: string;
+        try {
+          const decoded = await verifyFirebaseIdToken(idToken);
+          phone = decoded.phone_number ?? "";
+        } catch {
+          return null;
+        }
+        if (!phone) return null;
 
         await connectDB();
         const user = await User.findOne({ phone, role: "khati" });
