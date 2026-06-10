@@ -12,7 +12,100 @@ import { getFirebaseAuth } from "@/lib/firebase-client";
 const field =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
 
-export function KhatiLoginForm() {
+const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+
+// ─── Dev-mode form (no Firebase) ────────────────────────────────────────────
+
+function DevLoginForm() {
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("1111");
+  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setPending(true);
+    const res = await signIn("khati-otp", {
+      phone: phone.trim(),
+      code: code.trim(),
+      redirect: false,
+    });
+    if (!res || res.error) {
+      setError("Login failed. Check the phone number is registered as a khati.");
+      setPending(false);
+      return;
+    }
+    window.location.href = "/";
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
+        Dev mode — OTP is always <strong>1111</strong>
+      </div>
+
+      {step === "phone" ? (
+        <form onSubmit={(e) => { e.preventDefault(); setStep("otp"); }} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Phone number</label>
+            <input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className={field}
+              autoComplete="tel"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+          >
+            Continue
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={submit} className="space-y-4">
+          <p className="text-sm text-gray-500">Signing in as {phone}</p>
+          <div>
+            <label className="mb-1 block text-sm font-medium">OTP code</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className={field}
+              autoFocus
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+          >
+            {pending ? "Signing in…" : "Sign in"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setStep("phone"); setError(null); }}
+            className="w-full text-sm text-gray-500 hover:underline"
+          >
+            ← Change number
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ─── Firebase form (production) ──────────────────────────────────────────────
+
+function FirebaseLoginForm() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -24,17 +117,11 @@ export function KhatiLoginForm() {
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
   const recaptchaContainerId = "recaptcha-container";
 
-  // Set up invisible reCAPTCHA once on mount.
   useEffect(() => {
     const auth = getFirebaseAuth();
-    const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
-      size: "invisible",
-    });
+    const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, { size: "invisible" });
     recaptchaRef.current = verifier;
-    return () => {
-      verifier.clear();
-      recaptchaRef.current = null;
-    };
+    return () => { verifier.clear(); recaptchaRef.current = null; };
   }, []);
 
   async function sendOtp(e: React.FormEvent) {
@@ -42,31 +129,25 @@ export function KhatiLoginForm() {
     setError(null);
     const trimmed = phone.trim();
     if (!trimmed) { setError("Enter your phone number."); return; }
-
     setSending(true);
     try {
       const auth = getFirebaseAuth();
-      // Ensure phone has + prefix for Firebase (e.g. +919876543210).
       const normalized = trimmed.startsWith("+") ? trimmed : `+91${trimmed}`;
       const result = await signInWithPhoneNumber(auth, normalized, recaptchaRef.current!);
       confirmationRef.current = result;
       setStep("otp");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to send code.";
-      // Surface a friendly message for common Firebase errors.
       if (msg.includes("invalid-phone-number")) {
-        setError("Invalid phone number. Include country code, e.g. +919876543210");
+        setError("Invalid phone number. Include country code e.g. +919876543210");
       } else if (msg.includes("too-many-requests")) {
         setError("Too many attempts. Please wait and try again.");
       } else {
         setError(msg);
       }
-      // Reset reCAPTCHA so user can retry.
       recaptchaRef.current?.clear();
       const auth = getFirebaseAuth();
-      recaptchaRef.current = new RecaptchaVerifier(auth, recaptchaContainerId, {
-        size: "invisible",
-      });
+      recaptchaRef.current = new RecaptchaVerifier(auth, recaptchaContainerId, { size: "invisible" });
     } finally {
       setSending(false);
     }
@@ -77,12 +158,10 @@ export function KhatiLoginForm() {
     setError(null);
     if (!code.trim()) { setError("Enter the code."); return; }
     if (!confirmationRef.current) { setError("Session expired. Refresh and try again."); return; }
-
     setVerifying(true);
     try {
       const result = await confirmationRef.current.confirm(code.trim());
       const idToken = await result.user.getIdToken();
-
       const res = await signIn("khati-otp", { idToken, redirect: false });
       if (!res || res.error) {
         setError("Login failed. Make sure your number is registered as a khati.");
@@ -91,13 +170,9 @@ export function KhatiLoginForm() {
       window.location.href = "/";
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Verification failed.";
-      if (msg.includes("invalid-verification-code")) {
-        setError("Wrong code. Check and try again.");
-      } else if (msg.includes("code-expired")) {
-        setError("Code expired. Go back and request a new one.");
-      } else {
-        setError(msg);
-      }
+      if (msg.includes("invalid-verification-code")) setError("Wrong code. Check and try again.");
+      else if (msg.includes("code-expired")) setError("Code expired. Request a new one.");
+      else setError(msg);
     } finally {
       setVerifying(false);
     }
@@ -105,9 +180,7 @@ export function KhatiLoginForm() {
 
   return (
     <div className="space-y-4">
-      {/* Invisible reCAPTCHA anchor — Firebase needs a real DOM element. */}
       <div id={recaptchaContainerId} />
-
       {step === "phone" && (
         <form onSubmit={sendOtp} className="space-y-4">
           <div>
@@ -121,57 +194,40 @@ export function KhatiLoginForm() {
               className={field}
               autoComplete="tel"
             />
-            <p className="mt-1 text-xs text-gray-400">
-              Include country code, e.g. +91 for India
-            </p>
+            <p className="mt-1 text-xs text-gray-400">Include country code e.g. +91 for India</p>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={sending}
-            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-          >
+          <button type="submit" disabled={sending}
+            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50">
             {sending ? "Sending…" : "Send OTP"}
           </button>
         </form>
       )}
-
       {step === "otp" && (
         <form onSubmit={verifyOtp} className="space-y-4">
-          <p className="text-sm text-green-600">
-            OTP sent to {phone}. Enter the 6-digit code.
-          </p>
+          <p className="text-sm text-green-600">OTP sent to {phone}. Enter the 6-digit code.</p>
           <div>
             <label className="mb-1 block text-sm font-medium">6-digit code</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className={field}
-              autoFocus
-            />
+            <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} required
+              value={code} onChange={(e) => setCode(e.target.value)} className={field} autoFocus />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={verifying}
-            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-          >
+          <button type="submit" disabled={verifying}
+            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50">
             {verifying ? "Verifying…" : "Verify & sign in"}
           </button>
-          <button
-            type="button"
-            onClick={() => { setStep("phone"); setCode(""); setError(null); }}
-            className="w-full text-sm text-gray-500 hover:underline"
-          >
+          <button type="button" onClick={() => { setStep("phone"); setCode(""); setError(null); }}
+            className="w-full text-sm text-gray-500 hover:underline">
             ← Change number
           </button>
         </form>
       )}
     </div>
   );
+}
+
+// ─── Auto-select based on env ────────────────────────────────────────────────
+
+export function KhatiLoginForm() {
+  return FIREBASE_CONFIGURED ? <FirebaseLoginForm /> : <DevLoginForm />;
 }

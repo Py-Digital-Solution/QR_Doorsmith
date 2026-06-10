@@ -49,22 +49,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       id: "khati-otp",
       name: "Khati OTP",
-      credentials: { idToken: {} },
+      // Accepts either a Firebase idToken (production) or phone+code (dev mode).
+      credentials: { idToken: {}, phone: {}, code: {} },
       authorize: async (creds) => {
         const idToken = String(creds.idToken ?? "").trim();
-        if (!idToken) return null;
+        const phone = String(creds.phone ?? "").trim();
+        const code = String(creds.code ?? "").trim();
 
-        let phone: string;
-        try {
-          const decoded = await verifyFirebaseIdToken(idToken);
-          phone = decoded.phone_number ?? "";
-        } catch {
+        let resolvedPhone: string;
+
+        if (idToken) {
+          // Production: verify Firebase ID token.
+          try {
+            const decoded = await verifyFirebaseIdToken(idToken);
+            resolvedPhone = decoded.phone_number ?? "";
+          } catch {
+            return null;
+          }
+        } else if (process.env.OTP_DEV_MODE === "true" && phone && code === "1111") {
+          // Dev mode: accept the hardcoded default OTP.
+          resolvedPhone = phone;
+        } else {
           return null;
         }
-        if (!phone) return null;
+
+        if (!resolvedPhone) return null;
 
         await connectDB();
-        const user = await User.findOne({ phone, role: "khati" });
+        const user = await User.findOne({ phone: resolvedPhone, role: "khati" });
         if (!user || user.status !== "active") return null;
 
         return {
