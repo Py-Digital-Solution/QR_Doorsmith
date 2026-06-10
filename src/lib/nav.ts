@@ -13,6 +13,10 @@ export const NAV: Record<UserRole, NavItem[]> = {
   ],
   sales_rep: [{ href: "/sales", label: "Counters" }],
   distributor: [{ href: "/sales", label: "Counters" }],
-  counter: [{ href: "/counter", label: "Khatis" }],
+  counter: [
+    { href: "/counter", label: "Dashboard" },
+    { href: "/counter/inventory", label: "Inventory" },
+    { href: "/counter/dispatches", label: "Dispatches" },
+  ],
   khati: [{ href: "/khati", label: "Home" }],
 };

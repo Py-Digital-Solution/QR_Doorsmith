@@ -266,3 +266,72 @@ export async function getCounterInventory(counterId: string): Promise<CounterInv
   ]);
   return { masters, smalls, products, total: masters + smalls + products };
 }
+
+// ---- counter inventory list ----
+
+export type CounterCodeDTO = {
+  id: string;
+  serialNo: string;
+  type: string;
+  sku: string;
+  status: string;
+};
+
+export async function listCounterCodes(
+  counterId: string,
+  pagination: Pagination,
+  filter?: { type?: QrType },
+): Promise<Paginated<CounterCodeDTO>> {
+  await connectDB();
+  const q: Record<string, unknown> = { counterId };
+  if (filter?.type) q.type = filter.type;
+  const { page, pageSize } = pagination;
+  const total = await QrCode.countDocuments(q);
+  const docs = await QrCode.find(q)
+    .sort({ serialNo: 1 })
+    .skip((page - 1) * pageSize)
+    .limit(pageSize)
+    .select("serialNo type sku status")
+    .lean();
+  return paginated(
+    docs.map((d) => ({
+      id: String(d._id),
+      serialNo: d.serialNo,
+      type: String(d.type),
+      sku: d.sku ?? "",
+      status: String(d.status),
+    })),
+    total,
+    pagination,
+  );
+}
+
+// ---- counter dispatch history ----
+
+export async function listCounterDispatches(
+  counterId: string,
+  pagination: Pagination,
+): Promise<Paginated<DispatchDTO>> {
+  await connectDB();
+  const q = { counterId };
+  const { page, pageSize } = pagination;
+  const total = await Dispatch.countDocuments(q);
+  const docs = await Dispatch.find(q)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * pageSize)
+    .limit(pageSize)
+    .lean();
+  return paginated(
+    docs.map((d) => ({
+      id: String(d._id),
+      billNo: d.billNo,
+      counterLabel: "",
+      unitCount: d.rootCount ?? d.masterCount ?? 0,
+      totalCodes: d.totalCodes ?? 0,
+      status: String(d.status),
+      createdAt: (d.createdAt as Date)?.toISOString() ?? "",
+    })),
+    total,
+    pagination,
+  );
+}
