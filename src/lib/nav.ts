@@ -17,6 +17,12 @@ export const NAV: Record<UserRole, NavItem[]> = {
     { href: "/counter", label: "Dashboard" },
     { href: "/counter/inventory", label: "Inventory" },
     { href: "/counter/dispatches", label: "Dispatches" },
+    { href: "/counter/redemptions", label: "Redemptions" },
   ],
-  khati: [{ href: "/khati", label: "Home" }],
+  khati: [
+    { href: "/khati", label: "Home" },
+    { href: "/khati/scan", label: "Scan QR" },
+    { href: "/khati/history", label: "History" },
+    { href: "/khati/redemptions", label: "Redeem" },
+  ],
 };

@@ -31,6 +31,9 @@ const userSchema = new Schema(
       index: true,
     },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    // Khati rewards (Phase 4). Default 0 so old documents behave correctly.
+    points: { type: Number, default: 0 },
+    lifetimePoints: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

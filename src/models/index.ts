@@ -10,3 +10,4 @@ export * from "./Sequence";
 export * from "./QrBatch";
 export * from "./QrCode";
 export * from "./Dispatch";
+export * from "./Redemption";
