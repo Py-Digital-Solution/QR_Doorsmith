@@ -3,19 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createDispatchAction, type ActionState } from "@/actions/dispatch";
-import { QR_TYPES, inferTypeFromPrefix, type QrType } from "@/lib/qr";
 import { QrScanner } from "./QrScanner";
 
 const field =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
 
 type CodeHit = { id: string; serialNo: string; type: string; sku: string };
-
-const TYPE_LABEL: Record<QrType, string> = {
-  master: "Master box",
-  small: "Small box",
-  product: "Product",
-};
 
 export function DispatchClient({
   counters,
@@ -24,7 +17,6 @@ export function DispatchClient({
 }) {
   const [serials, setSerials] = useState<string[]>([]);
   const [counterId, setCounterId] = useState(counters[0]?.id ?? "");
-  const [type, setType] = useState<QrType>("master");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CodeHit[]>([]);
   const [searching, setSearching] = useState(false);
@@ -43,7 +35,7 @@ export function DispatchClient({
     setSerials((prev) => prev.filter((x) => x !== s));
   }
 
-  // Live search of undispatched codes by type (REST route, debounced + abortable).
+  // Live search — type is inferred server-side from the serial prefix.
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
@@ -51,7 +43,7 @@ export function DispatchClient({
     const t = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/qr/search?type=${type}&q=${encodeURIComponent(query)}`,
+          `/api/qr/search?q=${encodeURIComponent(query)}`,
           { signal: controller.signal },
         );
         const data = await res.json().catch(() => ({ items: [] }));
@@ -67,7 +59,7 @@ export function DispatchClient({
       clearTimeout(t);
       controller.abort();
     };
-  }, [type, query]);
+  }, [query]);
 
   // Close the dropdown on outside click.
   useEffect(() => {
@@ -127,36 +119,18 @@ export function DispatchClient({
         </select>
       </div>
 
-      {/* Type + searchable picker */}
+      {/* Searchable picker — no type dropdown, prefix identifies type */}
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-600">
           Add QR codes
         </label>
         <div className="flex gap-2">
-          <select
-            value={type}
-            onChange={(e) => {
-              setType(e.target.value as QrType);
-              setOpen(true);
-            }}
-            className="rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-          >
-            {QR_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {TYPE_LABEL[t]}
-              </option>
-            ))}
-          </select>
-
           <div ref={boxRef} className="relative flex-1">
             <input
               value={query}
               onChange={(e) => {
-                const val = e.target.value;
-                setQuery(val);
+                setQuery(e.target.value);
                 setOpen(true);
-                const inferred = inferTypeFromPrefix(val);
-                if (inferred) setType(inferred);
               }}
               onFocus={() => setOpen(true)}
               placeholder="MS- master · SM- small · PD- product"
@@ -170,7 +144,7 @@ export function DispatchClient({
                 )}
                 {!searching && available.length === 0 && (
                   <p className="px-3 py-2 text-xs text-gray-400">
-                    No undispatched {TYPE_LABEL[type].toLowerCase()} codes found.
+                    No undispatched codes found.
                   </p>
                 )}
                 {available.map((hit) => (
@@ -197,7 +171,7 @@ export function DispatchClient({
           </button>
         </div>
         <p className="mt-1 text-xs text-gray-400">
-          Type MS- for master box, SM- for small box, PD- for product. Contents dispatched along with it.
+          MS- master box · SM- small box · PD- product. Contents dispatched along with it.
         </p>
         {scanning && (
           <div className="mt-3">
