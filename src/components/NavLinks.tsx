@@ -15,8 +15,7 @@ export function NavLinks({
   return (
     <nav className="space-y-1">
       {items.map((it) => {
-        const active =
-          pathname === it.href || pathname.startsWith(it.href + "/");
+        const active = pathname === it.href;
         return (
           <Link
             key={it.href}

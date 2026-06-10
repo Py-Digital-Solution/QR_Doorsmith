@@ -11,15 +11,21 @@ type ScanState =
 
 export function KhatiScanPanel() {
   const [state, setState] = useState<ScanState>({ phase: "scanning" });
-  // Ref-based guard prevents duplicate API calls regardless of React re-renders.
   const isProcessing = useRef(false);
+  // After a scan the camera may still see the same code. Ignore it for 5 s so
+  // the user has time to move away before the next scan is accepted.
+  const lastSeen = useRef<{ serial: string; at: number } | null>(null);
 
   const handleScan = useCallback(async (text: string) => {
     if (isProcessing.current) return;
     const serialNo = text.trim();
     if (!serialNo) return;
 
+    const prev = lastSeen.current;
+    if (prev && prev.serial === serialNo && Date.now() - prev.at < 5000) return;
+
     isProcessing.current = true;
+    lastSeen.current = { serial: serialNo, at: Date.now() };
     setState({ phase: "loading", serialNo });
 
     try {
