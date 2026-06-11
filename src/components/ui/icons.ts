@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Users,
   Package,
@@ -39,6 +37,7 @@ import {
   FileText,
   KeyRound,
   Camera,
+  Undo2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -86,6 +85,7 @@ export const ICONS = {
   "file-text": FileText,
   key: KeyRound,
   camera: Camera,
+  undo: Undo2,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

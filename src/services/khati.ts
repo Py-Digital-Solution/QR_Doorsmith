@@ -70,6 +70,52 @@ export async function processQrScan(
   };
 }
 
+export type ReturnResult = {
+  serialNo: string;
+  sku: string;
+  pointsReversed: number;
+  khatiName: string;
+};
+
+/**
+ * Process a product return at a counter.
+ * Reverses the khati's reward points and reactivates the QR code for resale.
+ */
+export async function processQrReturn(
+  counterId: string,
+  serialNo: string,
+): Promise<ReturnResult> {
+  await connectDB();
+
+  const code = await QrCode.findOne({ serialNo: serialNo.trim() }).lean();
+  if (!code) throw new Error("QR code not found.");
+  if (code.type !== "product") throw new Error("Only product QR codes can be returned.");
+  if (code.status !== "scanned") throw new Error("This code has not been scanned — nothing to return.");
+  if (!code.counterId || String(code.counterId) !== counterId) {
+    throw new Error("This QR code does not belong to your counter.");
+  }
+  if (!code.scannedByKhatiId) throw new Error("No khati record found for this code.");
+
+  const pts = code.rewardPoints ?? 0;
+  const khati = await User.findById(code.scannedByKhatiId).select("name points").lean();
+  if (!khati) throw new Error("Khati account not found.");
+
+  await User.findByIdAndUpdate(code.scannedByKhatiId, {
+    $inc: { points: -pts },
+  });
+
+  await QrCode.findByIdAndUpdate(code._id, {
+    $set: { status: "active", scannedByKhatiId: null, scannedAt: null },
+  });
+
+  return {
+    serialNo: code.serialNo,
+    sku: code.sku ?? "",
+    pointsReversed: pts,
+    khatiName: khati.name ?? "Unknown",
+  };
+}
+
 export type ScanHistoryItem = {
   id: string;
   serialNo: string;
