@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
+import { HeaderTitle } from "./HeaderTitle";
 import type { NavItem } from "@/lib/nav";
 import type { UserRole } from "@/lib/roles";
 
@@ -20,7 +21,7 @@ export function DashboardShell({
       <Sidebar items={navItems} className="hidden md:flex" />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center gap-2 border-b border-gray-200 bg-white px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-gray-200 bg-white/95 px-4 backdrop-blur-sm sm:px-6">
           <MobileNav items={navItems} />
           <Image
             src="/logo.png"
@@ -29,12 +30,17 @@ export function DashboardShell({
             height={20}
             className="h-5 w-auto md:hidden"
           />
+          <HeaderTitle items={navItems} />
           <div className="ml-auto flex items-center gap-3">
             <UserMenu user={user} />
           </div>
         </header>
 
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1">
+          <div className="mx-auto w-full max-w-6xl p-4 sm:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

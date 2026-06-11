@@ -19,6 +19,21 @@
   --color-brand-light: #fff3e8; /* tint background */
   --color-brand-blue: #2d60b2; /* logo blue accent */
   --color-brand-navy: #0f2444; /* deep navy panels */
+
+  /* Elevation — navy-tinted so shadows read as depth, not dirt */
+  --shadow-card: 0 1px 2px 0 rgb(15 36 68 / 0.05);
+  --shadow-card-hover: 0 2px 8px -1px rgb(15 36 68 / 0.08), 0 1px 2px 0 rgb(15 36 68 / 0.05);
+  --shadow-overlay: 0 10px 38px -10px rgb(15 36 68 / 0.22), 0 4px 12px -6px rgb(15 36 68 / 0.12);
+
+  --default-transition-duration: 150ms;
+}
+
+/* Brand-colored focus ring shared by all interactive primitives */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid rgb(246 130 31 / 0.45);
+    outline-offset: 2px;
+  }
 }
 
 /* App is a light-themed dashboard — keep colors stable regardless of OS theme. */

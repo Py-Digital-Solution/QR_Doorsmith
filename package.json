@@ -17,6 +17,7 @@
     "firebase": "^12.14.0",
     "firebase-admin": "^13.10.0",
     "html5-qrcode": "^2.3.8",
+    "lucide-react": "^1.17.0",
     "minio": "^8.0.7",
     "mongoose": "^9.6.3",
     "next": "16.2.7",
