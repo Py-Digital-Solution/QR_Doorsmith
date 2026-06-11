@@ -11,6 +11,17 @@ import { parsePageParams } from "@/lib/pagination";
 import { Pagination } from "@/components/Pagination";
 import { BatchActions } from "@/components/BatchActions";
 import { QrCodeActions } from "@/components/QrCodeActions";
+import { Badge, statusTone } from "@/components/ui/Badge";
+import {
+  TableWrapper,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  MobileCardList,
+} from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const FILTER_LABELS: Record<CodeFilter, string> = {
   all: "All",
@@ -45,15 +56,20 @@ export default async function BatchDetailPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/qr" className="text-xs text-brand-dark hover:underline">
+        <Link
+          href="/admin/qr"
+          className="focus-ring inline-flex items-center gap-1 rounded-md text-xs font-medium text-brand-dark hover:underline"
+        >
           ← Back to batches
         </Link>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Batch · {batch.productSku}</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900">
+            Batch · {batch.productSku}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
             {batch.masterCount}×{batch.smallPerMaster}×{batch.productPerSmall} ·{" "}
             <span className="font-medium">{batch.total} codes</span> · {batch.status}
           </p>
@@ -67,7 +83,7 @@ export default async function BatchDetailPage({
       </div>
 
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {CODE_FILTERS.map((f) => {
           const active = f === filter;
           const href = f === "all" ? `/admin/qr/${id}` : `/admin/qr/${id}?status=${f}`;
@@ -75,10 +91,10 @@ export default async function BatchDetailPage({
             <Link
               key={f}
               href={href}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`focus-ring rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                 active
-                  ? "bg-brand text-white"
-                  : "border border-gray-300 text-gray-600 hover:bg-gray-50"
+                  ? "bg-brand text-white shadow-card"
+                  : "border border-gray-300 bg-white text-gray-600 hover:border-brand/40 hover:text-brand-dark"
               }`}
             >
               {FILTER_LABELS[f]}
@@ -88,18 +104,25 @@ export default async function BatchDetailPage({
       </div>
 
       {codes.items.length === 0 ? (
-        <p className="text-sm text-gray-500">No codes in this view.</p>
+        <div className="rounded-lg border border-gray-200 bg-white shadow-card">
+          <EmptyState
+            icon="qr-code"
+            title="No codes in this view"
+            description="Try a different filter."
+          />
+        </div>
       ) : (
         <>
           {/* Mobile: cards */}
-          <div className="space-y-3 sm:hidden">
+          <MobileCardList>
             {codes.items.map((c) => (
-              <div key={c.id} className="rounded-lg border border-gray-200 bg-white p-4">
+              <div
+                key={c.id}
+                className="rounded-lg border border-gray-200 bg-white p-4 shadow-card"
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm">{c.serialNo}</span>
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium uppercase text-gray-600">
-                    {c.type}
-                  </span>
+                  <span className="font-mono text-sm text-gray-900">{c.serialNo}</span>
+                  <Badge tone="gray" className="uppercase">{c.type}</Badge>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
                   {c.sku || "—"} · {c.status}
@@ -113,43 +136,43 @@ export default async function BatchDetailPage({
                 </div>
               </div>
             ))}
-          </div>
+          </MobileCardList>
 
           {/* Desktop: table */}
-          <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white sm:block">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-2">Serial</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Parent</th>
-                  <th className="px-4 py-2">SKU</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Counter</th>
-                  <th className="px-4 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
+          <TableWrapper>
+            <Table>
+              <THead>
+                <TH>Serial</TH>
+                <TH>Type</TH>
+                <TH>Parent</TH>
+                <TH>SKU</TH>
+                <TH>Status</TH>
+                <TH>Counter</TH>
+                <TH align="right">Actions</TH>
+              </THead>
               <tbody>
                 {codes.items.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-100 last:border-0">
-                    <td className="px-4 py-2 font-mono text-xs">{c.serialNo}</td>
-                    <td className="px-4 py-2 text-xs uppercase text-gray-600">{c.type}</td>
-                    <td className="px-4 py-2 font-mono text-xs text-gray-500">
+                  <TR key={c.id} interactive>
+                    <TD className="font-mono text-xs text-gray-900">{c.serialNo}</TD>
+                    <TD className="text-xs text-gray-600 uppercase">{c.type}</TD>
+                    <TD className="font-mono text-xs text-gray-500">
                       {c.parentSerial ?? "—"}
-                    </td>
-                    <td className="px-4 py-2 font-mono text-xs">{c.sku || "—"}</td>
-                    <td className="px-4 py-2">{c.status}</td>
-                    <td className="px-4 py-2 text-xs text-gray-600">
+                    </TD>
+                    <TD className="font-mono text-xs text-gray-600">{c.sku || "—"}</TD>
+                    <TD>
+                      <Badge tone={statusTone(c.status)}>{c.status}</Badge>
+                    </TD>
+                    <TD className="text-xs text-gray-600">
                       {c.counterLabel ?? "—"}
-                    </td>
-                    <td className="px-4 py-2">
+                    </TD>
+                    <TD>
                       <QrCodeActions code={c} batchId={id} />
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </Table>
+          </TableWrapper>
         </>
       )}
 

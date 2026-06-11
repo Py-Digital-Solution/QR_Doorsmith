@@ -3,6 +3,20 @@ import type { BatchDTO } from "@/services/qr";
 import { formatSerial } from "@/lib/qr";
 import { BatchActions } from "./BatchActions";
 import type { ProductOption } from "./GenerateBatchForm";
+import { Badge, statusTone } from "./ui/Badge";
+import {
+  TableWrapper,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  MobileCardList,
+} from "./ui/Table";
+import { EmptyState } from "./ui/EmptyState";
+
+const actionLink =
+  "focus-ring inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-brand-light";
 
 function PdfLink({ id }: { id: string }) {
   return (
@@ -10,7 +24,7 @@ function PdfLink({ id }: { id: string }) {
       href={`/admin/qr/${id}/pdf`}
       target="_blank"
       rel="noopener noreferrer"
-      className="rounded px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-light"
+      className={actionLink}
     >
       PDF
     </a>
@@ -19,10 +33,7 @@ function PdfLink({ id }: { id: string }) {
 
 function ManageLink({ id }: { id: string }) {
   return (
-    <Link
-      href={`/admin/qr/${id}`}
-      className="rounded px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-light"
-    >
+    <Link href={`/admin/qr/${id}`} className={actionLink}>
       Manage
     </Link>
   );
@@ -36,22 +47,31 @@ export function BatchesTable({
   products: ProductOption[];
 }) {
   if (batches.length === 0) {
-    return <p className="text-sm text-gray-500">No batches yet.</p>;
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white shadow-card">
+        <EmptyState
+          icon="qr-code"
+          title="No batches yet"
+          description="Generate a QR batch to get started."
+        />
+      </div>
+    );
   }
 
   return (
     <>
       {/* Mobile: cards */}
-      <div className="space-y-3 sm:hidden">
+      <MobileCardList>
         {batches.map((b) => (
-          <div key={b.id} className="rounded-lg border border-gray-200 bg-white p-4">
+          <div
+            key={b.id}
+            className="rounded-lg border border-gray-200 bg-white p-4 shadow-card"
+          >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs">{b.productSku}</span>
-              <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
-                {b.status}
-              </span>
+              <span className="font-mono text-xs text-gray-600">{b.productSku}</span>
+              <Badge tone={statusTone(b.status)}>{b.status}</Badge>
             </div>
-            <p className="mt-1 text-sm">
+            <p className="mt-1 text-sm text-gray-900">
               {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall} ·{" "}
               <span className="font-medium">{b.total} codes</span>
             </p>
@@ -70,62 +90,60 @@ export function BatchesTable({
                 <PdfLink id={b.id} />
               </div>
             </div>
-            <div className="mt-1 border-t border-gray-100 pt-2">
+            <div className="mt-2 border-t border-gray-100 pt-2">
               <BatchActions batch={b} products={products} />
             </div>
           </div>
         ))}
-      </div>
+      </MobileCardList>
 
       {/* Desktop: table */}
-      <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white sm:block">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Product</th>
-              <th className="px-4 py-2">Structure (M×S×P)</th>
-              <th className="px-4 py-2 text-right">Total</th>
-              <th className="px-4 py-2 text-right">Warehouse / Sent</th>
-              <th className="px-4 py-2">Serial range</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
+      <TableWrapper>
+        <Table>
+          <THead>
+            <TH>Date</TH>
+            <TH>Product</TH>
+            <TH>Structure (M×S×P)</TH>
+            <TH align="right">Total</TH>
+            <TH align="right">Warehouse / Sent</TH>
+            <TH>Serial range</TH>
+            <TH>Status</TH>
+            <TH align="right">Actions</TH>
+          </THead>
           <tbody>
             {batches.map((b) => (
-              <tr key={b.id} className="border-b border-gray-100 last:border-0">
-                <td className="px-4 py-2">{b.createdAt.slice(0, 10)}</td>
-                <td className="px-4 py-2 font-mono text-xs">{b.productSku}</td>
-                <td className="px-4 py-2">
+              <TR key={b.id} interactive>
+                <TD className="text-gray-600">{b.createdAt.slice(0, 10)}</TD>
+                <TD className="font-mono text-xs text-gray-600">{b.productSku}</TD>
+                <TD className="text-gray-600">
                   {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall}
-                </td>
-                <td className="px-4 py-2 text-right font-medium">{b.total}</td>
-                <td className="px-4 py-2 text-right text-xs">
+                </TD>
+                <TD align="right" className="font-medium text-gray-900">
+                  {b.total}
+                </TD>
+                <TD align="right" className="text-xs">
                   <span className="text-amber-700">{b.warehouseCount}</span>
                   {" / "}
                   <span className="text-green-700">{b.dispatchedCount}</span>
-                </td>
-                <td className="px-4 py-2 font-mono text-xs">
+                </TD>
+                <TD className="font-mono text-xs text-gray-600">
                   {formatSerial("master", b.serialStart)} – {formatSerial("master", b.serialEnd)}
-                </td>
-                <td className="px-4 py-2">
-                  <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
-                    {b.status}
-                  </span>
-                </td>
-                <td className="px-4 py-2">
+                </TD>
+                <TD>
+                  <Badge tone={statusTone(b.status)}>{b.status}</Badge>
+                </TD>
+                <TD>
                   <div className="flex items-center justify-end gap-1">
                     <ManageLink id={b.id} />
                     <PdfLink id={b.id} />
                     <BatchActions batch={b} products={products} />
                   </div>
-                </td>
-              </tr>
+                </TD>
+              </TR>
             ))}
           </tbody>
-        </table>
-      </div>
+        </Table>
+      </TableWrapper>
     </>
   );
 }

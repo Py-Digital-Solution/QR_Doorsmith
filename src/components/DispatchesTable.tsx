@@ -1,4 +1,15 @@
 import type { DispatchDTO } from "@/services/dispatch";
+import {
+  TableWrapper,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  MobileCardList,
+  MobileCard,
+} from "./ui/Table";
+import { EmptyState } from "./ui/EmptyState";
 
 function BillLink({ id }: { id: string }) {
   return (
@@ -6,7 +17,7 @@ function BillLink({ id }: { id: string }) {
       href={`/admin/dispatch/${id}/bill`}
       target="_blank"
       rel="noopener noreferrer"
-      className="rounded px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-light"
+      className="focus-ring inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-brand-light"
     >
       Bill PDF
     </a>
@@ -15,57 +26,63 @@ function BillLink({ id }: { id: string }) {
 
 export function DispatchesTable({ dispatches }: { dispatches: DispatchDTO[] }) {
   if (dispatches.length === 0) {
-    return <p className="text-sm text-gray-500">No dispatches yet.</p>;
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white shadow-card">
+        <EmptyState
+          icon="truck"
+          title="No dispatches yet"
+          description="Dispatched stock will appear here."
+        />
+      </div>
+    );
   }
 
   return (
     <>
       {/* Mobile: cards */}
-      <div className="space-y-3 sm:hidden">
+      <MobileCardList>
         {dispatches.map((d) => (
-          <div key={d.id} className="rounded-lg border border-gray-200 bg-white p-4">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-sm font-medium">{d.billNo}</span>
-              <BillLink id={d.id} />
-            </div>
-            <p className="mt-1 text-sm">→ {d.counterLabel}</p>
-            <p className="text-sm text-gray-500">
-              {d.unitCount} item(s) · {d.totalCodes} codes
-            </p>
-            <p className="text-xs text-gray-400">{d.createdAt.slice(0, 10)}</p>
-          </div>
+          <MobileCard
+            key={d.id}
+            title={<span className="font-mono">{d.billNo}</span>}
+            badge={<BillLink id={d.id} />}
+          >
+            <p className="text-sm text-gray-700">→ {d.counterLabel}</p>
+            <p>{d.unitCount} item(s) · {d.totalCodes} codes</p>
+            <p className="text-gray-400">{d.createdAt.slice(0, 10)}</p>
+          </MobileCard>
         ))}
-      </div>
+      </MobileCardList>
 
       {/* Desktop: table */}
-      <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white sm:block">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-2">Bill</th>
-              <th className="px-4 py-2">Counter</th>
-              <th className="px-4 py-2 text-right">Items</th>
-              <th className="px-4 py-2 text-right">Codes</th>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2 text-right">Print</th>
-            </tr>
-          </thead>
+      <TableWrapper>
+        <Table>
+          <THead>
+            <TH>Bill</TH>
+            <TH>Counter</TH>
+            <TH align="right">Items</TH>
+            <TH align="right">Codes</TH>
+            <TH>Date</TH>
+            <TH align="right">Print</TH>
+          </THead>
           <tbody>
             {dispatches.map((d) => (
-              <tr key={d.id} className="border-b border-gray-100 last:border-0">
-                <td className="px-4 py-2 font-mono">{d.billNo}</td>
-                <td className="px-4 py-2">{d.counterLabel}</td>
-                <td className="px-4 py-2 text-right">{d.unitCount}</td>
-                <td className="px-4 py-2 text-right font-medium">{d.totalCodes}</td>
-                <td className="px-4 py-2">{d.createdAt.slice(0, 10)}</td>
-                <td className="px-4 py-2 text-right">
+              <TR key={d.id} interactive>
+                <TD className="font-mono text-gray-900">{d.billNo}</TD>
+                <TD className="text-gray-600">{d.counterLabel}</TD>
+                <TD align="right" className="text-gray-600">{d.unitCount}</TD>
+                <TD align="right" className="font-medium text-gray-900">
+                  {d.totalCodes}
+                </TD>
+                <TD className="text-gray-600">{d.createdAt.slice(0, 10)}</TD>
+                <TD align="right">
                   <BillLink id={d.id} />
-                </td>
-              </tr>
+                </TD>
+              </TR>
             ))}
           </tbody>
-        </table>
-      </div>
+        </Table>
+      </TableWrapper>
     </>
   );
 }

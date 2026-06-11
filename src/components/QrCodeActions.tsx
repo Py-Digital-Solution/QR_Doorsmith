@@ -43,7 +43,8 @@ export function QrCodeActions({
     });
   }
 
-  const btn = "rounded px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50";
+  const btn =
+    "focus-ring rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50";
 
   return (
     <div className="flex items-center justify-end gap-1">

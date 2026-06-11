@@ -4,10 +4,10 @@ import { useState, useTransition } from "react";
 import { updateBatchAction } from "@/actions/qr";
 import type { ProductOption } from "./GenerateBatchForm";
 import type { BatchDTO } from "@/services/qr";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
-const label = "mb-1 block text-xs font-medium text-gray-600";
+import { Input, Select } from "./ui/Input";
+import { Label } from "./ui/Field";
+import { Button } from "./ui/Button";
+import { Alert } from "./ui/Alert";
 
 export function BatchEditForm({
   batch,
@@ -49,64 +49,52 @@ export function BatchEditForm({
       </p>
 
       <div>
-        <label className={label}>Product</label>
-        <select
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-          className={field}
-        >
+        <Label>Product</Label>
+        <Select value={productId} onChange={(e) => setProductId(e.target.value)}>
           <option value="">— Keep current —</option>
           {products.map((p) => (
             <option key={p.id} value={p.id}>
               {p.sku} · {p.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className={label}>Label W (mm)</label>
-          <input
+          <Label>Label W (mm)</Label>
+          <Input
             value={labelWidthMm}
             onChange={(e) => setLabelWidthMm(e.target.value)}
             placeholder="40"
-            className={field}
             inputMode="numeric"
           />
         </div>
         <div>
-          <label className={label}>Label H (mm)</label>
-          <input
+          <Label>Label H (mm)</Label>
+          <Input
             value={labelHeightMm}
             onChange={(e) => setLabelHeightMm(e.target.value)}
             placeholder="40"
-            className={field}
             inputMode="numeric"
           />
         </div>
         <div>
-          <label className={label}>Columns</label>
-          <input
+          <Label>Columns</Label>
+          <Input
             value={columns}
             onChange={(e) => setColumns(e.target.value)}
             placeholder="4"
-            className={field}
             inputMode="numeric"
           />
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <Alert variant="error">{error}</Alert>}
 
-      <button
-        type="button"
-        onClick={submit}
-        disabled={pending}
-        className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-      >
+      <Button type="button" onClick={submit} loading={pending}>
         {pending ? "Saving…" : "Save changes"}
-      </button>
+      </Button>
     </div>
   );
 }

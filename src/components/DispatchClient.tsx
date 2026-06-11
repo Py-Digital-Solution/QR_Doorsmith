@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Camera, X } from "lucide-react";
 import { createDispatchAction, type ActionState } from "@/actions/dispatch";
 import { QrScanner } from "./QrScanner";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
+import { Input, Select } from "./ui/Input";
+import { Label } from "./ui/Field";
+import { Button } from "./ui/Button";
+import { Alert } from "./ui/Alert";
 
 type CodeHit = { id: string; serialNo: string; type: string; sku: string };
 
@@ -98,35 +100,27 @@ export function DispatchClient({
   const available = results.filter((r) => !serials.includes(r.serialNo));
 
   return (
-    <div className="max-w-2xl space-y-4 rounded-lg border border-gray-200 bg-white p-4">
-      <h2 className="text-sm font-semibold">New dispatch</h2>
+    <div className="max-w-2xl space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
+      <h2 className="text-sm font-semibold text-gray-900">New dispatch</h2>
 
       {/* Counter */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">
-          Destination counter
-        </label>
-        <select
-          value={counterId}
-          onChange={(e) => setCounterId(e.target.value)}
-          className={field}
-        >
+        <Label>Destination counter</Label>
+        <Select value={counterId} onChange={(e) => setCounterId(e.target.value)}>
           {counters.map((c) => (
             <option key={c.id} value={c.id}>
               {c.label}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* Searchable picker — no type dropdown, prefix identifies type */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">
-          Add QR codes
-        </label>
+        <Label>Add QR codes</Label>
         <div className="flex gap-2">
           <div ref={boxRef} className="relative flex-1">
-            <input
+            <Input
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -134,11 +128,10 @@ export function DispatchClient({
               }}
               onFocus={() => setOpen(true)}
               placeholder="MS- master · SM- small · PD- product"
-              className={field}
             />
 
             {open && (
-              <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+              <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-overlay">
                 {searching && (
                   <p className="px-3 py-2 text-xs text-gray-400">Searching…</p>
                 )}
@@ -152,7 +145,7 @@ export function DispatchClient({
                     key={hit.id}
                     type="button"
                     onClick={() => pick(hit)}
-                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-brand-light"
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-brand-light"
                   >
                     <span className="font-mono">{hit.serialNo}</span>
                     <span className="text-xs text-gray-500">{hit.sku || "—"}</span>
@@ -162,13 +155,15 @@ export function DispatchClient({
             )}
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => setScanning((s) => !s)}
-            className="whitespace-nowrap rounded-md border border-gray-300 px-3 text-sm hover:bg-gray-50"
+            className="whitespace-nowrap"
           >
+            <Camera className="size-4" aria-hidden />
             {scanning ? "Stop" : "Camera"}
-          </button>
+          </Button>
         </div>
         <p className="mt-1 text-xs text-gray-400">
           MS- master box · SM- small box · PD- product. Contents dispatched along with it.
@@ -192,8 +187,9 @@ export function DispatchClient({
               <button
                 type="button"
                 onClick={() => remove(s)}
-                className="text-xs text-red-600 hover:underline"
+                className="focus-ring inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-red-600 transition-colors hover:bg-red-50"
               >
+                <X className="size-3" aria-hidden />
                 Remove
               </button>
             </div>
@@ -201,9 +197,9 @@ export function DispatchClient({
         </div>
       )}
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.ok && (
-        <p className="text-sm text-green-600">
+        <Alert variant="success">
           Dispatched ✓ Bill {state.billNo} · {state.total} codes ·{" "}
           <Link
             href={`/admin/dispatch/${state.dispatchId}/bill`}
@@ -212,17 +208,17 @@ export function DispatchClient({
           >
             Print bill
           </Link>
-        </p>
+        </Alert>
       )}
 
-      <button
+      <Button
         type="button"
         onClick={submit}
-        disabled={pending || serials.length === 0}
-        className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
+        loading={pending}
+        disabled={serials.length === 0}
       >
         {pending ? "Dispatching…" : `Dispatch ${serials.length} item(s)`}
-      </button>
+      </Button>
     </div>
   );
 }

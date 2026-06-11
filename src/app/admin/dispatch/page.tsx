@@ -4,6 +4,7 @@ import { parsePageParams } from "@/lib/pagination";
 import { DispatchClient } from "@/components/DispatchClient";
 import { DispatchesTable } from "@/components/DispatchesTable";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function DispatchPage({
   searchParams,
@@ -18,13 +19,10 @@ export default async function DispatchPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold">Dispatch</h1>
-        <p className="text-sm text-gray-500">
-          Scan any unit — master box, small box, or a unique product code — and send
-          stock to a counter (auto-activates the codes).
-        </p>
-      </div>
+      <PageHeader
+        title="Dispatch"
+        description="Scan any unit — master box, small box, or a unique product code — and send stock to a counter (auto-activates the codes)."
+      />
 
       <DispatchClient counters={counters} />
 

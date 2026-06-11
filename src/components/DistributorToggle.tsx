@@ -22,9 +22,9 @@ export function DistributorToggle({ initial }: { initial: boolean }) {
   }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4">
+    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
       <div>
-        <p className="text-sm font-medium">Distributor role</p>
+        <p className="text-sm font-medium text-gray-900">Distributor role</p>
         <p className="text-sm text-gray-500">
           When off, distributor accounts cannot be created or sign in (SOW 1.2).
         </p>

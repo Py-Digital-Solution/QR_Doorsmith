@@ -2,10 +2,10 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { generateBatchAction, type ActionState } from "@/actions/qr";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
-const labelCls = "mb-1 block text-xs font-medium text-gray-600";
+import { Input, Select } from "./ui/Input";
+import { Label } from "./ui/Field";
+import { Button } from "./ui/Button";
+import { Alert } from "./ui/Alert";
 
 export type ProductOption = { id: string; sku: string; name: string };
 
@@ -45,14 +45,13 @@ export function GenerateBatchForm({
     set: (n: number) => void,
   ) => (
     <div>
-      <label className={labelCls}>{label}</label>
-      <input
+      <Label>{label}</Label>
+      <Input
         name={name}
         type="number"
         min={0}
         value={value}
         onChange={(e) => set(Math.max(0, parseInt(e.target.value, 10) || 0))}
-        className={field}
       />
     </div>
   );
@@ -60,14 +59,14 @@ export function GenerateBatchForm({
   return (
     <form action={action} className="space-y-4">
       <div>
-        <label className={labelCls}>Product</label>
-        <select name="productId" required className={field}>
+        <Label>Product</Label>
+        <Select name="productId" required>
           {products.map((pr) => (
             <option key={pr.id} value={pr.id}>
               {pr.sku} — {pr.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -76,7 +75,7 @@ export function GenerateBatchForm({
         {numField("Products / small", "productPerSmall", p, setP)}
       </div>
 
-      <div className="rounded-md bg-brand-light px-3 py-2 text-sm text-brand-dark">
+      <div className="rounded-md border border-brand/20 bg-brand-light px-3 py-2 text-sm text-brand-dark">
         Total codes to generate: <span className="font-semibold">{total}</span>
         <span className="text-gray-500">
           {" "}
@@ -90,29 +89,25 @@ export function GenerateBatchForm({
         </summary>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
-            <label className={labelCls}>Label W (mm)</label>
-            <input name="labelWidthMm" type="number" min={0} defaultValue={40} className={field} />
+            <Label>Label W (mm)</Label>
+            <Input name="labelWidthMm" type="number" min={0} defaultValue={40} />
           </div>
           <div>
-            <label className={labelCls}>Label H (mm)</label>
-            <input name="labelHeightMm" type="number" min={0} defaultValue={40} className={field} />
+            <Label>Label H (mm)</Label>
+            <Input name="labelHeightMm" type="number" min={0} defaultValue={40} />
           </div>
           <div>
-            <label className={labelCls}>Columns</label>
-            <input name="columns" type="number" min={1} defaultValue={4} className={field} />
+            <Label>Columns</Label>
+            <Input name="columns" type="number" min={1} defaultValue={4} />
           </div>
         </div>
       </details>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <Alert variant="error">{state.error}</Alert>}
 
-      <button
-        type="submit"
-        disabled={pending || total <= 0}
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-      >
+      <Button type="submit" loading={pending} disabled={total <= 0} fullWidth>
         {pending ? "Generating…" : `Generate ${total} codes`}
-      </button>
+      </Button>
     </form>
   );
 }

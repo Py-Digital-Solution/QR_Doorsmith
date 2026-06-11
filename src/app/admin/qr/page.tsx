@@ -4,6 +4,7 @@ import { parsePageParams } from "@/lib/pagination";
 import { GenerateBatchPanel } from "@/components/GenerateBatchPanel";
 import { BatchesTable } from "@/components/BatchesTable";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function QrPage({
   searchParams,
@@ -23,15 +24,11 @@ export default async function QrPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">QR Generation</h1>
-          <p className="text-sm text-gray-500">
-            Generate Master → Small → Product QR batches and print sheets.
-          </p>
-        </div>
-        <GenerateBatchPanel products={productOptions} />
-      </div>
+      <PageHeader
+        title="QR Generation"
+        description="Generate Master → Small → Product QR batches and print sheets."
+        actions={<GenerateBatchPanel products={productOptions} />}
+      />
 
       <BatchesTable batches={result.items} products={productOptions} />
 
