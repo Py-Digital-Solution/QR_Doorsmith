@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { X } from "lucide-react";
 import {
   createProductAction,
   updateProductAction,
@@ -8,10 +9,10 @@ import {
 } from "@/actions/products";
 import { PRODUCT_STATUSES } from "@/lib/product";
 import type { ProductDTO } from "@/services/products";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
-const labelCls = "mb-1 block text-xs font-medium text-gray-600";
+import { Input, Select, Textarea } from "./ui/Input";
+import { Label } from "./ui/Field";
+import { Button } from "./ui/Button";
+import { Alert } from "./ui/Alert";
 
 export function ProductForm({
   product,
@@ -47,83 +48,79 @@ export function ProductForm({
       {product && <input type="hidden" name="id" value={product.id} />}
 
       <div>
-        <label className={labelCls}>SKU</label>
-        <input name="sku" defaultValue={product?.sku} required className={field} />
+        <Label>SKU</Label>
+        <Input name="sku" defaultValue={product?.sku} required />
       </div>
       <div>
-        <label className={labelCls}>Name</label>
-        <input name="name" defaultValue={product?.name} required className={field} />
+        <Label>Name</Label>
+        <Input name="name" defaultValue={product?.name} required />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <label className={labelCls}>MRP (₹)</label>
-          <input
+          <Label>MRP (₹)</Label>
+          <Input
             name="mrp"
             type="number"
             min={0}
             step="0.01"
             defaultValue={product?.mrp}
             required
-            className={field}
           />
         </div>
         <div>
-          <label className={labelCls}>Sales price (₹)</label>
-          <input
+          <Label>Sales price (₹)</Label>
+          <Input
             name="salesPrice"
             type="number"
             min={0}
             step="0.01"
             defaultValue={product?.salesPrice}
             required
-            className={field}
           />
         </div>
         <div>
-          <label className={labelCls}>Reward points</label>
-          <input
+          <Label>Reward points</Label>
+          <Input
             name="rewardPoints"
             type="number"
             min={0}
             step="1"
             defaultValue={product?.rewardPoints}
             required
-            className={field}
           />
         </div>
       </div>
 
       <div>
-        <label className={labelCls}>Description</label>
-        <textarea name="description" defaultValue={product?.description} rows={2} className={field} />
+        <Label>Description</Label>
+        <Textarea name="description" defaultValue={product?.description} rows={2} />
       </div>
 
       <div>
-        <label className={labelCls}>
+        <Label>
           Video links{" "}
           <span className="font-normal text-gray-400">
             (YouTube / Instagram / Facebook — optional)
           </span>
-        </label>
+        </Label>
         <div className="space-y-2">
           {videoLinks.map((link, i) => (
             <div key={i} className="flex gap-2">
-              <input
+              <Input
                 name="videoLinks"
                 type="url"
                 placeholder="https://youtube.com/…"
                 value={link}
                 onChange={(e) => updateLink(i, e.target.value)}
-                className={field}
               />
               <button
                 type="button"
                 onClick={() => removeLink(i)}
                 aria-label="Remove link"
-                className="rounded-md border border-gray-300 px-3 text-gray-500 hover:bg-gray-50"
+                className="focus-ring rounded-md border border-gray-300 px-3 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
               >
-                ✕
+                <X className="size-4" aria-hidden />
               </button>
             </div>
           ))}
@@ -138,25 +135,21 @@ export function ProductForm({
       </div>
 
       <div>
-        <label className={labelCls}>Status</label>
-        <select name="status" defaultValue={product?.status ?? "active"} className={field}>
+        <Label>Status</Label>
+        <Select name="status" defaultValue={product?.status ?? "active"}>
           {PRODUCT_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <Alert variant="error">{state.error}</Alert>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-      >
+      <Button type="submit" loading={pending} fullWidth>
         {pending ? "Saving…" : product ? "Save changes" : "Create product"}
-      </button>
+      </Button>
     </form>
   );
 }

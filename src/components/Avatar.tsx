@@ -19,14 +19,14 @@ export function Avatar({
       <img
         src={photoUrl}
         alt={name || "avatar"}
-        className="shrink-0 rounded-full object-cover"
+        className="shrink-0 rounded-full object-cover ring-1 ring-gray-200"
         style={{ width: size, height: size }}
       />
     );
   }
   return (
     <div
-      className="flex shrink-0 items-center justify-center rounded-full bg-brand-light font-medium text-brand-dark"
+      className="flex shrink-0 items-center justify-center rounded-full bg-brand-light font-medium text-brand-dark ring-1 ring-brand/15"
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
       {initialsOf(name)}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { SlideOver } from "./SlideOver";
+import { Button } from "./ui/Button";
 import { CreateUserForm } from "@/app/admin/users/CreateUserForm";
 import type { UserRole } from "@/models/User";
 
@@ -22,12 +24,10 @@ export function CreateUserPanel({
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
-      >
-        + {label}
-      </button>
+      <Button onClick={() => setOpen(true)}>
+        <Plus className="size-4" aria-hidden />
+        {label}
+      </Button>
 
       <SlideOver open={open} onClose={() => setOpen(false)} title={title}>
         <CreateUserForm

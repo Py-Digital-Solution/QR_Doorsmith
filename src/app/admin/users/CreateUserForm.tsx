@@ -3,9 +3,10 @@
 import { useActionState, useEffect, useState } from "react";
 import { createUserAction, type ActionState } from "@/actions/users";
 import type { UserRole } from "@/models/User";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
+import { Input, Select } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
 
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: "Admin",
@@ -37,58 +38,51 @@ export function CreateUserForm({
     <form action={action} className="space-y-4">
       {allowedRoles.length > 1 ? (
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Role</label>
-          <select
+          <Label>Role</Label>
+          <Select
             name="role"
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
-            className={field}
           >
             {allowedRoles.map((r) => (
               <option key={r} value={r}>
                 {ROLE_LABEL[r]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       ) : (
         <input type="hidden" name="role" value={role} />
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Name</label>
-        <input name="name" required className={field} />
+        <Label>Name</Label>
+        <Input name="name" required />
       </div>
 
       {isKhati ? (
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Phone</label>
-          <input name="phone" type="tel" required className={field} />
+          <Label>Phone</Label>
+          <Input name="phone" type="tel" required />
         </div>
       ) : (
         <>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Email</label>
-            <input name="email" type="email" required className={field} />
+            <Label>Email</Label>
+            <Input name="email" type="email" required />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Password
-            </label>
-            <input name="password" type="text" required minLength={8} className={field} />
+            <Label>Password</Label>
+            <Input name="password" type="text" required minLength={8} />
           </div>
         </>
       )}
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <Alert variant="error">{state.error}</Alert>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-      >
+      <Button type="submit" loading={pending} fullWidth>
         {pending ? "Creating…" : "Create user"}
-      </button>
+      </Button>
     </form>
   );
 }

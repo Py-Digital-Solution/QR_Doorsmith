@@ -6,6 +6,7 @@ import { parsePageParams } from "@/lib/pagination";
 import { CreateUserPanel } from "@/components/CreateUserPanel";
 import { UsersTable } from "@/components/UsersTable";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function UsersPage({
   searchParams,
@@ -24,13 +25,11 @@ export default async function UsersPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">Users</h1>
-          <p className="text-sm text-gray-500">All accounts across the network.</p>
-        </div>
-        <CreateUserPanel allowedRoles={allowedRoles} />
-      </div>
+      <PageHeader
+        title="Users"
+        description="All accounts across the network."
+        actions={<CreateUserPanel allowedRoles={allowedRoles} />}
+      />
 
       <UsersTable users={result.items} currentUserId={session!.user.id} />
 

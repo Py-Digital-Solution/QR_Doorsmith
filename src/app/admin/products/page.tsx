@@ -3,6 +3,7 @@ import { parsePageParams } from "@/lib/pagination";
 import { ProductCreatePanel } from "@/components/ProductCreatePanel";
 import { ProductsTable } from "@/components/ProductsTable";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function ProductsPage({
   searchParams,
@@ -14,15 +15,11 @@ export default async function ProductsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">Products</h1>
-          <p className="text-sm text-gray-500">
-            SKUs, pricing and reward points used to generate QR codes.
-          </p>
-        </div>
-        <ProductCreatePanel />
-      </div>
+      <PageHeader
+        title="Products"
+        description="SKUs, pricing and reward points used to generate QR codes."
+        actions={<ProductCreatePanel />}
+      />
 
       <ProductsTable products={result.items} />
 

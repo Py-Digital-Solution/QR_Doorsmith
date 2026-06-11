@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { SlideOver } from "./SlideOver";
 import { EditUserForm } from "./EditUserForm";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
+import { Alert } from "./ui/Alert";
 import { deleteUserAction } from "@/actions/users";
 import type { UserDTO } from "@/services/users";
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between border-b border-gray-100 py-2 text-sm">
+    <div className="flex justify-between border-b border-gray-100 py-2.5 text-sm">
       <span className="text-gray-500">{label}</span>
       <span className="font-medium text-gray-900">{value || "—"}</span>
     </div>
@@ -38,7 +42,7 @@ export function UserActions({
   }
 
   const btn =
-    "rounded px-2 py-1 text-xs font-medium transition-colors";
+    "focus-ring inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors";
 
   return (
     <div className="flex justify-end gap-1">
@@ -46,12 +50,14 @@ export function UserActions({
         onClick={() => setView(true)}
         className={`${btn} text-gray-600 hover:bg-gray-100`}
       >
+        <Eye className="size-3.5" aria-hidden />
         View
       </button>
       <button
         onClick={() => setEdit(true)}
         className={`${btn} text-brand-dark hover:bg-brand-light`}
       >
+        <Pencil className="size-3.5" aria-hidden />
         Edit
       </button>
       {!isSelf && (
@@ -62,6 +68,7 @@ export function UserActions({
           }}
           className={`${btn} text-red-600 hover:bg-red-50`}
         >
+          <Trash2 className="size-3.5" aria-hidden />
           Delete
         </button>
       )}
@@ -83,37 +90,34 @@ export function UserActions({
       </SlideOver>
 
       {/* Delete confirm */}
-      {confirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setConfirm(false)}
-          />
-          <div className="relative w-full max-w-sm rounded-lg border border-gray-200 bg-white p-5 shadow-xl">
-            <h3 className="text-sm font-semibold">Delete user</h3>
-            <p className="mt-2 text-sm text-gray-600">
-              Delete <span className="font-medium">{user.name || user.email || user.phone}</span>?
-              This cannot be undone.
-            </p>
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setConfirm(false)}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={onDelete}
-                disabled={pending}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {pending ? "Deleting…" : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={confirm}
+        onClose={() => setConfirm(false)}
+        title="Delete user"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setConfirm(false)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button variant="danger" size="sm" onClick={onDelete} loading={pending}>
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-600">
+          Delete{" "}
+          <span className="font-medium">
+            {user.name || user.email || user.phone}
+          </span>
+          ? This cannot be undone.
+        </p>
+        {error && (
+          <Alert variant="error" className="mt-3">
+            {error}
+          </Alert>
+        )}
+      </Modal>
     </div>
   );
 }

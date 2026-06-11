@@ -4,9 +4,10 @@ import { useActionState, useEffect } from "react";
 import { updateUserAction, type ActionState } from "@/actions/users";
 import { USER_STATUSES } from "@/lib/roles";
 import type { UserDTO } from "@/services/users";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
+import { Input, Select } from "./ui/Input";
+import { Label } from "./ui/Field";
+import { Button } from "./ui/Button";
+import { Alert } from "./ui/Alert";
 
 export function EditUserForm({
   user,
@@ -30,51 +31,47 @@ export function EditUserForm({
       <input type="hidden" name="id" value={user.id} />
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Name</label>
-        <input name="name" defaultValue={user.name} required className={field} />
+        <Label>Name</Label>
+        <Input name="name" defaultValue={user.name} required />
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Status</label>
-        <select name="status" defaultValue={user.status} className={field}>
+        <Label>Status</Label>
+        <Select name="status" defaultValue={user.status}>
           {USER_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {isKhati ? (
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Phone</label>
-          <input name="phone" type="tel" defaultValue={user.phone} className={field} />
+          <Label>Phone</Label>
+          <Input name="phone" type="tel" defaultValue={user.phone} />
         </div>
       ) : (
         <>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Email</label>
-            <input name="email" type="email" defaultValue={user.email} className={field} />
+            <Label>Email</Label>
+            <Input name="email" type="email" defaultValue={user.email} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <Label>
               New password{" "}
               <span className="font-normal text-gray-400">(leave blank to keep)</span>
-            </label>
-            <input name="password" type="text" minLength={8} className={field} />
+            </Label>
+            <Input name="password" type="text" minLength={8} />
           </div>
         </>
       )}
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <Alert variant="error">{state.error}</Alert>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-      >
+      <Button type="submit" loading={pending} fullWidth>
         {pending ? "Saving…" : "Save changes"}
-      </button>
+      </Button>
     </form>
   );
 }

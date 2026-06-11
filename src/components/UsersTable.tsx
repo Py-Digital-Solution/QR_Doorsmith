@@ -1,21 +1,17 @@
 import type { UserDTO } from "@/services/users";
 import { UserActions } from "./UserActions";
-
-function StatusText({ status }: { status: string }) {
-  return (
-    <span
-      className={
-        status === "active"
-          ? "text-green-600"
-          : status === "suspended"
-            ? "text-red-600"
-            : "text-gray-500"
-      }
-    >
-      {status}
-    </span>
-  );
-}
+import { Badge, statusTone } from "./ui/Badge";
+import {
+  TableWrapper,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  MobileCardList,
+  MobileCard,
+} from "./ui/Table";
+import { EmptyState } from "./ui/EmptyState";
 
 export function UsersTable({
   users,
@@ -25,65 +21,63 @@ export function UsersTable({
   currentUserId: string;
 }) {
   if (users.length === 0) {
-    return <p className="text-sm text-gray-500">No users yet.</p>;
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white shadow-card">
+        <EmptyState
+          icon="users"
+          title="No users yet"
+          description="Created accounts will appear here."
+        />
+      </div>
+    );
   }
 
   return (
     <>
       {/* Mobile: cards */}
-      <div className="space-y-3 sm:hidden">
+      <MobileCardList>
         {users.map((u) => (
-          <div key={u.id} className="rounded-lg border border-gray-200 bg-white p-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium">{u.name || "—"}</span>
-              <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
-                {u.role}
-              </span>
-            </div>
-            <p className="mt-1 break-all text-sm text-gray-600">
-              {u.email || u.phone || "—"}
-            </p>
-            <div className="mt-2 flex items-center justify-between">
-              <StatusText status={u.status} />
-              <UserActions user={u} isSelf={u.id === currentUserId} />
-            </div>
-          </div>
+          <MobileCard
+            key={u.id}
+            title={u.name || "—"}
+            badge={<Badge tone="brand">{u.role}</Badge>}
+            actions={<UserActions user={u} isSelf={u.id === currentUserId} />}
+          >
+            <p className="break-all text-gray-600">{u.email || u.phone || "—"}</p>
+            <Badge tone={statusTone(u.status)}>{u.status}</Badge>
+          </MobileCard>
         ))}
-      </div>
+      </MobileCardList>
 
       {/* Desktop: table */}
-      <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white sm:block">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Role</th>
-              <th className="px-4 py-2">Email / Phone</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
+      <TableWrapper>
+        <Table>
+          <THead>
+            <TH>Name</TH>
+            <TH>Role</TH>
+            <TH>Email / Phone</TH>
+            <TH>Status</TH>
+            <TH align="right">Actions</TH>
+          </THead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="border-b border-gray-100 last:border-0">
-                <td className="px-4 py-2">{u.name || "—"}</td>
-                <td className="px-4 py-2">
-                  <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
-                    {u.role}
-                  </span>
-                </td>
-                <td className="px-4 py-2">{u.email || u.phone || "—"}</td>
-                <td className="px-4 py-2">
-                  <StatusText status={u.status} />
-                </td>
-                <td className="px-4 py-2">
+              <TR key={u.id} interactive>
+                <TD className="font-medium text-gray-900">{u.name || "—"}</TD>
+                <TD>
+                  <Badge tone="brand">{u.role}</Badge>
+                </TD>
+                <TD className="text-gray-600">{u.email || u.phone || "—"}</TD>
+                <TD>
+                  <Badge tone={statusTone(u.status)}>{u.status}</Badge>
+                </TD>
+                <TD>
                   <UserActions user={u} isSelf={u.id === currentUserId} />
-                </td>
-              </tr>
+                </TD>
+              </TR>
             ))}
           </tbody>
-        </table>
-      </div>
+        </Table>
+      </TableWrapper>
     </>
   );
 }
