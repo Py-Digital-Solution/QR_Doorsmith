@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CircleCheck } from "lucide-react";
+import { Input } from "./ui/Input";
+import { Button } from "./ui/Button";
 
 export function RedeemForm({
   currentPoints,
@@ -49,11 +52,12 @@ export function RedeemForm({
   if (done) {
     return (
       <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+        <CircleCheck className="mx-auto mb-1 size-6 text-green-600" aria-hidden />
         <p className="text-sm font-medium text-green-700">Request submitted!</p>
         <p className="mt-1 text-xs text-green-600">Your counter will review and approve it.</p>
         <button
           onClick={() => setDone(false)}
-          className="mt-3 text-xs text-brand-dark underline"
+          className="mt-3 text-xs font-medium text-brand-dark underline"
         >
           Submit another
         </button>
@@ -64,23 +68,23 @@ export function RedeemForm({
   return (
     <form onSubmit={submit} className="space-y-3">
       <div className="flex gap-2">
-        <input
+        <Input
           type="number"
           min={minPoints > 0 ? minPoints : 1}
           max={currentPoints}
           value={points}
           onChange={(e) => { setPoints(e.target.value); setError(null); }}
           placeholder={`Points to redeem${minPoints > 0 ? ` (min ${minPoints})` : ""}`}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
           disabled={pending || currentPoints === 0}
         />
-        <button
+        <Button
           type="submit"
-          disabled={pending || currentPoints === 0}
-          className="whitespace-nowrap rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+          loading={pending}
+          disabled={currentPoints === 0}
+          className="whitespace-nowrap"
         >
           {pending ? "Submitting…" : "Request"}
-        </button>
+        </Button>
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       {currentPoints === 0 && (

@@ -49,7 +49,7 @@ export function PwaInstallBanner() {
   // ── Chrome/Android/Desktop install prompt ──
   if (prompt) {
     return (
-      <div className="mb-5 flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3">
+      <div className="mb-5 flex items-center gap-3 rounded-xl border border-brand/20 bg-brand-light p-3 shadow-card">
         <Image src="/icons/icon-192.png" alt="Khati app icon" width={44} height={44} className="shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-gray-900">Install Khati App</p>
@@ -66,7 +66,7 @@ export function PwaInstallBanner() {
   // ── iOS Safari — show manual steps ──
   if (isIOS) {
     return (
-      <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50 p-4">
+      <div className="mb-5 rounded-xl border border-brand/20 bg-brand-light p-4 shadow-card">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image src="/icons/icon-192.png" alt="Khati app icon" width={32} height={32} className="shrink-0 rounded-lg" />
