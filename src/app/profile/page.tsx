@@ -23,15 +23,17 @@ export default async function ProfilePage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-lg font-semibold">My profile</h1>
+      <h1 className="text-xl font-semibold tracking-tight text-gray-900">My profile</h1>
 
       {/* Summary */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
         <div className="flex items-center gap-4">
           <Avatar name={profile.name || profile.email} photoUrl={profile.photoUrl} size={56} />
           <div>
-            <p className="font-medium">{profile.name || "—"}</p>
-            <p className="text-sm text-gray-500">{profile.role}</p>
+            <p className="font-medium text-gray-900">{profile.name || "—"}</p>
+            <span className="mt-0.5 inline-flex items-center rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
+              {profile.role}
+            </span>
           </div>
         </div>
         <div className="mt-4">

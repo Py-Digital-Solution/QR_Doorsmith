@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import { Check } from "lucide-react";
 
 export default function LoginLayout({ children }: { children: ReactNode }) {
   return (
@@ -28,17 +29,23 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
             counters — scan, earn, and redeem with ease.
           </p>
           <ul className="space-y-3 text-sm text-gray-200">
-            <li className="flex items-center gap-2">
-              <span className="text-brand">✓</span> Earn reward points on every
-              product scan
+            <li className="flex items-center gap-2.5">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand/20">
+                <Check className="size-3 text-brand" strokeWidth={3} aria-hidden />
+              </span>
+              Earn reward points on every product scan
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-brand">✓</span> Redeem at any participating
-              counter
+            <li className="flex items-center gap-2.5">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand/20">
+                <Check className="size-3 text-brand" strokeWidth={3} aria-hidden />
+              </span>
+              Redeem at any participating counter
             </li>
-            <li className="flex items-center gap-2">
-              <span className="text-brand">✓</span> Track your rewards in real
-              time
+            <li className="flex items-center gap-2.5">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand/20">
+                <Check className="size-3 text-brand" strokeWidth={3} aria-hidden />
+              </span>
+              Track your rewards in real time
             </li>
           </ul>
         </div>

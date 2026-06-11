@@ -8,9 +8,9 @@ import {
   type ConfirmationResult,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase-client";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
 
 const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 
@@ -42,54 +42,45 @@ function DevLoginForm() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
+      <div className="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
         Dev mode — OTP is always <strong>1111</strong>
       </div>
 
       {step === "phone" ? (
         <form onSubmit={(e) => { e.preventDefault(); setStep("otp"); }} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Phone number</label>
-            <input
+            <label className="mb-1 block text-sm font-medium text-gray-700">Phone number</label>
+            <Input
               type="tel"
               required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className={field}
               autoComplete="tel"
             />
           </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-          >
+          <Button type="submit" fullWidth>
             Continue
-          </button>
+          </Button>
         </form>
       ) : (
         <form onSubmit={submit} className="space-y-4">
           <p className="text-sm text-gray-500">Signing in as {phone}</p>
           <div>
-            <label className="mb-1 block text-sm font-medium">OTP code</label>
-            <input
+            <label className="mb-1 block text-sm font-medium text-gray-700">OTP code</label>
+            <Input
               type="text"
               inputMode="numeric"
               maxLength={6}
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className={field}
               autoFocus
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
-          >
+          {error && <Alert variant="error">{error}</Alert>}
+          <Button type="submit" loading={pending} fullWidth>
             {pending ? "Signing in…" : "Sign in"}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => { setStep("phone"); setError(null); }}
@@ -184,40 +175,48 @@ function FirebaseLoginForm() {
       {step === "phone" && (
         <form onSubmit={sendOtp} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Phone number</label>
-            <input
+            <label className="mb-1 block text-sm font-medium text-gray-700">Phone number</label>
+            <Input
               type="tel"
               required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+91 98765 43210"
-              className={field}
               autoComplete="tel"
             />
             <p className="mt-1 text-xs text-gray-400">Include country code e.g. +91 for India</p>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={sending}
-            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50">
+          {error && <Alert variant="error">{error}</Alert>}
+          <Button type="submit" loading={sending} fullWidth>
             {sending ? "Sending…" : "Send OTP"}
-          </button>
+          </Button>
         </form>
       )}
       {step === "otp" && (
         <form onSubmit={verifyOtp} className="space-y-4">
-          <p className="text-sm text-green-600">OTP sent to {phone}. Enter the 6-digit code.</p>
+          <Alert variant="success">OTP sent to {phone}. Enter the 6-digit code.</Alert>
           <div>
-            <label className="mb-1 block text-sm font-medium">6-digit code</label>
-            <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} required
-              value={code} onChange={(e) => setCode(e.target.value)} className={field} autoFocus />
+            <label className="mb-1 block text-sm font-medium text-gray-700">6-digit code</label>
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoFocus
+            />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={verifying}
-            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50">
+          {error && <Alert variant="error">{error}</Alert>}
+          <Button type="submit" loading={verifying} fullWidth>
             {verifying ? "Verifying…" : "Verify & sign in"}
-          </button>
-          <button type="button" onClick={() => { setStep("phone"); setCode(""); setError(null); }}
-            className="w-full text-sm text-gray-500 hover:underline">
+          </Button>
+          <button
+            type="button"
+            onClick={() => { setStep("phone"); setCode(""); setError(null); }}
+            className="w-full text-sm text-gray-500 hover:underline"
+          >
             ← Change number
           </button>
         </form>

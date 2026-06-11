@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-
-const field =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-brand focus:ring-1 focus:ring-brand";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
 
 export function StaffLoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -38,29 +38,19 @@ export function StaffLoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm font-medium">Email</label>
-        <input name="email" type="email" required className={field} autoComplete="email" />
+        <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+        <Input name="email" type="email" required autoComplete="email" />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Password</label>
-        <input
-          name="password"
-          type="password"
-          required
-          className={field}
-          autoComplete="current-password"
-        />
+        <label className="mb-1 block text-sm font-medium text-gray-700">Password</label>
+        <Input name="password" type="password" required autoComplete="current-password" />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <Alert variant="error">{error}</Alert>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
-      >
+      <Button type="submit" loading={pending} fullWidth>
         {pending ? "Signing in…" : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }

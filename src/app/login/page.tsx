@@ -4,7 +4,7 @@ import { StaffLoginForm } from "./StaffLoginForm";
 
 export default function LoginPage() {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-overlay">
       <Image
         src="/logo.png"
         alt="DoorSmith"
@@ -13,6 +13,7 @@ export default function LoginPage() {
         priority
         className="mb-4 h-6 w-auto lg:hidden"
       />
+      <h1 className="text-lg font-semibold tracking-tight text-gray-900">Welcome back</h1>
       <p className="mb-6 text-sm text-gray-500">Staff sign in</p>
 
       <StaffLoginForm />
