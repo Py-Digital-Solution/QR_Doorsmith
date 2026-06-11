@@ -4,6 +4,7 @@ import { parsePageParams } from "@/lib/pagination";
 import { CreateUserPanel } from "@/components/CreateUserPanel";
 import { UsersTable } from "@/components/UsersTable";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function SalesHome({
   searchParams,
@@ -19,19 +20,17 @@ export default async function SalesHome({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">Counters</h1>
-          <p className="text-sm text-gray-500">
-            The retail counters in your network.
-          </p>
-        </div>
-        <CreateUserPanel
-          allowedRoles={["counter"]}
-          label="Create counter"
-          title="Create counter"
-        />
-      </div>
+      <PageHeader
+        title="Counters"
+        description="The retail counters in your network."
+        actions={
+          <CreateUserPanel
+            allowedRoles={["counter"]}
+            label="Create counter"
+            title="Create counter"
+          />
+        }
+      />
 
       <UsersTable users={result.items} currentUserId={session!.user.id} />
 

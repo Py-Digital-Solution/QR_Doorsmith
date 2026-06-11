@@ -48,14 +48,14 @@ export function RedemptionActions({ id }: { id: string }) {
         <button
           onClick={() => act("approve")}
           disabled={!!pending}
-          className="rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+          className="focus-ring rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white shadow-card transition-colors hover:bg-green-700 disabled:opacity-50"
         >
           {pending === "approve" ? "…" : "Approve"}
         </button>
         <button
           onClick={() => act("reject")}
           disabled={!!pending}
-          className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          className="focus-ring rounded-md border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
         >
           {pending === "reject" ? "…" : "Reject"}
         </button>

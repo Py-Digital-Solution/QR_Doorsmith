@@ -2,6 +2,20 @@ import { auth } from "@/auth";
 import { listCounterDispatches } from "@/services/dispatch";
 import { parsePageParams } from "@/lib/pagination";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
+import {
+  TableWrapper,
+  Table,
+  THead,
+  TH,
+  TR,
+  TD,
+  MobileCardList,
+} from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+const billLink =
+  "focus-ring inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-brand-light";
 
 export default async function CounterDispatchesPage({
   searchParams,
@@ -14,29 +28,37 @@ export default async function CounterDispatchesPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold">Dispatch history</h1>
-        <p className="text-sm text-gray-500">Bills dispatched to your counter.</p>
-      </div>
+      <PageHeader
+        title="Dispatch history"
+        description="Bills dispatched to your counter."
+      />
 
       {result.items.length === 0 ? (
-        <p className="text-sm text-gray-500">No dispatches received yet.</p>
+        <div className="rounded-lg border border-gray-200 bg-white shadow-card">
+          <EmptyState
+            icon="truck"
+            title="No dispatches received yet"
+            description="Stock dispatched to your counter will appear here."
+          />
+        </div>
       ) : (
         <>
           {/* Mobile */}
-          <div className="space-y-2 sm:hidden">
+          <MobileCardList className="space-y-2">
             {result.items.map((d) => (
               <div
                 key={d.id}
-                className="rounded-lg border border-gray-200 bg-white px-4 py-3"
+                className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-card"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm font-medium">{d.billNo}</span>
+                  <span className="font-mono text-sm font-medium text-gray-900">
+                    {d.billNo}
+                  </span>
                   <a
                     href={`/admin/dispatch/${d.id}/bill`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-medium text-brand-dark hover:underline"
+                    className={billLink}
                   >
                     Bill PDF
                   </a>
@@ -48,44 +70,48 @@ export default async function CounterDispatchesPage({
                 </div>
               </div>
             ))}
-          </div>
+          </MobileCardList>
 
           {/* Desktop */}
-          <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white sm:block">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-2">Bill No</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2 text-right">Units</th>
-                  <th className="px-4 py-2 text-right">Codes</th>
-                  <th className="px-4 py-2 text-right">PDF</th>
-                </tr>
-              </thead>
+          <TableWrapper>
+            <Table>
+              <THead>
+                <TH>Bill No</TH>
+                <TH>Date</TH>
+                <TH align="right">Units</TH>
+                <TH align="right">Codes</TH>
+                <TH align="right">PDF</TH>
+              </THead>
               <tbody>
                 {result.items.map((d) => (
-                  <tr key={d.id} className="border-b border-gray-100 last:border-0">
-                    <td className="px-4 py-2 font-mono text-xs font-medium">{d.billNo}</td>
-                    <td className="px-4 py-2 text-xs text-gray-500">
+                  <TR key={d.id} interactive>
+                    <TD className="font-mono text-xs font-medium text-gray-900">
+                      {d.billNo}
+                    </TD>
+                    <TD className="text-xs text-gray-500">
                       {d.createdAt.slice(0, 10)}
-                    </td>
-                    <td className="px-4 py-2 text-right text-xs">{d.unitCount}</td>
-                    <td className="px-4 py-2 text-right text-xs">{d.totalCodes}</td>
-                    <td className="px-4 py-2 text-right">
+                    </TD>
+                    <TD align="right" className="text-xs text-gray-600">
+                      {d.unitCount}
+                    </TD>
+                    <TD align="right" className="text-xs text-gray-600">
+                      {d.totalCodes}
+                    </TD>
+                    <TD align="right">
                       <a
                         href={`/admin/dispatch/${d.id}/bill`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-medium text-brand-dark hover:underline"
+                        className={billLink}
                       >
                         Bill PDF
                       </a>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </Table>
+          </TableWrapper>
 
           <Pagination
             page={result.page}

@@ -6,23 +6,35 @@ import { parsePageParams } from "@/lib/pagination";
 import { CreateUserPanel } from "@/components/CreateUserPanel";
 import { UsersTable } from "@/components/UsersTable";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ICONS, type IconName } from "@/components/ui/icons";
 
 function StatCard({
   label,
   value,
   href,
+  icon,
 }: {
   label: string;
   value: number;
   href: string;
+  icon: IconName;
 }) {
+  const Icon = ICONS[icon];
   return (
     <Link
       href={href}
-      className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
+      className="focus-ring rounded-lg border border-gray-200 bg-white p-4 shadow-card transition-shadow hover:shadow-card-hover"
     >
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-2xl font-bold text-brand-dark">{value}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+          {label}
+        </p>
+        <span className="flex size-8 items-center justify-center rounded-md bg-brand-light text-brand-dark">
+          <Icon className="size-4" aria-hidden />
+        </span>
+      </div>
+      <p className="mt-2 text-2xl font-bold tracking-tight text-brand-dark">{value}</p>
     </Link>
   );
 }
@@ -41,10 +53,7 @@ export default async function CounterHome({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-        <p className="text-sm text-gray-500">Your counter overview.</p>
-      </div>
+      <PageHeader title="Dashboard" description="Your counter overview." />
 
       {/* Inventory summary — clicking goes to full inventory */}
       <div>
@@ -52,7 +61,7 @@ export default async function CounterHome({
           <h2 className="text-sm font-semibold text-gray-700">Inventory</h2>
           <Link
             href="/counter/inventory"
-            className="text-xs text-brand-dark hover:underline"
+            className="text-xs font-medium text-brand-dark hover:underline"
           >
             View all →
           </Link>
@@ -62,38 +71,42 @@ export default async function CounterHome({
             label="Master boxes"
             value={inventory.masters}
             href="/counter/inventory?type=master"
+            icon="boxes"
           />
           <StatCard
             label="Small boxes"
             value={inventory.smalls}
             href="/counter/inventory?type=small"
+            icon="package"
           />
           <StatCard
             label="Products"
             value={inventory.products}
             href="/counter/inventory?type=product"
+            icon="qr-code"
           />
           <StatCard
             label="Total codes"
             value={inventory.total}
             href="/counter/inventory"
+            icon="dashboard"
           />
         </div>
       </div>
 
       {/* Khatis */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Khatis</h2>
-            <p className="text-sm text-gray-500">Khatis registered at your counter.</p>
-          </div>
-          <CreateUserPanel
-            allowedRoles={["khati"]}
-            label="Create khati"
-            title="Register khati"
-          />
-        </div>
+        <PageHeader
+          title="Khatis"
+          description="Khatis registered at your counter."
+          actions={
+            <CreateUserPanel
+              allowedRoles={["khati"]}
+              label="Create khati"
+              title="Register khati"
+            />
+          }
+        />
 
         <UsersTable users={result.items} currentUserId={session!.user.id} />
 
