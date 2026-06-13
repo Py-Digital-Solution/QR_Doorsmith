@@ -3,34 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { createUser, updateUser, deleteUser } from "@/services/users";
-import { requestOtp, verifyOtp } from "@/services/otp";
+import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { sendWelcomeEmail } from "@/services/email";
 import type { UserRole, UserStatus } from "@/models/User";
 
-export type ActionState = { error?: string; ok?: boolean; otpSent?: boolean };
+export type ActionState = { error?: string; ok?: boolean };
 
 function revalidateAreas() {
   revalidatePath("/admin/users");
   revalidatePath("/sales");
   revalidatePath("/counter");
-}
-
-export async function requestOtpAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const session = await auth();
-  if (!session?.user) return { error: "Not authenticated." };
-
-  const phone = String(formData.get("phone") ?? "").trim();
-  if (!phone) return { error: "Phone number is required." };
-
-  try {
-    await requestOtp(phone);
-    return { otpSent: true };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to send OTP." };
-  }
 }
 
 export async function createUserAction(
@@ -41,17 +23,24 @@ export async function createUserAction(
   if (!session?.user) return { error: "Not authenticated." };
 
   const role = String(formData.get("role") ?? "") as UserRole;
-  const phone = String(formData.get("phone") ?? "") || undefined;
   const email = String(formData.get("email") ?? "") || undefined;
   const password = String(formData.get("password") ?? "") || undefined;
   const name = String(formData.get("name") ?? "");
+  let phone = String(formData.get("phone") ?? "") || undefined;
 
-  // For staff accounts with a phone, verify OTP before creating
+  // For staff with a phone: verify the Firebase ID token produced after OTP confirm
   if (role !== "khati" && phone) {
-    const otpCode = String(formData.get("otpCode") ?? "").trim();
-    if (!otpCode) return { error: "Please enter the OTP sent to the phone number." };
-    const valid = await verifyOtp(phone, otpCode);
-    if (!valid) return { error: "Invalid or expired OTP. Please request a new one." };
+    const idToken = String(formData.get("firebaseIdToken") ?? "").trim();
+    if (!idToken) {
+      return { error: "Please verify the phone number via OTP before submitting." };
+    }
+    try {
+      const decoded = await verifyFirebaseIdToken(idToken);
+      // Use the Firebase-confirmed number as the authoritative phone value
+      if (decoded.phone_number) phone = decoded.phone_number;
+    } catch {
+      return { error: "Phone verification failed or expired. Please re-verify." };
+    }
   }
 
   try {
@@ -65,11 +54,9 @@ export async function createUserAction(
       phone,
     });
 
-    // Send welcome email to staff accounts
+    // Send welcome email to staff accounts (non-fatal if SMTP not configured)
     if (role !== "khati" && email && password) {
-      await sendWelcomeEmail({ to: email, name, role, password }).catch(() => {
-        // Non-fatal: user is created even if email fails
-      });
+      await sendWelcomeEmail({ to: email, name, role, password }).catch(() => {});
     }
 
     revalidateAreas();
