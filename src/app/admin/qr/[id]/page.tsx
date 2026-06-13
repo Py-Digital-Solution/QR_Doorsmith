@@ -12,6 +12,7 @@ import { Pagination } from "@/components/Pagination";
 import { BatchActions } from "@/components/BatchActions";
 import { QrCodeActions } from "@/components/QrCodeActions";
 import { Badge, statusTone } from "@/components/ui/Badge";
+import { FilterBar } from "@/components/ui/FilterBar";
 import {
   TableWrapper,
   Table,
@@ -35,11 +36,12 @@ export default async function BatchDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string; status?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string; status?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
+  const q = sp.q ?? "";
   const filter: CodeFilter = (CODE_FILTERS as readonly string[]).includes(sp.status ?? "")
     ? (sp.status as CodeFilter)
     : "all";
@@ -48,13 +50,19 @@ export default async function BatchDetailPage({
   if (!batch) notFound();
 
   const [codes, products] = await Promise.all([
-    listBatchCodes(id, pagination, filter),
+    listBatchCodes(id, pagination, filter, q || undefined),
     listActiveProducts(),
   ]);
   const productOptions = products.map((p) => ({ id: p.id, sku: p.sku, name: p.name }));
 
+  const fp = new URLSearchParams();
+  if (q) fp.set("q", q);
+  fp.set("pageSize", String(pagination.pageSize));
+  if (filter !== "all") fp.set("status", filter);
+  const basePath = `/admin/qr/${id}?${fp.toString()}`;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <Link
           href="/admin/qr"
@@ -102,6 +110,11 @@ export default async function BatchDetailPage({
           );
         })}
       </div>
+
+      <FilterBar
+        placeholder="Search by serial or SKU…"
+        exportType="qr-codes"
+      />
 
       {codes.items.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white shadow-card">
@@ -181,7 +194,7 @@ export default async function BatchDetailPage({
         pageCount={codes.pageCount}
         total={codes.total}
         pageSize={codes.pageSize}
-        basePath={filter === "all" ? `/admin/qr/${id}` : `/admin/qr/${id}?status=${filter}`}
+        basePath={basePath}
       />
     </div>
   );

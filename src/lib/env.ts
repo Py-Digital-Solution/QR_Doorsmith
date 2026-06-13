@@ -34,8 +34,21 @@ const envSchema = z.object({
   WHATSAPP_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
 
+  // --- WhatsApp Baileys microservice ---
+  // URL of the whatsapp-service process running on the Oracle VM
+  WA_SERVICE_URL: z.string().url().optional(),
+  // Must match WA_SERVICE_SECRET in whatsapp-service/.env
+  WA_SERVICE_SECRET: z.string().optional(),
+
   // --- Firebase SMS OTP (Phase 1, optional for now) ---
   FIREBASE_PROJECT_ID: z.string().optional(),
+
+  // --- SMTP Email (welcome emails) ---
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
 
   NODE_ENV: z
     .enum(["development", "production", "test"])

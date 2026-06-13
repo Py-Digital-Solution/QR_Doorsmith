@@ -92,28 +92,28 @@ export function KhatiShell({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-dvh overflow-hidden bg-gray-50">
 
       {/* ── Desktop sidebar (hidden on mobile) ─────────────────────────── */}
       <Sidebar items={NAV.khati} className="hidden md:flex" />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
         {/* ── Desktop header (hidden on mobile) ──────────────────────────── */}
-        <header className="sticky top-0 z-30 hidden h-16 items-center gap-2 border-b border-gray-200 bg-white/95 px-4 backdrop-blur-sm sm:px-6 md:flex">
+        <header className="z-30 hidden h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white/95 px-4 backdrop-blur-sm sm:px-6 md:flex">
           <div className="ml-auto flex items-center gap-3">
             <UserMenu user={user} />
           </div>
         </header>
 
         {/* ── Mobile header (hidden on desktop) ──────────────────────────── */}
-        <header className="sticky top-0 z-40 flex h-14 items-center border-b border-gray-100 bg-white/95 px-4 shadow-card backdrop-blur-sm md:hidden">
+        <header className="z-40 flex h-14 shrink-0 items-center border-b border-gray-100 bg-white/95 px-4 shadow-card backdrop-blur-sm md:hidden">
           <Image src="/logo.png" alt="DoorSmith" width={110} height={18} className="h-5 w-auto" />
         </header>
 
         {/* ── Page content ───────────────────────────────────────────────── */}
         {/* pb-24 on mobile gives room for the fixed bottom nav */}
-        <main className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-6xl p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}
           </div>

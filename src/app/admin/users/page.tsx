@@ -7,29 +7,40 @@ import { CreateUserPanel } from "@/components/CreateUserPanel";
 import { UsersTable } from "@/components/UsersTable";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { FilterBar } from "@/components/ui/FilterBar";
 
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
   const session = await auth();
-  const pagination = parsePageParams(await searchParams);
+  const sp = await searchParams;
+  const pagination = parsePageParams(sp);
+  const q = sp.q ?? "";
+
   const [result, distributorEnabled] = await Promise.all([
-    listUsers({}, pagination),
+    listUsers({ search: q || undefined }, pagination),
     isDistributorEnabled(),
   ]);
   const allowedRoles = distributorEnabled
     ? CAN_CREATE.admin
     : CAN_CREATE.admin.filter((r) => r !== "distributor");
 
+  const fp = new URLSearchParams();
+  if (q) fp.set("q", q);
+  fp.set("pageSize", String(pagination.pageSize));
+  const basePath = `/admin/users?${fp.toString()}`;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Users"
         description="All accounts across the network."
         actions={<CreateUserPanel allowedRoles={allowedRoles} />}
       />
+
+      <FilterBar placeholder="Search by name…" exportType="users" />
 
       <UsersTable users={result.items} currentUserId={session!.user.id} />
 
@@ -38,7 +49,7 @@ export default async function UsersPage({
         pageCount={result.pageCount}
         total={result.total}
         pageSize={result.pageSize}
-        basePath="/admin/users"
+        basePath={basePath}
       />
     </div>
   );

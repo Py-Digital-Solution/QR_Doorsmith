@@ -3,6 +3,7 @@ import { listKhatiScans } from "@/services/khati";
 import { parsePageParams } from "@/lib/pagination";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { FilterBar } from "@/components/ui/FilterBar";
 import {
   TableWrapper,
   Table,
@@ -32,30 +33,35 @@ function PointsBadge({ points, isReturn }: { points: number; isReturn: boolean }
 export default async function KhatiHistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
   const session = await auth();
-  const pagination = parsePageParams(await searchParams);
-  const scans = await listKhatiScans(session!.user.id, pagination);
+  const sp = await searchParams;
+  const pagination = parsePageParams(sp);
+  const q = sp.q ?? "";
+
+  const scans = await listKhatiScans(session!.user.id, pagination, q || undefined);
+
+  const fp = new URLSearchParams();
+  if (q) fp.set("q", q);
+  fp.set("pageSize", String(pagination.pageSize));
+  const basePath = `/khati/history?${fp.toString()}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Transaction history"
         description={`${scans.total} transactions total (scans + returns).`}
       />
 
+      <FilterBar placeholder="Search by serial or SKU…" exportType="khati-history" />
+
       {scans.items.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white shadow-card">
-          <EmptyState
-            icon="history"
-            title="No scans yet"
-            description="Your scanned QR codes will appear here."
-          />
+          <EmptyState icon="history" title="No scans yet" description="Your scanned QR codes will appear here." />
         </div>
       ) : (
         <>
-          {/* Mobile */}
           <MobileCardList className="space-y-2">
             {scans.items.map((s) => (
               <div
@@ -67,19 +73,14 @@ export default async function KhatiHistoryPage({
                 <div>
                   <p className="font-mono text-sm font-medium text-gray-900">{s.serialNo}</p>
                   {s.sku && <p className="text-xs text-gray-400">{s.sku}</p>}
-                  <p className="text-xs text-gray-400">
-                    {s.scannedAt.slice(0, 16).replace("T", " ")}
-                  </p>
-                  {s.isReturn && (
-                    <p className="text-xs font-medium text-red-500">Product returned</p>
-                  )}
+                  <p className="text-xs text-gray-400">{s.scannedAt.slice(0, 16).replace("T", " ")}</p>
+                  {s.isReturn && <p className="text-xs font-medium text-red-500">Product returned</p>}
                 </div>
                 <PointsBadge points={s.points} isReturn={s.isReturn} />
               </div>
             ))}
           </MobileCardList>
 
-          {/* Desktop */}
           <TableWrapper>
             <Table>
               <THead>
@@ -93,14 +94,10 @@ export default async function KhatiHistoryPage({
                   <TR key={s.id} interactive>
                     <TD>
                       <p className="font-mono text-xs text-gray-900">{s.serialNo}</p>
-                      {s.isReturn && (
-                        <p className="text-xs font-medium text-red-500">Product returned</p>
-                      )}
+                      {s.isReturn && <p className="text-xs font-medium text-red-500">Product returned</p>}
                     </TD>
                     <TD className="text-xs text-gray-500">{s.sku || "—"}</TD>
-                    <TD className="text-xs text-gray-500">
-                      {s.scannedAt.slice(0, 16).replace("T", " ")}
-                    </TD>
+                    <TD className="text-xs text-gray-500">{s.scannedAt.slice(0, 16).replace("T", " ")}</TD>
                     <TD align="right">
                       <PointsBadge points={s.points} isReturn={s.isReturn} />
                     </TD>
@@ -115,7 +112,7 @@ export default async function KhatiHistoryPage({
             pageCount={scans.pageCount}
             total={scans.total}
             pageSize={scans.pageSize}
-            basePath="/khati/history"
+            basePath={basePath}
           />
         </>
       )}

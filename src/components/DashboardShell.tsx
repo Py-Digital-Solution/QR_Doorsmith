@@ -17,11 +17,11 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-dvh overflow-hidden bg-gray-50">
       <Sidebar items={navItems} className="hidden md:flex" />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-gray-200 bg-white/95 px-4 backdrop-blur-sm sm:px-6">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="z-30 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white/95 px-4 backdrop-blur-sm sm:px-6">
           <MobileNav items={navItems} />
           <Image
             src="/logo.png"
@@ -36,7 +36,7 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-6xl p-4 sm:p-6 lg:p-8">
             {children}
           </div>

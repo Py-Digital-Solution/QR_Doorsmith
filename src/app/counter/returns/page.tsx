@@ -4,6 +4,7 @@ import { CounterReturnPanel } from "@/components/CounterReturnPanel";
 import { listCounterReturns } from "@/services/returns";
 import { parsePageParams } from "@/lib/pagination";
 import { Pagination } from "@/components/Pagination";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   TableWrapper,
@@ -19,14 +20,22 @@ import { Store } from "lucide-react";
 export default async function CounterReturnsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
   const session = await auth();
-  const pagination = parsePageParams(await searchParams);
-  const history = await listCounterReturns(session!.user.id, pagination);
+  const sp = await searchParams;
+  const pagination = parsePageParams(sp);
+  const q = sp.q ?? "";
+
+  const history = await listCounterReturns(session!.user.id, pagination, q || undefined);
+
+  const fp = new URLSearchParams();
+  if (q) fp.set("q", q);
+  fp.set("pageSize", String(pagination.pageSize));
+  const basePath = `/counter/returns?${fp.toString()}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Process Return"
         description="Scan a product QR code to reverse the khati's points and reactivate it for resale."
@@ -34,27 +43,20 @@ export default async function CounterReturnsPage({
 
       <CounterReturnPanel />
 
-      {/* Return history */}
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Return history</h2>
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-gray-700">Return history</h2>
+
+        <FilterBar placeholder="Search by serial, SKU or khati name…" exportType="counter-returns" />
 
         {history.items.length === 0 ? (
           <div className="rounded-lg border border-gray-200 bg-white shadow-card">
-            <EmptyState
-              icon="undo"
-              title="No returns yet"
-              description="Processed product returns will appear here."
-            />
+            <EmptyState icon="undo" title="No returns yet" description="Processed product returns will appear here." />
           </div>
         ) : (
           <>
-            {/* Mobile */}
             <MobileCardList className="space-y-2">
               {history.items.map((r) => (
-                <div
-                  key={r.id}
-                  className="rounded-lg border border-gray-200 bg-white p-4 shadow-card"
-                >
+                <div key={r.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-card">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-mono text-xs font-semibold text-gray-800">{r.serialNo}</p>
@@ -76,7 +78,6 @@ export default async function CounterReturnsPage({
               ))}
             </MobileCardList>
 
-            {/* Desktop */}
             <TableWrapper>
               <Table>
                 <THead>
@@ -115,7 +116,7 @@ export default async function CounterReturnsPage({
               pageCount={history.pageCount}
               total={history.total}
               pageSize={history.pageSize}
-              basePath="/counter/returns"
+              basePath={basePath}
             />
           </>
         )}

@@ -182,11 +182,14 @@ async function dispatchedCountsByBatch(
 
 export async function listBatches(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  search?: string,
 ): Promise<Paginated<BatchDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
-  const total = await QrBatch.countDocuments({});
-  const docs = await QrBatch.find({})
+  const query: Record<string, unknown> = {};
+  if (search) query.$or = [{ serialStart: { $regex: search, $options: "i" } }, { serialEnd: { $regex: search, $options: "i" } }];
+  const total = await QrBatch.countDocuments(query);
+  const docs = await QrBatch.find(query)
     .sort({ createdAt: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)
@@ -378,10 +381,13 @@ export async function listBatchCodes(
   batchId: string,
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   filter: CodeFilter = "all",
+  search?: string,
 ): Promise<Paginated<BatchCodeDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
-  const query = { batchId, ...codeFilterQuery(filter) };
+  const baseQuery = { batchId, ...codeFilterQuery(filter) };
+  const query: Record<string, unknown> = { ...baseQuery };
+  if (search) query.$or = [{ serialNo: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
   const total = await QrCode.countDocuments(query);
   const docs = await QrCode.find(query)
     .sort({ serialNo: 1 })

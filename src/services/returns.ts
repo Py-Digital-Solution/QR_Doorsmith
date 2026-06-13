@@ -16,9 +16,15 @@ export type ReturnDTO = {
 export async function listCounterReturns(
   counterId: string,
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  search?: string,
 ): Promise<Paginated<ReturnDTO>> {
   await connectDB();
-  const q = { counterId };
+  const q: Record<string, unknown> = { counterId };
+  if (search) q.$or = [
+    { serialNo: { $regex: search, $options: "i" } },
+    { sku: { $regex: search, $options: "i" } },
+    { khatiName: { $regex: search, $options: "i" } },
+  ];
   const total = await Return.countDocuments(q);
   const { page, pageSize } = pagination;
   const docs = await Return.find(q)

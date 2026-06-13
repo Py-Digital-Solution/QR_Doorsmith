@@ -5,30 +5,37 @@ import { GenerateBatchPanel } from "@/components/GenerateBatchPanel";
 import { BatchesTable } from "@/components/BatchesTable";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { FilterBar } from "@/components/ui/FilterBar";
 
 export default async function QrPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
-  const pagination = parsePageParams(await searchParams);
+  const sp = await searchParams;
+  const pagination = parsePageParams(sp);
+  const q = sp.q ?? "";
+
   const [result, products] = await Promise.all([
-    listBatches(pagination),
+    listBatches(pagination, q || undefined),
     listActiveProducts(),
   ]);
-  const productOptions = products.map((p) => ({
-    id: p.id,
-    sku: p.sku,
-    name: p.name,
-  }));
+  const productOptions = products.map((p) => ({ id: p.id, sku: p.sku, name: p.name }));
+
+  const fp = new URLSearchParams();
+  if (q) fp.set("q", q);
+  fp.set("pageSize", String(pagination.pageSize));
+  const basePath = `/admin/qr?${fp.toString()}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="QR Generation"
         description="Generate Master → Small → Product QR batches and print sheets."
         actions={<GenerateBatchPanel products={productOptions} />}
       />
+
+      <FilterBar placeholder="Search by serial range…" exportType="qr-batches" />
 
       <BatchesTable batches={result.items} products={productOptions} />
 
@@ -37,7 +44,7 @@ export default async function QrPage({
         pageCount={result.pageCount}
         total={result.total}
         pageSize={result.pageSize}
-        basePath="/admin/qr"
+        basePath={basePath}
       />
     </div>
   );

@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { TabNav } from "@/components/ui/Tabs";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { FilterBar } from "@/components/ui/FilterBar";
 import {
   TableWrapper,
   Table,
@@ -36,18 +37,19 @@ const STATUS_TONE: Record<string, BadgeTone> = {
 export default async function CounterInventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; type?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string; type?: string }>;
 }) {
   const session = await auth();
-  const params = await searchParams;
-  const pagination = parsePageParams(params);
-  const typeFilter = (QR_TYPES as readonly string[]).includes(params.type ?? "")
-    ? (params.type as QrType)
+  const sp = await searchParams;
+  const pagination = parsePageParams(sp);
+  const q = sp.q ?? "";
+  const typeFilter = (QR_TYPES as readonly string[]).includes(sp.type ?? "")
+    ? (sp.type as QrType)
     : undefined;
 
   const [inventory, codes] = await Promise.all([
     getCounterInventory(session!.user.id),
-    listCounterCodes(session!.user.id, pagination, { type: typeFilter }),
+    listCounterCodes(session!.user.id, pagination, { type: typeFilter }, q || undefined),
   ]);
 
   const tabs = [
@@ -58,17 +60,19 @@ export default async function CounterInventoryPage({
   ].map((tab) => ({
     label: tab.label,
     href: tab.value ? `/counter/inventory?type=${tab.value}` : "/counter/inventory",
-    active: (params.type ?? "") === tab.value,
+    active: (sp.type ?? "") === tab.value,
   }));
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Inventory"
-        description="All QR codes dispatched to your counter."
-      />
+  const fp = new URLSearchParams();
+  if (q) fp.set("q", q);
+  fp.set("pageSize", String(pagination.pageSize));
+  if (typeFilter) fp.set("type", typeFilter);
+  const basePath = `/counter/inventory?${fp.toString()}`;
 
-      {/* Summary stats */}
+  return (
+    <div className="space-y-4">
+      <PageHeader title="Inventory" description="All QR codes dispatched to your counter." />
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Master boxes" value={inventory.masters} icon="boxes" tone="brand" />
         <StatCard label="Small boxes" value={inventory.smalls} icon="package" tone="brand" />
@@ -76,27 +80,19 @@ export default async function CounterInventoryPage({
         <StatCard label="Total codes" value={inventory.total} icon="dashboard" tone="brand" />
       </div>
 
-      {/* Type filter tabs */}
       <TabNav tabs={tabs} />
 
-      {/* Code list */}
+      <FilterBar placeholder="Search by serial or SKU…" exportType="counter-inventory" />
+
       {codes.items.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white shadow-card">
-          <EmptyState
-            icon="boxes"
-            title="No codes dispatched yet"
-            description="Stock dispatched to your counter will appear here."
-          />
+          <EmptyState icon="boxes" title="No codes dispatched yet" description="Stock dispatched to your counter will appear here." />
         </div>
       ) : (
         <>
-          {/* Mobile */}
           <MobileCardList className="space-y-2">
             {codes.items.map((c) => (
-              <div
-                key={c.id}
-                className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-card"
-              >
+              <div key={c.id} className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-card">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-sm text-gray-900">{c.serialNo}</span>
                   <Badge tone={STATUS_TONE[c.status] ?? "gray"}>{c.status}</Badge>
@@ -109,7 +105,6 @@ export default async function CounterInventoryPage({
             ))}
           </MobileCardList>
 
-          {/* Desktop */}
           <TableWrapper>
             <Table>
               <THead>
@@ -122,13 +117,9 @@ export default async function CounterInventoryPage({
                 {codes.items.map((c) => (
                   <TR key={c.id} interactive>
                     <TD className="font-mono text-xs text-gray-900">{c.serialNo}</TD>
-                    <TD className="text-xs text-gray-600">
-                      {TYPE_LABEL[c.type as QrType] ?? c.type}
-                    </TD>
+                    <TD className="text-xs text-gray-600">{TYPE_LABEL[c.type as QrType] ?? c.type}</TD>
                     <TD className="text-xs text-gray-500">{c.sku || "—"}</TD>
-                    <TD>
-                      <Badge tone={STATUS_TONE[c.status] ?? "gray"}>{c.status}</Badge>
-                    </TD>
+                    <TD><Badge tone={STATUS_TONE[c.status] ?? "gray"}>{c.status}</Badge></TD>
                   </TR>
                 ))}
               </tbody>
@@ -140,7 +131,7 @@ export default async function CounterInventoryPage({
             pageCount={codes.pageCount}
             total={codes.total}
             pageSize={codes.pageSize}
-            basePath={typeFilter ? `/counter/inventory?type=${typeFilter}` : "/counter/inventory"}
+            basePath={basePath}
           />
         </>
       )}

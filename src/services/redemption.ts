@@ -85,11 +85,17 @@ export async function listKhatiRedemptions(
 export async function listCounterRedemptions(
   counterId: string,
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
-  filter?: { status?: string },
+  filter?: { status?: string; search?: string },
 ): Promise<Paginated<RedemptionDTO>> {
   await connectDB();
   const q: Record<string, unknown> = { counterId };
   if (filter?.status) q.status = filter.status;
+  if (filter?.search) {
+    // Search by khati name: find matching khati user IDs first
+    const { User } = await import("@/models/User");
+    const khatis = await User.find({ role: "khati", name: { $regex: filter.search, $options: "i" } }).select("_id").lean();
+    q.khatiId = { $in: khatis.map((k) => k._id) };
+  }
   const total = await Redemption.countDocuments(q);
   const { page, pageSize } = pagination;
   const docs = await Redemption.find(q)

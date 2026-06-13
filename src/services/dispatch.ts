@@ -141,11 +141,14 @@ function counterLabel(c: { name?: string; email?: string } | null): string {
 
 export async function listDispatches(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  search?: string,
 ): Promise<Paginated<DispatchDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
-  const total = await Dispatch.countDocuments({});
-  const docs = await Dispatch.find({})
+  const query: Record<string, unknown> = {};
+  if (search) query.billNo = { $regex: search, $options: "i" };
+  const total = await Dispatch.countDocuments(query);
+  const docs = await Dispatch.find(query)
     .sort({ createdAt: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)
@@ -281,10 +284,12 @@ export async function listCounterCodes(
   counterId: string,
   pagination: Pagination,
   filter?: { type?: QrType },
+  search?: string,
 ): Promise<Paginated<CounterCodeDTO>> {
   await connectDB();
   const q: Record<string, unknown> = { counterId };
   if (filter?.type) q.type = filter.type;
+  if (search) q.$or = [{ serialNo: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
   const { page, pageSize } = pagination;
   const total = await QrCode.countDocuments(q);
   const docs = await QrCode.find(q)
@@ -311,9 +316,11 @@ export async function listCounterCodes(
 export async function listCounterDispatches(
   counterId: string,
   pagination: Pagination,
+  search?: string,
 ): Promise<Paginated<DispatchDTO>> {
   await connectDB();
-  const q = { counterId };
+  const q: Record<string, unknown> = { counterId };
+  if (search) q.billNo = { $regex: search, $options: "i" };
   const { page, pageSize } = pagination;
   const total = await Dispatch.countDocuments(q);
   const docs = await Dispatch.find(q)

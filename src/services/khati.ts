@@ -152,14 +152,19 @@ export type ScanHistoryItem = {
 export async function listKhatiScans(
   khatiId: string,
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  search?: string,
 ): Promise<Paginated<ScanHistoryItem>> {
   await connectDB();
 
+  const searchFilter = search
+    ? { $or: [{ serialNo: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }] }
+    : {};
+
   const [scanDocs, returnDocs] = await Promise.all([
-    QrCode.find({ scannedByKhatiId: khatiId })
+    QrCode.find({ scannedByKhatiId: khatiId, ...searchFilter })
       .select("serialNo sku rewardPoints scannedAt")
       .lean(),
-    Return.find({ khatiId })
+    Return.find({ khatiId, ...searchFilter })
       .select("serialNo sku pointsReversed createdAt")
       .lean(),
   ]);

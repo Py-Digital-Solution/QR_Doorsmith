@@ -145,11 +145,14 @@ function toDTO(d: {
 
 export async function listProducts(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  search?: string,
 ): Promise<Paginated<ProductDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
-  const total = await Product.countDocuments({});
-  const docs = await Product.find({})
+  const query: Record<string, unknown> = {};
+  if (search) query.$or = [{ name: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
+  const total = await Product.countDocuments(query);
+  const docs = await Product.find(query)
     .sort({ createdAt: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)

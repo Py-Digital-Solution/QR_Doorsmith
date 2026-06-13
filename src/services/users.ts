@@ -80,8 +80,10 @@ export async function createUser(input: CreateUserInput) {
   const existing = await User.findOne({ email });
   if (existing) throw new Error("A user with this email already exists.");
   const passwordHash = await hashPassword(input.password);
+  const extra: Record<string, unknown> = {};
+  if (input.phone) extra.phone = input.phone.trim();
   try {
-    return await User.create({ ...base, email, passwordHash });
+    return await User.create({ ...base, email, passwordHash, ...extra });
   } catch (e) {
     if (isDuplicateKeyError(e)) throw new Error("A user with this email already exists.");
     throw e;
@@ -147,7 +149,7 @@ export async function deleteUser(input: {
 }
 
 export async function listUsers(
-  filter: { role?: UserRole; createdBy?: string } = {},
+  filter: { role?: UserRole; createdBy?: string; search?: string } = {},
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
 ): Promise<Paginated<UserDTO>> {
   await connectDB();
@@ -155,6 +157,7 @@ export async function listUsers(
   const query: Record<string, unknown> = {};
   if (filter.role) query.role = filter.role;
   if (filter.createdBy) query.createdBy = filter.createdBy;
+  if (filter.search) query.name = { $regex: filter.search, $options: "i" };
 
   const { page, pageSize } = pagination;
   const total = await User.countDocuments(query);
