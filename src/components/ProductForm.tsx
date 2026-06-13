@@ -47,10 +47,17 @@ export function ProductForm({
     <form action={formAction} className="space-y-4">
       {product && <input type="hidden" name="id" value={product.id} />}
 
-      <div>
-        <Label>SKU</Label>
-        <Input name="sku" defaultValue={product?.sku} required />
-      </div>
+      {product ? (
+        <div>
+          <Label>SKU</Label>
+          <input type="hidden" name="sku" value={product.sku} />
+          <Input defaultValue={product.sku} readOnly className="cursor-default bg-gray-50 text-gray-500" />
+        </div>
+      ) : (
+        <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
+          SKU will be auto-generated on save
+        </div>
+      )}
       <div>
         <Label>Name</Label>
         <Input name="name" defaultValue={product?.name} required />

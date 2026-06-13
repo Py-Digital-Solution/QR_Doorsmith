@@ -24,6 +24,7 @@ import {
   CircleCheck,
   Phone,
   Mail,
+  PlayCircle,
   type LucideIcon,
 } from "lucide-react";
 import { Sidebar } from "./Sidebar";
@@ -182,6 +183,13 @@ export function KhatiShell({
                 </div>
 
                 <div className="py-2">
+                  <Link href="/khati/products" onClick={closeMore}
+                    className="flex items-center gap-3 px-5 py-3.5 text-sm text-gray-700 transition-colors hover:bg-gray-50">
+                    <PlayCircle className="size-5 text-brand" aria-hidden />
+                    <span className="flex-1 font-medium text-gray-900">Product Tutorials</span>
+                    <ChevronRight className="size-4 text-gray-300" aria-hidden />
+                  </Link>
+
                   <Link href="/profile" onClick={closeMore}
                     className="flex items-center gap-3 px-5 py-3.5 text-sm text-gray-700 transition-colors hover:bg-gray-50">
                     <User className="size-5 text-gray-400" aria-hidden />

@@ -38,6 +38,7 @@ import {
   KeyRound,
   Camera,
   Undo2,
+  PlayCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -86,6 +87,7 @@ export const ICONS = {
   key: KeyRound,
   camera: Camera,
   undo: Undo2,
+  "play-circle": PlayCircle,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

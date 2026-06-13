@@ -54,12 +54,21 @@ export default async function KhatiRedemptionsPage({
           <>
             <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white shadow-card">
               {redemptions.items.map((r) => (
-                <div key={r.id} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{r.points} points</p>
-                    <p className="text-xs text-gray-400">{r.createdAt.slice(0, 10)}</p>
+                <div key={r.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{r.points} points</p>
+                      <p className="text-xs text-gray-400">{r.createdAt.slice(0, 10)}</p>
+                    </div>
+                    <Badge tone={statusTone(r.status)}>{r.status}</Badge>
                   </div>
-                  <Badge tone={statusTone(r.status)}>{r.status}</Badge>
+                  {r.otp && (
+                    <div className="mt-2 flex items-center gap-2 rounded-lg border border-brand/30 bg-brand-light px-3 py-2">
+                      <span className="text-xs font-medium text-gray-500">OTP:</span>
+                      <span className="font-mono text-lg font-bold tracking-[0.2em] text-brand">{r.otp}</span>
+                      <span className="ml-auto text-xs text-gray-400">Show to counter</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

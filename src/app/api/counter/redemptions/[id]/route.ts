@@ -19,7 +19,9 @@ export async function POST(
 
   try {
     if (action === "approve") {
-      await approveRedemption(id, session.user.id);
+      const otp = String(body?.otp ?? "").trim();
+      if (!otp) return NextResponse.json({ error: "OTP is required to approve." }, { status: 400 });
+      await approveRedemption(id, session.user.id, otp);
     } else if (action === "reject") {
       await rejectRedemption(id, session.user.id);
     } else {

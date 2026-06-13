@@ -2,21 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Input } from "./ui/Input";
 
 export function RedemptionActions({ id }: { id: string }) {
+  const [otp, setOtp] = useState("");
   const [pending, setPending] = useState<"approve" | "reject" | null>(null);
   const [done, setDone] = useState<"approved" | "rejected" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   async function act(action: "approve" | "reject") {
+    if (action === "approve" && otp.trim().length !== 6) {
+      setError("Enter the 6-digit OTP from the khati.");
+      return;
+    }
     setPending(action);
     setError(null);
     try {
+      const body = action === "approve" ? { action, otp: otp.trim() } : { action };
       const res = await fetch(`/api/counter/redemptions/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({ error: "Unexpected error." }));
       if (data.ok) {
@@ -43,7 +50,19 @@ export function RedemptionActions({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="space-y-2">
+      <Input
+        value={otp}
+        onChange={(e) => {
+          setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+          setError(null);
+        }}
+        placeholder="OTP from khati"
+        maxLength={6}
+        inputMode="numeric"
+        pattern="\d{6}"
+        className="w-36 font-mono tracking-widest text-center"
+      />
       <div className="flex gap-2">
         <button
           onClick={() => act("approve")}

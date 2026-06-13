@@ -23,7 +23,7 @@ export type ProductDTO = {
 };
 
 export type ProductInput = {
-  sku: string;
+  sku?: string;
   name: string;
   mrp: number;
   salesPrice: number;
@@ -32,6 +32,15 @@ export type ProductInput = {
   videoLinks?: string[];
   status?: ProductStatus;
 };
+
+async function generateSku(): Promise<string> {
+  const last = await Product.findOne({ sku: /^DS-\d{6}$/ })
+    .sort({ sku: -1 })
+    .select("sku")
+    .lean();
+  const next = last?.sku ? parseInt(last.sku.slice(3), 10) + 1 : 1;
+  return `DS-${String(next).padStart(6, "0")}`;
+}
 
 /** Trim, drop blanks, and validate each video link is a real http(s) URL. */
 function cleanVideoLinks(links?: string[]): string[] {
@@ -45,7 +54,7 @@ function cleanVideoLinks(links?: string[]): string[] {
 }
 
 function assertValid(input: ProductInput) {
-  if (!input.sku.trim()) throw new Error("SKU is required.");
+  if (input.sku !== undefined && !input.sku.trim()) throw new Error("SKU is required.");
   if (!input.name.trim()) throw new Error("Name is required.");
   for (const [k, v] of [
     ["MRP", input.mrp],
@@ -58,8 +67,9 @@ function assertValid(input: ProductInput) {
 
 export async function createProduct(input: ProductInput) {
   await connectDB();
-  assertValid(input);
-  const sku = input.sku.trim();
+  const sku = input.sku?.trim() || await generateSku();
+  const fullInput = { ...input, sku };
+  assertValid(fullInput);
   const exists = await Product.findOne({ sku });
   if (exists) throw new Error("A product with this SKU already exists.");
   try {
@@ -81,6 +91,7 @@ export async function createProduct(input: ProductInput) {
 
 export async function updateProduct(id: string, input: ProductInput) {
   await connectDB();
+  if (!input.sku?.trim()) throw new Error("SKU is required.");
   assertValid(input);
   const product = await Product.findById(id);
   if (!product) throw new Error("Product not found.");

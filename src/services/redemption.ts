@@ -11,13 +11,18 @@ export type RedemptionDTO = {
   khatiPhone: string;
   points: number;
   status: string;
+  otp?: string;
   createdAt: string;
 };
+
+function generateOtp(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 export async function requestRedemption(
   khatiId: string,
   points: number,
-): Promise<{ id: string }> {
+): Promise<{ id: string; otp: string }> {
   await connectDB();
 
   const minPts = await getSetting<number>("min_redemption_points", 0);
@@ -34,13 +39,18 @@ export async function requestRedemption(
   const existing = await Redemption.findOne({ khatiId, status: "pending" });
   if (existing) throw new Error("You already have a pending redemption request.");
 
+  const otp = generateOtp();
+  const otpExpiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
   const r = await Redemption.create({
     khatiId: khatiId,
     counterId: khati.createdBy ?? undefined,
     points,
     status: "pending",
+    otp,
+    otpExpiresAt,
   });
-  return { id: String(r._id) };
+  return { id: String(r._id), otp };
 }
 
 export async function listKhatiRedemptions(
@@ -64,6 +74,7 @@ export async function listKhatiRedemptions(
       khatiPhone: "",
       points: d.points,
       status: d.status,
+      otp: d.status === "pending" ? (d.otp ?? undefined) : undefined,
       createdAt: (d.createdAt as Date)?.toISOString() ?? "",
     })),
     total,
@@ -105,10 +116,14 @@ export async function listCounterRedemptions(
   );
 }
 
-export async function approveRedemption(id: string, counterId: string): Promise<void> {
+export async function approveRedemption(id: string, counterId: string, otp: string): Promise<void> {
   await connectDB();
   const r = await Redemption.findOne({ _id: id, counterId, status: "pending" }).lean();
   if (!r) throw new Error("Redemption not found or already processed.");
+  if (!r.otp || r.otp !== otp.trim()) throw new Error("Invalid OTP. Please check the code shown on the khati's screen.");
+  if (!r.otpExpiresAt || new Date(r.otpExpiresAt as unknown as string) < new Date()) {
+    throw new Error("OTP has expired. Ask the khati to submit a new redemption request.");
+  }
 
   const result = await User.findOneAndUpdate(
     { _id: r.khatiId, points: { $gte: r.points } },

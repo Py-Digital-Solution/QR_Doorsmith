@@ -16,7 +16,7 @@ export function RedeemForm({
   const [points, setPoints] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [done, setDone] = useState(false);
+  const [otp, setOtp] = useState<string | null>(null);
   const router = useRouter();
 
   async function submit(e: React.FormEvent) {
@@ -36,7 +36,7 @@ export function RedeemForm({
       });
       const data = await res.json().catch(() => ({ error: "Unexpected error." }));
       if (data.ok) {
-        setDone(true);
+        setOtp(data.otp ?? null);
         setPoints("");
         router.refresh();
       } else {
@@ -49,17 +49,25 @@ export function RedeemForm({
     }
   }
 
-  if (done) {
+  if (otp) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-        <CircleCheck className="mx-auto mb-1 size-6 text-green-600" aria-hidden />
-        <p className="text-sm font-medium text-green-700">Request submitted!</p>
-        <p className="mt-1 text-xs text-green-600">Your counter will review and approve it.</p>
+      <div className="rounded-lg border border-brand/30 bg-brand-light p-5 text-center">
+        <CircleCheck className="mx-auto mb-2 size-7 text-brand" aria-hidden />
+        <p className="font-semibold text-gray-900">Redemption request sent!</p>
+        <p className="mt-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+          Your OTP — show this to your counter
+        </p>
+        <div className="mt-2 rounded-xl border-2 border-brand/40 bg-white py-3 px-6 inline-block">
+          <span className="font-mono text-4xl font-bold tracking-[0.25em] text-brand">
+            {otp}
+          </span>
+        </div>
+        <p className="mt-3 text-xs text-gray-400">Valid for 30 minutes</p>
         <button
-          onClick={() => setDone(false)}
-          className="mt-3 text-xs font-medium text-brand-dark underline"
+          onClick={() => setOtp(null)}
+          className="mt-4 text-xs font-medium text-brand-dark underline"
         >
-          Submit another
+          Submit another request
         </button>
       </div>
     );

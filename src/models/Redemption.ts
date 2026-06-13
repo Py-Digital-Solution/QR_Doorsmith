@@ -16,6 +16,8 @@ const redemptionSchema = new Schema(
     },
     processedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     note: { type: String, default: "" },
+    otp: { type: String, default: null },
+    otpExpiresAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
