@@ -140,38 +140,59 @@ export type ScanHistoryItem = {
   id: string;
   serialNo: string;
   sku: string;
-  pointsEarned: number;
+  points: number;      // positive for scans, positive value for returns (sign applied in UI)
   scannedAt: string;
-  returned: boolean;
-  returnedAt: string | null;
+  isReturn: boolean;   // true = this is a return deduction entry
 };
 
+/**
+ * Combined transaction history: QR scans (positive) + product returns (negative).
+ * Merged in-memory so returns show as separate −pts entries alongside original scans.
+ */
 export async function listKhatiScans(
   khatiId: string,
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
 ): Promise<Paginated<ScanHistoryItem>> {
   await connectDB();
-  const q = { scannedByKhatiId: khatiId };
-  const total = await QrCode.countDocuments(q);
-  const { page, pageSize } = pagination;
-  const docs = await QrCode.find(q)
-    .sort({ scannedAt: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
-    .select("serialNo sku rewardPoints scannedAt returned returnedAt")
-    .lean();
 
-  return paginated(
-    docs.map((d) => ({
+  const [scanDocs, returnDocs] = await Promise.all([
+    QrCode.find({ scannedByKhatiId: khatiId })
+      .select("serialNo sku rewardPoints scannedAt")
+      .lean(),
+    Return.find({ khatiId })
+      .select("serialNo sku pointsReversed createdAt")
+      .lean(),
+  ]);
+
+  const all: (ScanHistoryItem & { _ts: number })[] = [
+    ...scanDocs.map((d) => ({
       id: String(d._id),
       serialNo: d.serialNo,
       sku: d.sku ?? "",
-      pointsEarned: d.rewardPoints ?? 0,
+      points: d.rewardPoints ?? 0,
       scannedAt: (d.scannedAt as Date | null)?.toISOString() ?? "",
-      returned: d.returned ?? false,
-      returnedAt: (d.returnedAt as Date | null)?.toISOString() ?? null,
+      isReturn: false,
+      _ts: (d.scannedAt as Date | null)?.getTime() ?? 0,
     })),
-    total,
-    pagination,
-  );
+    ...returnDocs.map((d) => ({
+      id: `ret-${String(d._id)}`,
+      serialNo: d.serialNo,
+      sku: d.sku ?? "",
+      points: d.pointsReversed,
+      scannedAt: (d.createdAt as Date)?.toISOString() ?? "",
+      isReturn: true,
+      _ts: (d.createdAt as Date)?.getTime() ?? 0,
+    })),
+  ];
+
+  all.sort((a, b) => b._ts - a._ts);
+
+  const total = all.length;
+  const { page, pageSize } = pagination;
+  const pageItems = all
+    .slice((page - 1) * pageSize, page * pageSize)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    .map(({ _ts, ...item }) => item);
+
+  return paginated(pageItems, total, pagination);
 }

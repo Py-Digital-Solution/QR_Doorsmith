@@ -74,23 +74,23 @@ export default async function KhatiHome() {
         ) : (
           <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white shadow-card">
             {scans.items.map((s) => (
-              <div key={s.id} className="flex items-center justify-between px-4 py-3">
+              <div key={s.id} className={`flex items-center justify-between px-4 py-3 ${s.isReturn ? "bg-red-50/30" : ""}`}>
                 <div>
                   <p className="font-mono text-xs font-medium text-gray-900">{s.serialNo}</p>
                   {s.sku && <p className="text-xs text-gray-400">{s.sku}</p>}
                   <p className="text-xs text-gray-400">{s.scannedAt.slice(0, 10)}</p>
-                  {s.returned && (
-                    <span className="mt-1 inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 ring-1 ring-inset ring-red-200">
-                      Returned
+                  {s.isReturn && (
+                    <span className="mt-0.5 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+                      Product returned
                     </span>
                   )}
                 </div>
                 <span className={`rounded-full px-2.5 py-0.5 text-sm font-bold ring-1 ring-inset ${
-                  s.returned
+                  s.isReturn
                     ? "bg-red-50 text-red-600 ring-red-200"
                     : "bg-green-50 text-green-700 ring-green-600/20"
                 }`}>
-                  {s.returned ? `−${s.pointsEarned}` : `+${s.pointsEarned}`}
+                  {s.isReturn ? `−${s.points}` : `+${s.points}`}
                 </span>
               </div>
             ))}

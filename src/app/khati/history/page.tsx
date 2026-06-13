@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-function PointsBadge({ points, returned }: { points: number; returned: boolean }) {
-  return returned ? (
+function PointsBadge({ points, isReturn }: { points: number; isReturn: boolean }) {
+  return isReturn ? (
     <div className="flex flex-col items-end gap-0.5">
       <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-600 ring-1 ring-inset ring-red-200">
         −{points}
@@ -41,8 +41,8 @@ export default async function KhatiHistoryPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Scan history"
-        description={`${scans.total} product codes scanned total.`}
+        title="Transaction history"
+        description={`${scans.total} transactions total (scans + returns).`}
       />
 
       {scans.items.length === 0 ? (
@@ -61,7 +61,7 @@ export default async function KhatiHistoryPage({
               <div
                 key={s.id}
                 className={`flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-card ${
-                  s.returned ? "border-red-100" : "border-gray-200"
+                  s.isReturn ? "border-red-100 bg-red-50/20" : "border-gray-200"
                 }`}
               >
                 <div>
@@ -70,13 +70,11 @@ export default async function KhatiHistoryPage({
                   <p className="text-xs text-gray-400">
                     {s.scannedAt.slice(0, 16).replace("T", " ")}
                   </p>
-                  {s.returned && s.returnedAt && (
-                    <p className="text-xs text-red-400">
-                      Returned {s.returnedAt.slice(0, 10)}
-                    </p>
+                  {s.isReturn && (
+                    <p className="text-xs font-medium text-red-500">Product returned</p>
                   )}
                 </div>
-                <PointsBadge points={s.pointsEarned} returned={s.returned} />
+                <PointsBadge points={s.points} isReturn={s.isReturn} />
               </div>
             ))}
           </MobileCardList>
@@ -87,22 +85,24 @@ export default async function KhatiHistoryPage({
               <THead>
                 <TH>Serial No</TH>
                 <TH>SKU</TH>
-                <TH>Scanned</TH>
+                <TH>Date</TH>
                 <TH align="right">Points</TH>
               </THead>
               <tbody>
                 {scans.items.map((s) => (
                   <TR key={s.id} interactive>
-                    <TD className="font-mono text-xs text-gray-900">{s.serialNo}</TD>
-                    <TD className="text-xs text-gray-500">{s.sku || "—"}</TD>
-                    <TD className="text-xs text-gray-500">
-                      <p>{s.scannedAt.slice(0, 16).replace("T", " ")}</p>
-                      {s.returned && s.returnedAt && (
-                        <p className="text-red-400">Returned {s.returnedAt.slice(0, 10)}</p>
+                    <TD>
+                      <p className="font-mono text-xs text-gray-900">{s.serialNo}</p>
+                      {s.isReturn && (
+                        <p className="text-xs font-medium text-red-500">Product returned</p>
                       )}
                     </TD>
+                    <TD className="text-xs text-gray-500">{s.sku || "—"}</TD>
+                    <TD className="text-xs text-gray-500">
+                      {s.scannedAt.slice(0, 16).replace("T", " ")}
+                    </TD>
                     <TD align="right">
-                      <PointsBadge points={s.pointsEarned} returned={s.returned} />
+                      <PointsBadge points={s.points} isReturn={s.isReturn} />
                     </TD>
                   </TR>
                 ))}
