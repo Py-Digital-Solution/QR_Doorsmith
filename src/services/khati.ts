@@ -54,7 +54,7 @@ export async function processQrScan(
   const pts = code.rewardPoints ?? 0;
 
   await QrCode.findByIdAndUpdate(code._id, {
-    $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: new Date() },
+    $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: new Date(), returned: false, returnedAt: null },
   });
 
   const updated = await User.findByIdAndUpdate(
@@ -113,7 +113,8 @@ export async function processQrReturn(
   });
 
   await QrCode.findByIdAndUpdate(code._id, {
-    $set: { status: "active", scannedByKhatiId: null, scannedAt: null },
+    $set: { status: "active", returned: true, returnedAt: new Date() },
+    // scannedByKhatiId and scannedAt kept so the entry stays in khati history
   });
 
   await Return.create({
@@ -141,6 +142,8 @@ export type ScanHistoryItem = {
   sku: string;
   pointsEarned: number;
   scannedAt: string;
+  returned: boolean;
+  returnedAt: string | null;
 };
 
 export async function listKhatiScans(
@@ -155,7 +158,7 @@ export async function listKhatiScans(
     .sort({ scannedAt: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)
-    .select("serialNo sku rewardPoints scannedAt")
+    .select("serialNo sku rewardPoints scannedAt returned returnedAt")
     .lean();
 
   return paginated(
@@ -165,6 +168,8 @@ export async function listKhatiScans(
       sku: d.sku ?? "",
       pointsEarned: d.rewardPoints ?? 0,
       scannedAt: (d.scannedAt as Date | null)?.toISOString() ?? "",
+      returned: d.returned ?? false,
+      returnedAt: (d.returnedAt as Date | null)?.toISOString() ?? null,
     })),
     total,
     pagination,

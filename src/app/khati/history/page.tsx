@@ -14,8 +14,20 @@ import {
 } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-const pointsPill =
-  "rounded-full bg-green-50 font-bold text-green-700 ring-1 ring-inset ring-green-600/20";
+function PointsBadge({ points, returned }: { points: number; returned: boolean }) {
+  return returned ? (
+    <div className="flex flex-col items-end gap-0.5">
+      <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-600 ring-1 ring-inset ring-red-200">
+        −{points}
+      </span>
+      <span className="text-[9px] font-semibold tracking-wide text-red-400 uppercase">Returned</span>
+    </div>
+  ) : (
+    <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-bold text-green-700 ring-1 ring-inset ring-green-600/20">
+      +{points}
+    </span>
+  );
+}
 
 export default async function KhatiHistoryPage({
   searchParams,
@@ -48,7 +60,9 @@ export default async function KhatiHistoryPage({
             {scans.items.map((s) => (
               <div
                 key={s.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-card"
+                className={`flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-card ${
+                  s.returned ? "border-red-100" : "border-gray-200"
+                }`}
               >
                 <div>
                   <p className="font-mono text-sm font-medium text-gray-900">{s.serialNo}</p>
@@ -56,10 +70,13 @@ export default async function KhatiHistoryPage({
                   <p className="text-xs text-gray-400">
                     {s.scannedAt.slice(0, 16).replace("T", " ")}
                   </p>
+                  {s.returned && s.returnedAt && (
+                    <p className="text-xs text-red-400">
+                      Returned {s.returnedAt.slice(0, 10)}
+                    </p>
+                  )}
                 </div>
-                <span className={`${pointsPill} px-3 py-1 text-sm`}>
-                  +{s.pointsEarned}
-                </span>
+                <PointsBadge points={s.pointsEarned} returned={s.returned} />
               </div>
             ))}
           </MobileCardList>
@@ -70,7 +87,7 @@ export default async function KhatiHistoryPage({
               <THead>
                 <TH>Serial No</TH>
                 <TH>SKU</TH>
-                <TH>Date</TH>
+                <TH>Scanned</TH>
                 <TH align="right">Points</TH>
               </THead>
               <tbody>
@@ -79,12 +96,13 @@ export default async function KhatiHistoryPage({
                     <TD className="font-mono text-xs text-gray-900">{s.serialNo}</TD>
                     <TD className="text-xs text-gray-500">{s.sku || "—"}</TD>
                     <TD className="text-xs text-gray-500">
-                      {s.scannedAt.slice(0, 16).replace("T", " ")}
+                      <p>{s.scannedAt.slice(0, 16).replace("T", " ")}</p>
+                      {s.returned && s.returnedAt && (
+                        <p className="text-red-400">Returned {s.returnedAt.slice(0, 10)}</p>
+                      )}
                     </TD>
                     <TD align="right">
-                      <span className={`${pointsPill} px-2 py-0.5 text-xs`}>
-                        +{s.pointsEarned}
-                      </span>
+                      <PointsBadge points={s.pointsEarned} returned={s.returned} />
                     </TD>
                   </TR>
                 ))}
