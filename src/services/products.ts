@@ -34,12 +34,14 @@ export type ProductInput = {
 };
 
 async function generateSku(): Promise<string> {
-  const last = await Product.findOne({ sku: /^DS-\d{6}$/ })
+  const year = new Date().getFullYear();
+  // Only match auto-generated SKUs for this year (4-digit SNO): SKU-20260001
+  const last = await Product.findOne({ sku: new RegExp(`^SKU-${year}\\d{4}$`) })
     .sort({ sku: -1 })
     .select("sku")
     .lean();
-  const next = last?.sku ? parseInt(last.sku.slice(3), 10) + 1 : 1;
-  return `DS-${String(next).padStart(6, "0")}`;
+  const next = last?.sku ? parseInt(last.sku.slice(8), 10) + 1 : 1;
+  return `SKU-${year}${String(next).padStart(4, "0")}`;
 }
 
 /** Trim, drop blanks, and validate each video link is a real http(s) URL. */
