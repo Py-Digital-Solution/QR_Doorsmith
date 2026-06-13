@@ -2,6 +2,7 @@ import "server-only";
 import { connectDB } from "@/db/mongoose";
 import { QrCode } from "@/models/QrCode";
 import { User } from "@/models/User";
+import { Return } from "@/models/Return";
 import { paginated, type Pagination, type Paginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 export type KhatiStats = {
@@ -75,6 +76,7 @@ export type ReturnResult = {
   sku: string;
   pointsReversed: number;
   khatiName: string;
+  counterName: string;
 };
 
 /**
@@ -97,8 +99,14 @@ export async function processQrReturn(
   if (!code.scannedByKhatiId) throw new Error("No khati record found for this code.");
 
   const pts = code.rewardPoints ?? 0;
-  const khati = await User.findById(code.scannedByKhatiId).select("name points").lean();
+  const [khati, counter] = await Promise.all([
+    User.findById(code.scannedByKhatiId).select("name points").lean(),
+    User.findById(counterId).select("name").lean(),
+  ]);
   if (!khati) throw new Error("Khati account not found.");
+
+  const khatiName = khati.name ?? "Unknown";
+  const counterName = counter?.name ?? "Unknown Counter";
 
   await User.findByIdAndUpdate(code.scannedByKhatiId, {
     $inc: { points: -pts },
@@ -108,11 +116,22 @@ export async function processQrReturn(
     $set: { status: "active", scannedByKhatiId: null, scannedAt: null },
   });
 
+  await Return.create({
+    counterId,
+    khatiId: code.scannedByKhatiId,
+    serialNo: code.serialNo,
+    sku: code.sku ?? "",
+    pointsReversed: pts,
+    counterName,
+    khatiName,
+  });
+
   return {
     serialNo: code.serialNo,
     sku: code.sku ?? "",
     pointsReversed: pts,
-    khatiName: khati.name ?? "Unknown",
+    khatiName,
+    counterName,
   };
 }
 

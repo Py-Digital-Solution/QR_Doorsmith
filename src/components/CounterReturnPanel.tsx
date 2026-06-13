@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Undo2, X, Camera } from "lucide-react";
+import { Undo2, X, Camera, Store } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { QrScanner } from "./QrScanner";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
@@ -10,7 +11,7 @@ type ReturnState =
   | { phase: "idle" }
   | { phase: "scanning" }
   | { phase: "loading"; serialNo: string }
-  | { phase: "success"; serialNo: string; sku: string; pointsReversed: number; khatiName: string }
+  | { phase: "success"; serialNo: string; sku: string; pointsReversed: number; khatiName: string; counterName: string }
   | { phase: "error"; message: string };
 
 export function CounterReturnPanel() {
@@ -18,6 +19,7 @@ export function CounterReturnPanel() {
   const [manual, setManual] = useState("");
   const isProcessing = useRef(false);
   const lastSeen = useRef<{ serial: string; at: number } | null>(null);
+  const router = useRouter();
 
   async function submit(serialNo: string) {
     const sn = serialNo.trim();
@@ -39,8 +41,10 @@ export function CounterReturnPanel() {
           sku: data.sku,
           pointsReversed: data.pointsReversed,
           khatiName: data.khatiName,
+          counterName: data.counterName ?? "",
         });
         setManual("");
+        router.refresh();
       } else {
         setState({ phase: "error", message: data.error ?? "Return failed." });
       }
@@ -129,16 +133,35 @@ export function CounterReturnPanel() {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
                 <Undo2 className="size-5 text-green-600" strokeWidth={2} aria-hidden />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 space-y-2">
                 <p className="text-sm font-semibold text-green-700">Return processed</p>
-                <p className="mt-0.5 font-mono text-xs text-gray-500">{state.serialNo}</p>
-                {state.sku && <p className="text-xs text-gray-500">{state.sku}</p>}
-                <p className="mt-2 text-sm text-gray-700">
-                  <span className="font-medium text-red-600">−{state.pointsReversed} pts</span>
+
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white border border-gray-200 px-2.5 py-0.5 font-mono text-xs text-gray-600 shadow-card">
+                    {state.serialNo}
+                  </span>
+                  {state.sku && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white border border-gray-200 px-2.5 py-0.5 text-xs text-gray-500 shadow-card">
+                      {state.sku}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold text-red-600">−{state.pointsReversed} pts</span>
                   {" "}reversed from{" "}
-                  <span className="font-medium">{state.khatiName}</span>
+                  <span className="font-semibold text-gray-900">{state.khatiName}</span>
                 </p>
-                <p className="mt-0.5 text-xs text-gray-400">QR code is now active and ready for resale.</p>
+
+                {state.counterName && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Store className="size-3.5 shrink-0 text-brand" aria-hidden />
+                    Processed at{" "}
+                    <span className="font-medium text-gray-700">{state.counterName}</span>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-400">QR code is now active and ready for resale.</p>
               </div>
             </div>
             <Button variant="secondary" onClick={reset}>
