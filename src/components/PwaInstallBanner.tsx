@@ -13,7 +13,6 @@ export function PwaInstallBanner() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [showIOSSteps, setShowIOSSteps] = useState(false);
 
   useEffect(() => {
     const standalone =
@@ -63,7 +62,7 @@ export function PwaInstallBanner() {
     );
   }
 
-  // ── iOS Safari — show manual steps ──
+  // ── iOS Safari — show manual steps immediately ──
   if (isIOS) {
     return (
       <div className="mb-5 rounded-xl border border-brand/20 bg-brand-light p-4 shadow-card">
@@ -74,28 +73,18 @@ export function PwaInstallBanner() {
           </div>
           <button onClick={dismiss} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
         </div>
-
-        {!showIOSSteps ? (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500">Install this app for quick access</p>
-            <button onClick={() => setShowIOSSteps(true)} className="ml-3 shrink-0 rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark">
-              How?
-            </button>
-          </div>
-        ) : (
-          <ol className="space-y-2">
-            {[
-              { icon: "⬆️", text: 'Tap the Share button at the bottom of Safari' },
-              { icon: "➕", text: 'Scroll down and tap "Add to Home Screen"' },
-              { icon: "✅", text: 'Tap "Add" in the top right' },
-            ].map((s, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-gray-700">
-                <span className="shrink-0">{s.icon}</span>
-                <span>{s.text}</span>
-              </li>
-            ))}
-          </ol>
-        )}
+        <ol className="space-y-2">
+          {[
+            { icon: "⬆️", text: 'Tap the Share button at the bottom of Safari' },
+            { icon: "➕", text: 'Scroll down and tap "Add to Home Screen"' },
+            { icon: "✅", text: 'Tap "Add" in the top right' },
+          ].map((s, i) => (
+            <li key={i} className="flex items-start gap-2 text-xs text-gray-700">
+              <span className="shrink-0">{s.icon}</span>
+              <span>{s.text}</span>
+            </li>
+          ))}
+        </ol>
       </div>
     );
   }
