@@ -146,10 +146,12 @@ function toDTO(d: {
 export async function listProducts(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   search?: string,
+  statusFilter?: ProductStatus,
 ): Promise<Paginated<ProductDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
   const query: Record<string, unknown> = {};
+  if (statusFilter) query.status = statusFilter;
   if (search) query.$or = [{ name: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
   const total = await Product.countDocuments(query);
   const docs = await Product.find(query)
