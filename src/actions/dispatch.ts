@@ -27,6 +27,7 @@ export async function createDispatchAction(input: {
     });
     revalidatePath("/admin/dispatch");
     revalidatePath("/admin/qr");
+    revalidatePath("/counter", "layout"); // counter inventory + dispatch history update
     return {
       ok: true,
       billNo: res.billNo,

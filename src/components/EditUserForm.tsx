@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { updateUserAction, type ActionState } from "@/actions/users";
-import { USER_STATUSES } from "@/lib/roles";
+import { USER_STATUSES, type UserStatus } from "@/lib/roles";
 import type { UserDTO } from "@/services/users";
 import { Input, Select } from "./ui/Input";
 import { Label } from "./ui/Field";
@@ -22,6 +22,11 @@ export function EditUserForm({
   );
   const isKhati = user.role === "khati";
 
+  const [name, setName] = useState(user.name);
+  const [status, setStatus] = useState<UserStatus>(user.status as UserStatus);
+  const [phone, setPhone] = useState(user.phone ?? "");
+  const [email, setEmail] = useState(user.email ?? "");
+
   useEffect(() => {
     if (state.ok) onSuccess?.();
   }, [state.ok, onSuccess]);
@@ -32,12 +37,16 @@ export function EditUserForm({
 
       <div>
         <Label>Name</Label>
-        <Input name="name" defaultValue={user.name} required />
+        <Input name="name" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
 
       <div>
         <Label>Status</Label>
-        <Select name="status" defaultValue={user.status}>
+        <Select
+          name="status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as UserStatus)}
+        >
           {USER_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -49,13 +58,23 @@ export function EditUserForm({
       {isKhati ? (
         <div>
           <Label>Phone</Label>
-          <Input name="phone" type="tel" defaultValue={user.phone} />
+          <Input
+            name="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
       ) : (
         <>
           <div>
             <Label>Email</Label>
-            <Input name="email" type="email" defaultValue={user.email} />
+            <Input
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div>
             <Label>

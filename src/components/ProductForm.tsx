@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import {
   createProductAction,
   updateProductAction,
   type ActionState,
 } from "@/actions/products";
-import { PRODUCT_STATUSES } from "@/lib/product";
+import { PRODUCT_STATUSES, type ProductStatus } from "@/lib/product";
 import type { ProductDTO } from "@/services/products";
 import { Input, Select, Textarea } from "./ui/Input";
 import { Label } from "./ui/Field";
@@ -27,9 +27,41 @@ export function ProductForm({
     {},
   );
 
+  // Controlled fields so form data survives server action submissions
+  const [sku, setSku] = useState(product?.sku ?? "");
+  const [name, setName] = useState(product?.name ?? "");
+  const [mrp, setMrp] = useState(product?.mrp?.toString() ?? "");
+  const [salesPrice, setSalesPrice] = useState(
+    product?.salesPrice?.toString() ?? "",
+  );
+  const [rewardPoints, setRewardPoints] = useState(
+    product?.rewardPoints?.toString() ?? "",
+  );
+  const [description, setDescription] = useState(product?.description ?? "");
+  const [status, setStatus] = useState<ProductStatus>(product?.status ?? "active");
   const [videoLinks, setVideoLinks] = useState<string[]>(
     product?.videoLinks?.length ? product.videoLinks : [""],
   );
+
+  const skuRef = useRef<HTMLInputElement>(null);
+
+  const isSkuError = !!(
+    state.error &&
+    (state.error.toLowerCase().includes("sku") ||
+      state.error.toLowerCase().includes("already exist"))
+  );
+
+  // Focus + select SKU field when a SKU duplicate error appears
+  useEffect(() => {
+    if (isSkuError) {
+      skuRef.current?.focus();
+      skuRef.current?.select();
+    }
+  }, [isSkuError, state]);
+
+  useEffect(() => {
+    if (state.ok) onSuccess?.();
+  }, [state.ok, onSuccess]);
 
   const updateLink = (i: number, val: string) =>
     setVideoLinks((prev) => prev.map((l, idx) => (idx === i ? val : l)));
@@ -39,28 +71,52 @@ export function ProductForm({
       prev.length === 1 ? [""] : prev.filter((_, idx) => idx !== i),
     );
 
-  useEffect(() => {
-    if (state.ok) onSuccess?.();
-  }, [state.ok, onSuccess]);
-
   return (
     <form action={formAction} className="space-y-4">
       {product && <input type="hidden" name="id" value={product.id} />}
 
-      {product ? (
-        <div>
-          <Label>SKU</Label>
-          <input type="hidden" name="sku" value={product.sku} />
-          <Input defaultValue={product.sku} readOnly className="cursor-default bg-gray-50 text-gray-500" />
-        </div>
-      ) : (
-        <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
-          SKU will be auto-generated on save
-        </div>
-      )}
+      <div>
+        <Label>
+          SKU{" "}
+          {!product && (
+            <span className="font-normal text-gray-400">
+              (leave blank to auto-generate)
+            </span>
+          )}
+        </Label>
+        {product ? (
+          <>
+            <input type="hidden" name="sku" value={product.sku} />
+            <Input
+              value={product.sku}
+              readOnly
+              className="cursor-default bg-gray-50 text-gray-500"
+            />
+          </>
+        ) : (
+          <Input
+            ref={skuRef}
+            name="sku"
+            placeholder="e.g. SKU-20260001 — leave blank to auto-generate"
+            autoComplete="off"
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            invalid={isSkuError}
+          />
+        )}
+        {isSkuError && (
+          <p className="mt-1 text-xs text-red-600">{state.error}</p>
+        )}
+      </div>
+
       <div>
         <Label>Name</Label>
-        <Input name="name" defaultValue={product?.name} required />
+        <Input
+          name="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -71,7 +127,8 @@ export function ProductForm({
             type="number"
             min={0}
             step="0.01"
-            defaultValue={product?.mrp}
+            value={mrp}
+            onChange={(e) => setMrp(e.target.value)}
             required
           />
         </div>
@@ -82,7 +139,8 @@ export function ProductForm({
             type="number"
             min={0}
             step="0.01"
-            defaultValue={product?.salesPrice}
+            value={salesPrice}
+            onChange={(e) => setSalesPrice(e.target.value)}
             required
           />
         </div>
@@ -93,7 +151,8 @@ export function ProductForm({
             type="number"
             min={0}
             step="1"
-            defaultValue={product?.rewardPoints}
+            value={rewardPoints}
+            onChange={(e) => setRewardPoints(e.target.value)}
             required
           />
         </div>
@@ -101,7 +160,12 @@ export function ProductForm({
 
       <div>
         <Label>Description</Label>
-        <Textarea name="description" defaultValue={product?.description} rows={2} />
+        <Textarea
+          name="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+        />
       </div>
 
       <div>
@@ -143,7 +207,11 @@ export function ProductForm({
 
       <div>
         <Label>Status</Label>
-        <Select name="status" defaultValue={product?.status ?? "active"}>
+        <Select
+          name="status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as ProductStatus)}
+        >
           {PRODUCT_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -152,7 +220,9 @@ export function ProductForm({
         </Select>
       </div>
 
-      {state.error && <Alert variant="error">{state.error}</Alert>}
+      {state.error && !isSkuError && (
+        <Alert variant="error">{state.error}</Alert>
+      )}
 
       <Button type="submit" loading={pending} fullWidth>
         {pending ? "Saving…" : product ? "Save changes" : "Create product"}

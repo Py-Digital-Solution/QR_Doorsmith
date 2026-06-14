@@ -35,6 +35,9 @@ export type CreateUserInput = {
   password?: string;
   // khati (phone)
   phone?: string;
+  // When an admin creates a khati, the admin picks which counter owns them.
+  // When a counter creates a khati, this is automatically set to the counter's own ID.
+  counterId?: string;
 };
 
 /**
@@ -63,10 +66,15 @@ export async function createUser(input: CreateUserInput) {
 
   if (input.role === "khati") {
     if (!input.phone) throw new Error("Phone is required for a khati.");
+    // counterId links this khati to their counter for scan validation.
+    // Counter actors own their own khatis; admins/sales_reps/distributors must specify.
+    const counterId =
+      input.actorRole === "counter" ? input.actorId : input.counterId;
+    if (!counterId) throw new Error("Please select which counter this khati belongs to.");
     const existing = await User.findOne({ phone: input.phone });
     if (existing) throw new Error("A user with this phone already exists.");
     try {
-      return await User.create({ ...base, phone: input.phone.trim() });
+      return await User.create({ ...base, phone: input.phone.trim(), counterId });
     } catch (e) {
       if (isDuplicateKeyError(e)) throw new Error("A user with this phone already exists.");
       throw e;

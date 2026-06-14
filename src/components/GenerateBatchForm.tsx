@@ -28,7 +28,11 @@ export function GenerateBatchForm({
     if (state.ok) onSuccess?.();
   }, [state.ok, onSuccess]);
 
-  const total = m + m * s + m * s * p;
+  // When m=0: s = total smalls, p = products per small (or total products if s=0 too)
+  const totalMasters = m;
+  const totalSmalls = m > 0 ? m * s : s;
+  const totalProducts = m > 0 ? m * s * p : s > 0 ? s * p : p;
+  const total = totalMasters + totalSmalls + totalProducts;
 
   if (products.length === 0) {
     return (
@@ -71,15 +75,15 @@ export function GenerateBatchForm({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {numField("Master boxes", "masterCount", m, setM)}
-        {numField("Small / master", "smallPerMaster", s, setS)}
-        {numField("Products / small", "productPerSmall", p, setP)}
+        {numField(m > 0 ? "Small / master" : "Total smalls", "smallPerMaster", s, setS)}
+        {numField(m === 0 && s === 0 ? "Total products" : "Products / small", "productPerSmall", p, setP)}
       </div>
 
       <div className="rounded-md border border-brand/20 bg-brand-light px-3 py-2 text-sm text-brand-dark">
         Total codes to generate: <span className="font-semibold">{total}</span>
         <span className="text-gray-500">
           {" "}
-          ({m} master + {m * s} small + {m * s * p} product)
+          ({totalMasters} master + {totalSmalls} small + {totalProducts} product)
         </span>
       </div>
 

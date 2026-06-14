@@ -11,8 +11,9 @@ export type ActionState = { error?: string; ok?: boolean };
 
 function revalidateAreas() {
   revalidatePath("/admin/users");
+  revalidatePath("/admin/dispatch"); // counter list in dispatch form updates
   revalidatePath("/sales");
-  revalidatePath("/counter");
+  revalidatePath("/counter", "layout");
 }
 
 export async function createUserAction(
@@ -43,6 +44,8 @@ export async function createUserAction(
     }
   }
 
+  const counterId = String(formData.get("counterId") ?? "").trim() || undefined;
+
   try {
     await createUser({
       actorRole: session.user.role,
@@ -52,6 +55,7 @@ export async function createUserAction(
       email,
       password,
       phone,
+      counterId,
     });
 
     // Send welcome email to staff accounts (non-fatal if SMTP not configured)

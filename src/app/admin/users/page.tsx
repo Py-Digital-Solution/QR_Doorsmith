@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { listUsers } from "@/services/users";
+import { listUsers, listCounters } from "@/services/users";
 import { isDistributorEnabled } from "@/services/settings";
 import { CAN_CREATE } from "@/lib/rbac";
 import { parsePageParams } from "@/lib/pagination";
@@ -19,9 +19,10 @@ export default async function UsersPage({
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
 
-  const [result, distributorEnabled] = await Promise.all([
+  const [result, distributorEnabled, counters] = await Promise.all([
     listUsers({ search: q || undefined }, pagination),
     isDistributorEnabled(),
+    listCounters(),
   ]);
   const allowedRoles = distributorEnabled
     ? CAN_CREATE.admin
@@ -37,7 +38,7 @@ export default async function UsersPage({
       <PageHeader
         title="Users"
         description="All accounts across the network."
-        actions={<CreateUserPanel allowedRoles={allowedRoles} />}
+        actions={<CreateUserPanel allowedRoles={allowedRoles} counters={counters} />}
       />
 
       <FilterBar placeholder="Search by name…" exportType="users" />

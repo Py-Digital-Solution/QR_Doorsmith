@@ -31,6 +31,10 @@ const userSchema = new Schema(
       index: true,
     },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    // Explicit counter link for khatis. When a counter creates a khati, this
+    // equals createdBy. When an admin creates a khati, createdBy = admin but
+    // counterId = the selected counter.
+    counterId: { type: Schema.Types.ObjectId, ref: "User" },
     // Khati rewards (Phase 4). Default 0 so old documents behave correctly.
     points: { type: Number, default: 0 },
     lifetimePoints: { type: Number, default: 0 },

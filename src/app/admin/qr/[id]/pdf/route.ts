@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 import { auth } from "@/auth";
 import { getBatchPrintData } from "@/services/qr";
+import { getCompanyBranding } from "@/services/branding";
 
 export const runtime = "nodejs";
 
@@ -37,12 +38,17 @@ export async function GET(
   }
 
   const { id } = await params;
-  const data = await getBatchPrintData(id);
+  const [data, branding] = await Promise.all([
+    getBatchPrintData(id),
+    getCompanyBranding(),
+  ]);
   if (!data) return new Response("Batch not found", { status: 404 });
 
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const black = rgb(0, 0, 0);
+  const gray = rgb(0.5, 0.5, 0.5);
+  const footerText = [branding.name, branding.website].filter(Boolean).join("  ·  ") || "DoorSmith";
 
   const cols = Math.max(1, data.columns);
   const cellW = (PAGE_W - 2 * MARGIN) / cols;
@@ -52,10 +58,23 @@ export async function GET(
   const perPage = cols * rows;
   const qrSize = Math.min(cellW, labelH) - 8;
 
-  let page = pdf.addPage([PAGE_W, PAGE_H]);
+  function addPageWithFooter(): ReturnType<typeof pdf.addPage> {
+    const p = pdf.addPage([PAGE_W, PAGE_H]);
+    const fw = font.widthOfTextAtSize(footerText, 6);
+    p.drawText(footerText, {
+      x: (PAGE_W - fw) / 2,
+      y: MARGIN / 2,
+      size: 6,
+      font,
+      color: gray,
+    });
+    return p;
+  }
+
+  let page = addPageWithFooter();
 
   for (let i = 0; i < data.codes.length; i++) {
-    if (i > 0 && i % perPage === 0) page = pdf.addPage([PAGE_W, PAGE_H]);
+    if (i > 0 && i % perPage === 0) page = addPageWithFooter();
 
     const idx = i % perPage;
     const col = idx % cols;

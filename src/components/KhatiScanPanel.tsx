@@ -8,7 +8,7 @@ import { Button } from "./ui/Button";
 type ScanState =
   | { phase: "scanning" }
   | { phase: "loading"; serialNo: string }
-  | { phase: "success"; serialNo: string; sku: string; pointsEarned: number; newBalance: number }
+  | { phase: "success"; serialNo: string; sku: string; pointsEarned: number; newBalance: number; type: "product" | "small"; productsScanned?: number }
   | { phase: "error"; message: string };
 
 export function KhatiScanPanel() {
@@ -44,6 +44,8 @@ export function KhatiScanPanel() {
           sku: data.sku,
           pointsEarned: data.pointsEarned,
           newBalance: data.newBalance,
+          type: data.type ?? "product",
+          productsScanned: data.productsScanned,
         });
       } else {
         setState({ phase: "error", message: data.error ?? "Scan failed." });
@@ -56,6 +58,7 @@ export function KhatiScanPanel() {
 
   function reset() {
     isProcessing.current = false;
+    lastSeen.current = null; // clear cooldown so same code can be re-scanned immediately
     setState({ phase: "scanning" });
   }
 
@@ -80,8 +83,15 @@ export function KhatiScanPanel() {
                 <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                   <Check className="size-6 text-green-600" strokeWidth={2.5} aria-hidden />
                 </div>
-                <p className="text-sm font-semibold text-green-700">Points Earned!</p>
+                <p className="text-sm font-semibold text-green-700">
+                  {state.type === "small" ? "Small Box Scanned!" : "Points Earned!"}
+                </p>
                 <p className="mt-1 text-3xl font-bold text-brand">+{state.pointsEarned}</p>
+                {state.type === "small" && state.productsScanned != null && (
+                  <p className="mt-1 text-xs font-medium text-green-600">
+                    {state.productsScanned} product{state.productsScanned !== 1 ? "s" : ""} credited
+                  </p>
+                )}
                 {state.sku && <p className="mt-1 text-xs text-gray-500">{state.sku}</p>}
                 <p className="mt-2 text-xs text-gray-400">
                   Balance: <span className="font-semibold text-gray-700">{state.newBalance}</span>
@@ -110,7 +120,7 @@ export function KhatiScanPanel() {
 
       {state.phase === "scanning" && (
         <p className="text-center text-xs text-gray-400">
-          Point the camera at a product QR code
+          Point the camera at a product or small box QR code
         </p>
       )}
     </div>

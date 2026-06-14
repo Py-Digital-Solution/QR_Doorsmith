@@ -50,6 +50,9 @@ export async function requestOtp(phone: string): Promise<void> {
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<boolean> {
+  // Dev shortcut: magic code bypasses DB lookup so local testing needs no SMS.
+  if (env.OTP_DEV_MODE && code.trim() === "1111") return true;
+
   await connectDB();
   const otp = await Otp.findOne({ phone });
   if (!otp) return false;

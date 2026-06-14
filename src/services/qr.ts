@@ -5,7 +5,14 @@ import { Product } from "@/models/Product";
 import { QrBatch } from "@/models/QrBatch";
 import { QrCode, type QrCodeDoc } from "@/models/QrCode";
 import { Sequence } from "@/models/Sequence";
-import { formatSerial, type QrType, type QrStatus } from "@/lib/qr";
+import {
+  productInitials,
+  formatMasterSerial,
+  formatSmallSerial,
+  formatProductSerial,
+  type QrType,
+  type QrStatus,
+} from "@/lib/qr";
 import {
   DEFAULT_PAGE_SIZE,
   paginated,
@@ -64,10 +71,16 @@ export async function generateBatch(input: GenerateBatchInput) {
   const smallPerMaster = Math.max(0, Math.floor(input.smallPerMaster));
   const productPerSmall = Math.max(0, Math.floor(input.productPerSmall));
 
-  const masters = masterCount;
-  const smalls = masters * smallPerMaster;
-  const products = smalls * productPerSmall;
-  const total = masters + smalls + products;
+  // When masterCount === 0, smallPerMaster is treated as total smalls (not per-master).
+  const totalMasters = masterCount;
+  const totalSmalls = masterCount > 0 ? masterCount * smallPerMaster : smallPerMaster;
+  const totalProducts =
+    masterCount > 0
+      ? masterCount * smallPerMaster * productPerSmall
+      : smallPerMaster > 0
+        ? smallPerMaster * productPerSmall
+        : productPerSmall;
+  const total = totalMasters + totalSmalls + totalProducts;
 
   if (total <= 0) throw new Error("Nothing to generate — set at least one count.");
   if (total > MAX_BATCH)
@@ -76,12 +89,23 @@ export async function generateBatch(input: GenerateBatchInput) {
   const product = await Product.findById(input.productId);
   if (!product) throw new Error("Product not found.");
 
+  const initials = productInitials(product.name as string);
+
   // Reserve separate serial ranges per type (each type counts independently).
   const [masterStart, smallStart, productStart] = await Promise.all([
-    reserveSerials("master", masters),
-    reserveSerials("small", smalls),
-    reserveSerials("product", products),
+    reserveSerials("master", totalMasters),
+    reserveSerials("small", totalSmalls),
+    reserveSerials("product", totalProducts),
   ]);
+
+  // Top-level serial range stored on the batch (master → small → product priority).
+  const topStart = totalMasters > 0 ? masterStart : totalSmalls > 0 ? smallStart : productStart;
+  const topEnd =
+    totalMasters > 0
+      ? masterStart + totalMasters - 1
+      : totalSmalls > 0
+        ? smallStart + totalSmalls - 1
+        : productStart + totalProducts - 1;
 
   const batch = await QrBatch.create({
     productId: product._id,
@@ -90,8 +114,8 @@ export async function generateBatch(input: GenerateBatchInput) {
     smallPerMaster,
     productPerSmall,
     totalCodes: total,
-    serialStart: masterStart,
-    serialEnd: masterStart + masterCount - 1,
+    serialStart: topStart,
+    serialEnd: topEnd,
     sheetConfig: input.sheetConfig,
     status: "in_warehouse",
   });
@@ -106,47 +130,52 @@ export async function generateBatch(input: GenerateBatchInput) {
     status: "inactive" as QrStatus,
   };
 
-  // Pre-generate ObjectIds so children can reference their parent before insert.
+  const docs: Record<string, unknown>[] = [];
   let mSerial = masterStart;
   let sSerial = smallStart;
   let pSerial = productStart;
-  const docs: Record<string, unknown>[] = [];
 
-  for (let m = 0; m < masterCount; m++) {
-    const masterId = new Types.ObjectId();
-    docs.push({
-      _id: masterId,
-      serialNo: formatSerial("master", mSerial++),
-      type: "master" as QrType,
-      parentQrId: null,
-      ...meta,
-    });
+  if (totalMasters > 0) {
+    // Full hierarchy or masters-only / masters+smalls.
+    for (let m = 0; m < totalMasters; m++) {
+      const masterId = new Types.ObjectId();
+      const mN = mSerial++;
+      docs.push({ _id: masterId, serialNo: formatMasterSerial(initials, mN), type: "master" as QrType, parentQrId: null, ...meta });
 
-    for (let s = 0; s < smallPerMaster; s++) {
+      for (let s = 0; s < smallPerMaster; s++) {
+        const smallId = new Types.ObjectId();
+        const sN = sSerial++;
+        docs.push({ _id: smallId, serialNo: formatSmallSerial(initials, sN, mN), type: "small" as QrType, parentQrId: masterId, ...meta });
+
+        for (let p = 0; p < productPerSmall; p++) {
+          const pN = pSerial++;
+          docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(initials, pN, sN, mN), type: "product" as QrType, parentQrId: smallId, ...meta });
+        }
+      }
+    }
+  } else if (totalSmalls > 0) {
+    // No masters: smalls are top-level.
+    for (let s = 0; s < totalSmalls; s++) {
       const smallId = new Types.ObjectId();
-      docs.push({
-        _id: smallId,
-        serialNo: formatSerial("small", sSerial++),
-        type: "small" as QrType,
-        parentQrId: masterId,
-        ...meta,
-      });
+      const sN = sSerial++;
+      docs.push({ _id: smallId, serialNo: formatSmallSerial(initials, sN), type: "small" as QrType, parentQrId: null, ...meta });
 
       for (let p = 0; p < productPerSmall; p++) {
-        docs.push({
-          _id: new Types.ObjectId(),
-          serialNo: formatSerial("product", pSerial++),
-          type: "product" as QrType,
-          parentQrId: smallId,
-          ...meta,
-        });
+        const pN = pSerial++;
+        docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(initials, pN, sN), type: "product" as QrType, parentQrId: smallId, ...meta });
       }
+    }
+  } else {
+    // Standalone products only.
+    for (let p = 0; p < totalProducts; p++) {
+      const pN = pSerial++;
+      docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(initials, pN), type: "product" as QrType, parentQrId: null, ...meta });
     }
   }
 
   await QrCode.insertMany(docs as unknown as QrCodeDoc[], { ordered: true });
 
-  return { batchId: String(batch._id), total, serialStart: masterStart, serialEnd: masterStart + masterCount - 1 };
+  return { batchId: String(batch._id), total, serialStart: topStart, serialEnd: topEnd };
 }
 
 // ---- read models ----
@@ -154,12 +183,17 @@ export async function generateBatch(input: GenerateBatchInput) {
 export type BatchDTO = {
   id: string;
   productSku: string;
+  productName: string;
   total: number;
   masterCount: number;
   smallPerMaster: number;
   productPerSmall: number;
   serialStart: number;
   serialEnd: number;
+  /** Formatted label for the first serial in the top-level range. */
+  serialStartLabel: string;
+  /** Formatted label for the last serial in the top-level range. */
+  serialEndLabel: string;
   status: string;
   createdAt: string;
   /** How many codes are still in the warehouse (not yet dispatched). */
@@ -167,6 +201,18 @@ export type BatchDTO = {
   /** How many codes have been dispatched to a counter (active or scanned). */
   dispatchedCount: number;
 };
+
+/** Compute the formatted serial label for the batch's top-level range boundary. */
+function batchSerialLabel(
+  initials: string,
+  n: number,
+  masterCount: number,
+  smallPerMaster: number,
+): string {
+  if (masterCount > 0) return formatMasterSerial(initials, n);
+  if (smallPerMaster > 0) return formatSmallSerial(initials, n);
+  return formatProductSerial(initials, n);
+}
 
 /** Map of batchId → dispatched-code count, computed in a single aggregation. */
 async function dispatchedCountsByBatch(
@@ -187,28 +233,48 @@ export async function listBatches(
   await connectDB();
   const { page, pageSize } = pagination;
   const query: Record<string, unknown> = {};
-  if (search) query.$or = [{ serialStart: { $regex: search, $options: "i" } }, { serialEnd: { $regex: search, $options: "i" } }];
+  if (search) {
+    // Search by product SKU (text) and/or master serial number (numeric range).
+    const skuMatches = await Product.find({ sku: { $regex: search, $options: "i" } })
+      .select("_id")
+      .lean();
+    const digits = search.replace(/\D/g, "");
+    const serialNum = digits.length > 0 ? parseInt(digits, 10) : NaN;
+    const orClauses: Record<string, unknown>[] = [];
+    if (skuMatches.length) orClauses.push({ productId: { $in: skuMatches.map((p) => p._id) } });
+    if (Number.isFinite(serialNum) && serialNum > 0) {
+      orClauses.push({ serialStart: { $lte: serialNum }, serialEnd: { $gte: serialNum } });
+    }
+    if (orClauses.length) query.$or = orClauses;
+  }
   const total = await QrBatch.countDocuments(query);
   const docs = await QrBatch.find(query)
     .sort({ createdAt: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)
-    .populate<{ productId: { sku?: string } }>("productId", "sku")
+    .populate<{ productId: { sku?: string; name?: string } }>("productId", "sku name")
     .lean();
 
   const dispatched = await dispatchedCountsByBatch(docs.map((d) => d._id as Types.ObjectId));
 
   const items: BatchDTO[] = docs.map((d) => {
     const dispatchedCount = dispatched.get(String(d._id)) ?? 0;
+    const prod = d.productId as { sku?: string; name?: string } | null;
+    const mCount = d.masterCount ?? 0;
+    const sCount = d.smallPerMaster ?? 0;
+    const initials = productInitials(prod?.name ?? "X");
     return {
       id: String(d._id),
-      productSku: (d.productId as { sku?: string } | null)?.sku ?? "—",
+      productSku: prod?.sku ?? "—",
+      productName: prod?.name ?? "",
       total: d.totalCodes,
-      masterCount: d.masterCount ?? 0,
-      smallPerMaster: d.smallPerMaster ?? 0,
+      masterCount: mCount,
+      smallPerMaster: sCount,
       productPerSmall: d.productPerSmall ?? 0,
       serialStart: d.serialStart,
       serialEnd: d.serialEnd,
+      serialStartLabel: batchSerialLabel(initials, d.serialStart, mCount, sCount),
+      serialEndLabel: batchSerialLabel(initials, d.serialEnd, mCount, sCount),
       status: String(d.status),
       createdAt: (d.createdAt as Date)?.toISOString() ?? "",
       dispatchedCount,
@@ -351,7 +417,7 @@ function codeFilterQuery(filter: CodeFilter): Record<string, unknown> {
 export async function getBatch(batchId: string): Promise<BatchDTO | null> {
   await connectDB();
   const d = await QrBatch.findById(batchId)
-    .populate<{ productId: { sku?: string } }>("productId", "sku")
+    .populate<{ productId: { sku?: string; name?: string } }>("productId", "sku name")
     .lean();
   if (!d) return null;
 
@@ -360,15 +426,22 @@ export async function getBatch(batchId: string): Promise<BatchDTO | null> {
     counterId: { $ne: null },
   });
 
+  const prod = d.productId as { sku?: string; name?: string } | null;
+  const mCount = d.masterCount ?? 0;
+  const sCount = d.smallPerMaster ?? 0;
+  const initials = productInitials(prod?.name ?? "X");
   return {
     id: String(d._id),
-    productSku: (d.productId as { sku?: string } | null)?.sku ?? "—",
+    productSku: prod?.sku ?? "—",
+    productName: prod?.name ?? "",
     total: d.totalCodes,
-    masterCount: d.masterCount ?? 0,
-    smallPerMaster: d.smallPerMaster ?? 0,
+    masterCount: mCount,
+    smallPerMaster: sCount,
     productPerSmall: d.productPerSmall ?? 0,
     serialStart: d.serialStart,
     serialEnd: d.serialEnd,
+    serialStartLabel: batchSerialLabel(initials, d.serialStart, mCount, sCount),
+    serialEndLabel: batchSerialLabel(initials, d.serialEnd, mCount, sCount),
     status: String(d.status),
     createdAt: (d.createdAt as Date)?.toISOString() ?? "",
     dispatchedCount,
@@ -425,15 +498,15 @@ async function collectWithDescendants(rootId: Types.ObjectId): Promise<Types.Obj
   return all;
 }
 
-/** Enable/disable a single code, or relink it (and its children) to a product. */
+/** Update a code's status or re-link its product. Admin can pass `adminOverride` to bypass the lock guard. */
 export async function updateQrCode(
   codeId: string,
-  input: { status?: "inactive" | "disabled"; productId?: string },
+  input: { status?: QrStatus; productId?: string; adminOverride?: boolean },
 ) {
   await connectDB();
   const code = await QrCode.findById(codeId);
   if (!code) throw new Error("QR code not found.");
-  if (code.counterId || code.dispatchId || code.scannedByKhatiId || code.status === "scanned") {
+  if (!input.adminOverride && (code.counterId || code.dispatchId || code.scannedByKhatiId || code.status === "scanned")) {
     throw new Error("Cannot edit — this code is already dispatched or scanned.");
   }
 

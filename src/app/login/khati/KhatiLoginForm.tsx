@@ -12,7 +12,9 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+const FIREBASE_CONFIGURED =
+  Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) &&
+  process.env.NODE_ENV === "production";
 
 // ─── Dev-mode form (no Firebase) ────────────────────────────────────────────
 

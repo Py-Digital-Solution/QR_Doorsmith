@@ -17,21 +17,50 @@ export type QrStatus = (typeof QR_STATUSES)[number];
 export const QR_BATCH_STATUSES = ["in_warehouse", "active", "archived"] as const;
 export type QrBatchStatus = (typeof QR_BATCH_STATUSES)[number];
 
-/** Type-specific serial prefixes: MS-DS (master), SM-DS (small), PD-DS (product). */
-export const QR_TYPE_PREFIXES: Record<QrType, string> = {
-  master: "MS-DS",
-  small: "SM-DS",
-  product: "PD-DS",
-};
+/** "Door Knob" → "DK", "Main Door Lock" → "MDL" (max 4 letters). */
+export function productInitials(name: string): string {
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .filter(Boolean)
+    .join("");
+  return letters.slice(0, 4) || "XX";
+}
 
-/** Type-prefixed serial, e.g. ("master", 42) → "MS-DS-0000042". */
-export function formatSerial(type: QrType, n: number): string {
-  return `${QR_TYPE_PREFIXES[type]}-${String(n).padStart(7, "0")}`;
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** "MS-DK-02" */
+export function formatMasterSerial(initials: string, n: number): string {
+  return `MS-${initials}-${pad(n)}`;
+}
+
+/** With master parent: "SM-MS02-DK-01". Standalone: "SM-DK-01". */
+export function formatSmallSerial(initials: string, n: number, masterN?: number): string {
+  return masterN != null
+    ? `SM-MS${pad(masterN)}-${initials}-${pad(n)}`
+    : `SM-${initials}-${pad(n)}`;
+}
+
+/** Full: "PD-SM01-MS02-DK-01". Partial parents are dropped. */
+export function formatProductSerial(
+  initials: string,
+  n: number,
+  smallN?: number,
+  masterN?: number,
+): string {
+  const parts: string[] = ["PD"];
+  if (smallN != null) parts.push(`SM${pad(smallN)}`);
+  if (masterN != null) parts.push(`MS${pad(masterN)}`);
+  parts.push(initials, pad(n));
+  return parts.join("-");
 }
 
 /**
  * Infer QrType from a serial/query prefix.
- * "MS" or "MS-DS-..." → "master", "SM" → "small", "PD" → "product".
+ * "MS..." → "master", "SM..." → "small", "PD..." → "product".
  */
 export function inferTypeFromPrefix(q: string): QrType | undefined {
   const up = q.toUpperCase();

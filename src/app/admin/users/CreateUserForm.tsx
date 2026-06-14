@@ -26,9 +26,11 @@ type PhoneStep = "idle" | "sending" | "awaiting_code" | "verifying" | "verified"
 
 export function CreateUserForm({
   allowedRoles,
+  counters,
   onSuccess,
 }: {
   allowedRoles: UserRole[];
+  counters?: { id: string; label: string }[];
   onSuccess?: () => void;
 }) {
   const [createState, createAction, createPending] = useActionState<ActionState, FormData>(
@@ -149,10 +151,26 @@ export function CreateUserForm({
         </div>
 
         {isKhati ? (
-          <div>
-            <Label>Phone</Label>
-            <Input name="phone" type="tel" required placeholder="+91 98765 43210" />
-          </div>
+          <>
+            <div>
+              <Label>Phone</Label>
+              <Input name="phone" type="tel" required placeholder="+91 98765 43210" />
+            </div>
+
+            {counters && counters.length > 0 && (
+              <div>
+                <Label>Counter</Label>
+                <Select name="counterId" required>
+                  <option value="">— select counter —</option>
+                  {counters.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+          </>
         ) : (
           <>
             <div>

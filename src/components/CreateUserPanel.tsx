@@ -13,10 +13,12 @@ import type { UserRole } from "@/models/User";
  */
 export function CreateUserPanel({
   allowedRoles,
+  counters,
   label = "Create user",
   title = "Create user",
 }: {
   allowedRoles: UserRole[];
+  counters?: { id: string; label: string }[];
   label?: string;
   title?: string;
 }) {
@@ -32,6 +34,7 @@ export function CreateUserPanel({
       <SlideOver open={open} onClose={() => setOpen(false)} title={title}>
         <CreateUserForm
           allowedRoles={allowedRoles}
+          counters={counters}
           onSuccess={() => setOpen(false)}
         />
       </SlideOver>

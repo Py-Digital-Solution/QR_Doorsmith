@@ -10,6 +10,7 @@ export const NAV: Record<UserRole, NavItem[]> = {
     { href: "/admin/products", label: "Products", icon: "package" },
     { href: "/admin/qr", label: "QR Codes", icon: "qr-code" },
     { href: "/admin/dispatch", label: "Dispatch", icon: "truck" },
+    { href: "/admin/returns", label: "Returns", icon: "undo" },
     { href: "/admin/settings", label: "Settings", icon: "settings" },
   ],
   sales_rep: [{ href: "/sales", label: "Counters", icon: "store" }],

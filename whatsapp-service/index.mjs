@@ -11,6 +11,8 @@
  *
  * Auth: every request must carry  Authorization: Bearer <WA_SERVICE_SECRET>
  * Set WA_SERVICE_SECRET and WA_SERVICE_PORT in environment (or .env file).
+ *
+ * Node 12 compatible — no ??, no ?., no fs.rm (use rmdir recursive instead).
  */
 
 import express from "express";
@@ -23,14 +25,14 @@ import {
   fetchLatestBaileysVersion,
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
-import { readFileSync, existsSync } from "fs";
+import { existsSync, promises as fsPromises } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const __dir = dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.WA_SERVICE_PORT ?? 3099);
-const SECRET = process.env.WA_SERVICE_SECRET ?? "";
+const PORT = Number(process.env.WA_SERVICE_PORT || 3099);
+const SECRET = process.env.WA_SERVICE_SECRET || "";
 const AUTH_DIR = resolve(__dir, "auth_info");
 
 if (!SECRET) {
@@ -77,17 +79,19 @@ async function startSocket() {
     }
 
     if (connection === "open") {
-      const jid = sock.user?.id ?? "";
+      const user = sock.user || {};
+      const jid = user.id || "";
       // jid is like "919876543210:0@s.whatsapp.net" — extract the number
       connectedPhone = "+" + jid.split(":")[0].split("@")[0];
       status = "connected";
       currentQr = null;
-      console.log(`[wa] Connected as ${connectedPhone}`);
+      console.log("[wa] Connected as " + connectedPhone);
     }
 
     if (connection === "close") {
-      const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
-      console.log(`[wa] Disconnected — reason: ${reason}`);
+      const boomError = lastDisconnect && lastDisconnect.error;
+      const reason = new Boom(boomError).output.statusCode;
+      console.log("[wa] Disconnected — reason: " + reason);
 
       if (reason === DisconnectReason.loggedOut) {
         // Session invalidated — need fresh QR
@@ -126,8 +130,8 @@ app.use(express.json());
 // Auth middleware
 app.use((req, res, next) => {
   if (!SECRET) return next(); // dev: no secret set
-  const auth = req.headers["authorization"] ?? "";
-  if (auth === `Bearer ${SECRET}`) return next();
+  const auth = req.headers["authorization"] || "";
+  if (auth === "Bearer " + SECRET) return next();
   res.status(401).json({ error: "Unauthorized" });
 });
 
@@ -156,8 +160,8 @@ app.post("/connect", async (_req, res) => {
 app.post("/disconnect", async (_req, res) => {
   await stopSocket();
   // Delete saved auth so next connect shows a fresh QR
-  const { rm } = await import("fs/promises");
-  await rm(AUTH_DIR, { recursive: true, force: true });
+  // fs.rmdir with recursive works on Node 12.10+ (fs.rm requires Node 14.14+)
+  await fsPromises.rmdir(AUTH_DIR, { recursive: true }).catch(function() {});
   res.json({ status: "disconnected" });
 });
 
@@ -166,14 +170,16 @@ app.post("/send", async (req, res) => {
     return res.status(503).json({ error: "WhatsApp not connected" });
   }
 
-  const { phone, message } = req.body ?? {};
+  const body = req.body || {};
+  const phone = body.phone;
+  const message = body.message;
   if (!phone || !message) {
     return res.status(400).json({ error: "phone and message are required" });
   }
 
   // Normalise to JID: strip non-digits, append @s.whatsapp.net
   const digits = String(phone).replace(/\D/g, "");
-  const jid = `${digits}@s.whatsapp.net`;
+  const jid = digits + "@s.whatsapp.net";
 
   try {
     await sock.sendMessage(jid, { text: String(message) });
@@ -185,5 +191,5 @@ app.post("/send", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[wa] WhatsApp service listening on port ${PORT}`);
+  console.log("[wa] WhatsApp service listening on port " + PORT);
 });

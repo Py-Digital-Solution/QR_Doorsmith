@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   updateNameAction,
   changePasswordAction,
@@ -20,10 +20,11 @@ export function NameForm({ defaultName }: { defaultName: string }) {
     updateNameAction,
     {},
   );
+  const [name, setName] = useState(defaultName);
   return (
     <form action={action} className={card}>
       <h2 className="text-sm font-semibold text-gray-900">Name</h2>
-      <Input name="name" defaultValue={defaultName} required />
+      <Input name="name" value={name} onChange={(e) => setName(e.target.value)} required />
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.ok && <Alert variant="success">Saved ✓</Alert>}
       <Button type="submit" loading={pending}>

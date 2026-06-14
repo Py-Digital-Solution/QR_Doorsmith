@@ -1,59 +1,71 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
+import { useEffect, useRef, useState } from "react";
+import type QrScannerType from "qr-scanner";
 
 /**
- * Camera QR scanner. Calls onScan with the decoded text once per code.
- * Requires HTTPS or localhost for camera access.
+ * Camera QR scanner backed by qr-scanner (Nimiq).
+ * Uses native BarcodeDetector on Android Chrome (fastest path),
+ * falls back to WASM on iOS/Firefox — both faster than html5-qrcode.
  */
 export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
-  const id = useId().replace(/:/g, "");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerRef = useRef<QrScannerType | null>(null);
   const onScanRef = useRef(onScan);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Always keep the callback ref up to date without recreating the scanner.
   useEffect(() => {
     onScanRef.current = onScan;
   }, [onScan]);
 
   useEffect(() => {
-    const scanner = new Html5Qrcode(id);
+    if (!videoRef.current) return;
+    let destroyed = false;
 
-    const startPromise = scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        (decoded) => onScanRef.current(decoded),
-        undefined,
-      )
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.toLowerCase().includes("permission")) {
+    (async () => {
+      const { default: QrScannerLib } = await import("qr-scanner");
+      QrScannerLib.WORKER_PATH = "/qr-scanner-worker.min.js";
+
+      if (destroyed) return;
+
+      const scanner = new QrScannerLib(
+        videoRef.current!,
+        (result) => onScanRef.current(result.data),
+        {
+          preferredCamera: "environment",
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          maxScansPerSecond: 15,
+          returnDetailedScanResult: true,
+        },
+      );
+
+      scannerRef.current = scanner;
+
+      try {
+        await scanner.start();
+      } catch (err) {
+        if (destroyed) return;
+        const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+        if (msg.includes("permission")) {
           setCameraError("Camera permission denied. Allow camera access and reload.");
-        } else if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no cameras")) {
+        } else if (msg.includes("not found") || msg.includes("no camera")) {
           setCameraError("No camera found on this device.");
         } else {
-          setCameraError("Camera unavailable.");
+          setCameraError("Camera unavailable: " + msg);
         }
-      });
+      }
+    })();
 
     return () => {
-      startPromise.finally(() => {
-        try {
-          const state = scanner.getState();
-          if (
-            state === Html5QrcodeScannerState.SCANNING ||
-            state === Html5QrcodeScannerState.PAUSED
-          ) {
-            scanner.stop().then(() => scanner.clear()).catch(() => {});
-          }
-        } catch {
-          // already stopped
-        }
-      });
+      destroyed = true;
+      if (scannerRef.current) {
+        scannerRef.current.stop();
+        scannerRef.current.destroy();
+        scannerRef.current = null;
+      }
     };
-  }, [id]);
+  }, []);
 
   if (cameraError) {
     return (
@@ -64,9 +76,12 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
   }
 
   return (
-    <div
-      id={id}
-      className="min-h-[280px] w-full max-w-xs overflow-hidden rounded-lg border border-gray-200 bg-black"
+    <video
+      ref={videoRef}
+      className="w-full max-w-xs rounded-lg border border-gray-200 bg-black"
+      style={{ display: "block", aspectRatio: "4/3" }}
+      muted
+      playsInline
     />
   );
 }

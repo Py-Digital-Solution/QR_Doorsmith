@@ -13,11 +13,11 @@ export type KhatiStats = {
 
 export async function getKhatiStats(khatiId: string): Promise<KhatiStats> {
   await connectDB();
-  const user = await User.findById(khatiId).select("points lifetimePoints createdBy").lean();
+  const user = await User.findById(khatiId).select("points lifetimePoints counterId createdBy").lean();
   return {
     points: user?.points ?? 0,
     lifetimePoints: user?.lifetimePoints ?? 0,
-    counterId: String(user?.createdBy ?? ""),
+    counterId: String(user?.counterId ?? user?.createdBy ?? ""),
   };
 }
 
@@ -26,11 +26,16 @@ export type ScanResult = {
   sku: string;
   pointsEarned: number;
   newBalance: number;
+  /** "product" = single code scanned; "small" = full small-box bulk scan. */
+  type: "product" | "small";
+  /** Number of product codes credited (only set for small-box scans). */
+  productsScanned?: number;
 };
 
 /**
- * Validate and record a product QR scan for a khati.
- * The code must be active, type=product, and belong to the khati's counter.
+ * Validate and record a QR scan for a khati.
+ * Accepts product codes (single point award) and small-box codes (bulk award
+ * for all active product children of that small box).
  */
 export async function processQrScan(
   khatiId: string,
@@ -40,21 +45,74 @@ export async function processQrScan(
 
   const code = await QrCode.findOne({ serialNo: serialNo.trim() }).lean();
   if (!code) throw new Error("QR code not found.");
-  if (code.type !== "product") throw new Error("Only product QR codes earn points.");
+  if (code.type === "master") throw new Error("Master box QR codes cannot be scanned for points.");
+  if (code.type !== "product" && code.type !== "small") throw new Error("Only product or small box QR codes earn points.");
   if (code.status === "scanned") throw new Error("This QR code has already been scanned.");
   if (code.status !== "active") throw new Error("QR code is not active — it must be dispatched to a counter first.");
   if (!code.counterId) throw new Error("QR code has not been dispatched to a counter.");
 
-  const khati = await User.findById(khatiId).select("createdBy points").lean();
+  const khati = await User.findById(khatiId).select("counterId createdBy points").lean();
   if (!khati) throw new Error("Khati account not found.");
-  if (String(code.counterId) !== String(khati.createdBy)) {
+  // counterId is the authoritative counter link; fall back to createdBy for legacy rows.
+  const khatiCounterId = String(khati.counterId ?? khati.createdBy ?? "");
+  if (String(code.counterId) !== khatiCounterId) {
     throw new Error("This QR code does not belong to your counter.");
   }
 
+  const now = new Date();
+
+  // ── Small-box scan: credit only the still-unscanned product children ──
+  // Already-scanned products (status !== "active") are deliberately excluded so
+  // they stay owned by the khati who scanned them first. Ownership is tracked
+  // per product via scannedByKhatiId, so returns reverse points from the exact
+  // owner — never from whoever happened to scan the box.
+  if (code.type === "small") {
+    const productCodes = await QrCode.find({
+      parentQrId: code._id,
+      type: "product",
+      status: "active",
+      counterId: code.counterId, // never assign a child re-dispatched elsewhere
+    }).lean();
+
+    if (productCodes.length === 0) {
+      throw new Error("No unscanned products remain in this small box.");
+    }
+
+    const totalPts = productCodes.reduce((sum, c) => sum + (c.rewardPoints ?? 0), 0);
+
+    await Promise.all([
+      // Mark every product code as scanned
+      QrCode.updateMany(
+        { _id: { $in: productCodes.map((c) => c._id) } },
+        { $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now, returned: false, returnedAt: null } },
+      ),
+      // Mark the small box itself as scanned for traceability
+      QrCode.findByIdAndUpdate(code._id, {
+        $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now },
+      }),
+    ]);
+
+    const updated = await User.findByIdAndUpdate(
+      khatiId,
+      { $inc: { points: totalPts, lifetimePoints: totalPts } },
+      { returnDocument: "after" },
+    ).lean();
+
+    return {
+      serialNo: code.serialNo,
+      sku: code.sku ?? "",
+      pointsEarned: totalPts,
+      newBalance: updated?.points ?? totalPts,
+      type: "small",
+      productsScanned: productCodes.length,
+    };
+  }
+
+  // ── Single product scan ──
   const pts = code.rewardPoints ?? 0;
 
   await QrCode.findByIdAndUpdate(code._id, {
-    $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: new Date(), returned: false, returnedAt: null },
+    $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now, returned: false, returnedAt: null },
   });
 
   const updated = await User.findByIdAndUpdate(
@@ -68,6 +126,7 @@ export async function processQrScan(
     sku: code.sku ?? "",
     pointsEarned: pts,
     newBalance: updated?.points ?? pts,
+    type: "product",
   };
 }
 
@@ -84,8 +143,9 @@ export type ReturnResult = {
  * Reverses the khati's reward points and reactivates the QR code for resale.
  */
 export async function processQrReturn(
-  counterId: string,
+  actorId: string,
   serialNo: string,
+  opts: { adminOverride?: boolean } = {},
 ): Promise<ReturnResult> {
   await connectDB();
 
@@ -93,11 +153,15 @@ export async function processQrReturn(
   if (!code) throw new Error("QR code not found.");
   if (code.type !== "product") throw new Error("Only product QR codes can be returned.");
   if (code.status !== "scanned") throw new Error("This code has not been scanned — nothing to return.");
-  if (!code.counterId || String(code.counterId) !== counterId) {
+  if (!code.counterId) throw new Error("This product was never dispatched to a counter.");
+  // A counter may only return its own codes. An admin can return any code and
+  // the return is booked against the counter the product actually belongs to.
+  if (!opts.adminOverride && String(code.counterId) !== actorId) {
     throw new Error("This QR code does not belong to your counter.");
   }
   if (!code.scannedByKhatiId) throw new Error("No khati record found for this code.");
 
+  const counterId = opts.adminOverride ? String(code.counterId) : actorId;
   const pts = code.rewardPoints ?? 0;
   const [khati, counter] = await Promise.all([
     User.findById(code.scannedByKhatiId).select("name points").lean(),
@@ -162,23 +226,47 @@ export async function listKhatiScans(
 
   const [scanDocs, returnDocs] = await Promise.all([
     QrCode.find({ scannedByKhatiId: khatiId, ...searchFilter })
-      .select("serialNo sku rewardPoints scannedAt")
+      .select("serialNo sku rewardPoints scannedAt type parentQrId")
       .lean(),
     Return.find({ khatiId, ...searchFilter })
       .select("serialNo sku pointsReversed createdAt")
       .lean(),
   ]);
 
+  // A small-box scan credits the sum of its product children — never the box's
+  // own rewardPoints snapshot. So in history we show ONE row per scanned box
+  // carrying that real total, and fold its child products into it (rather than
+  // listing the box AND every child, which double-counts).
+  const scannedBoxIds = scanDocs.filter((d) => d.type === "small").map((d) => d._id);
+  const boxIdSet = new Set(scannedBoxIds.map((id) => String(id)));
+  const boxTotals = new Map<string, number>();
+  if (scannedBoxIds.length > 0) {
+    const children = await QrCode.find({
+      scannedByKhatiId: khatiId,
+      type: "product",
+      parentQrId: { $in: scannedBoxIds },
+    })
+      .select("parentQrId rewardPoints")
+      .lean();
+    for (const c of children) {
+      const key = String(c.parentQrId);
+      boxTotals.set(key, (boxTotals.get(key) ?? 0) + (c.rewardPoints ?? 0));
+    }
+  }
+
   const all: (ScanHistoryItem & { _ts: number })[] = [
-    ...scanDocs.map((d) => ({
-      id: String(d._id),
-      serialNo: d.serialNo,
-      sku: d.sku ?? "",
-      points: d.rewardPoints ?? 0,
-      scannedAt: (d.scannedAt as Date | null)?.toISOString() ?? "",
-      isReturn: false,
-      _ts: (d.scannedAt as Date | null)?.getTime() ?? 0,
-    })),
+    ...scanDocs
+      // Drop child products of a scanned small box — represented by the box row.
+      .filter((d) => !(d.type === "product" && d.parentQrId && boxIdSet.has(String(d.parentQrId))))
+      .map((d) => ({
+        id: String(d._id),
+        serialNo: d.serialNo,
+        sku: d.sku ?? "",
+        points: d.type === "small" ? (boxTotals.get(String(d._id)) ?? 0) : (d.rewardPoints ?? 0),
+        scannedAt: (d.scannedAt as Date | null)?.toISOString() ?? "",
+        isReturn: false,
+        _ts: (d.scannedAt as Date | null)?.getTime() ?? 0,
+      })),
     ...returnDocs.map((d) => ({
       id: `ret-${String(d._id)}`,
       serialNo: d.serialNo,

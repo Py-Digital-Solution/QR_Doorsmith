@@ -9,6 +9,7 @@ import {
   updateQrCode,
   deleteQrCode,
 } from "@/services/qr";
+import type { QrStatus } from "@/lib/qr";
 
 export type ActionState = { error?: string; ok?: boolean; total?: number };
 
@@ -53,12 +54,12 @@ export async function deleteBatchAction(
 
 export async function updateQrCodeAction(
   codeId: string,
-  input: { status?: "inactive" | "disabled"; productId?: string },
+  input: { status?: QrStatus; productId?: string },
   batchId: string,
 ): Promise<{ error?: string; ok?: boolean }> {
   if (!(await requireAdmin())) return { error: "Not authorized." };
   try {
-    await updateQrCode(codeId, input);
+    await updateQrCode(codeId, { ...input, adminOverride: true });
     revalidatePath(`/admin/qr/${batchId}`);
     return { ok: true };
   } catch (e) {

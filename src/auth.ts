@@ -66,8 +66,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           } catch {
             return null;
           }
-        } else if (process.env.OTP_DEV_MODE === "true" && phone && code === "1111") {
-          // Dev mode: accept the hardcoded default OTP.
+        } else if (process.env.NODE_ENV !== "production" && phone && code === "1111") {
+          // Dev shortcut: magic OTP bypasses Firebase (matches client-side NODE_ENV check).
+          // Normalize same as Firebase production: bare 10-digit → +91xxxxxxxxxx.
+          resolvedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+        } else if (process.env.OTP_DEV_MODE === "true" && phone) {
+          // OTP_DEV_MODE: verify through the OTP service (1111 accepted there too).
+          const { verifyOtp } = await import("@/services/otp");
+          const ok = await verifyOtp(phone, code);
+          if (!ok) return null;
           resolvedPhone = phone;
         } else {
           return null;
@@ -76,8 +83,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!resolvedPhone) return null;
 
         await connectDB();
-        const user = await User.findOne({ phone: resolvedPhone, role: "khati" });
-        if (!user || user.status !== "active") return null;
+
+        // Match on last 10 digits so spacing/prefix differences don't break lookup.
+        const last10 = resolvedPhone.replace(/\D/g, "").slice(-10);
+        const user = await User.findOne({
+          phone: { $regex: last10 + "$" },
+          role: "khati",
+        });
+        if (!user) {
+          console.warn(`[khati-otp] No khati found matching last-10: ${last10}`);
+          return null;
+        }
+        if (user.status !== "active") {
+          console.warn(`[khati-otp] Khati found but status is "${user.status}" for phone: ${resolvedPhone}`);
+          return null;
+        }
 
         return {
           id: user._id.toString(),

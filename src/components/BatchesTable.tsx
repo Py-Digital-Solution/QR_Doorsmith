@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { BatchDTO } from "@/services/qr";
-import { formatSerial } from "@/lib/qr";
 import { BatchActions } from "./BatchActions";
 import type { ProductOption } from "./GenerateBatchForm";
 import { Badge, statusTone } from "./ui/Badge";
@@ -39,6 +38,15 @@ function ManageLink({ id }: { id: string }) {
   );
 }
 
+/** "in_warehouse" → "In Warehouse", "active" → "Active" */
+function fmtStatus(s: string) {
+  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function serialRange(startLabel: string, endLabel: string) {
+  return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
+}
+
 export function BatchesTable({
   batches,
   products,
@@ -68,20 +76,25 @@ export function BatchesTable({
             className="rounded-lg border border-gray-200 bg-white p-4 shadow-card"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs text-gray-600">{b.productSku}</span>
-              <Badge tone={statusTone(b.status)}>{b.status}</Badge>
+              <div>
+                <p className="font-mono text-xs text-gray-600">{b.productSku}</p>
+                {b.productName && (
+                  <p className="text-sm font-medium text-gray-900">{b.productName}</p>
+                )}
+              </div>
+              <Badge tone={statusTone(b.status)}>{fmtStatus(b.status)}</Badge>
             </div>
-            <p className="mt-1 text-sm text-gray-900">
+            <p className="mt-1 text-sm text-gray-700">
               {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall} ·{" "}
-              <span className="font-medium">{b.total} codes</span>
+              <span className="font-semibold">{b.total}</span> codes
             </p>
             <p className="mt-0.5 text-xs">
               <span className="text-amber-700">{b.warehouseCount} in warehouse</span>
               {" · "}
               <span className="text-green-700">{b.dispatchedCount} dispatched</span>
             </p>
-            <p className="font-mono text-xs text-gray-500">
-              {formatSerial("master", b.serialStart)} – {formatSerial("master", b.serialEnd)}
+            <p className="mt-0.5 font-mono text-xs text-gray-500">
+              {serialRange(b.serialStartLabel, b.serialEndLabel)}
             </p>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs text-gray-400">{b.createdAt.slice(0, 10)}</span>
@@ -106,19 +119,26 @@ export function BatchesTable({
             <TH>Structure (M×S×P)</TH>
             <TH align="right">Total</TH>
             <TH align="right">Warehouse / Sent</TH>
-            <TH>Serial range</TH>
-            <TH>Status</TH>
+            <TH>Master serial range</TH>
+            <TH align="center">Status</TH>
             <TH align="right">Actions</TH>
           </THead>
           <tbody>
             {batches.map((b) => (
               <TR key={b.id} interactive>
                 <TD className="text-gray-600">{b.createdAt.slice(0, 10)}</TD>
-                <TD className="font-mono text-xs text-gray-600">{b.productSku}</TD>
-                <TD className="text-gray-600">
+                <TD>
+                  <div>
+                    <span className="font-mono text-xs text-gray-500">{b.productSku}</span>
+                    {b.productName && (
+                      <p className="text-sm text-gray-900">{b.productName}</p>
+                    )}
+                  </div>
+                </TD>
+                <TD className="text-gray-700">
                   {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall}
                 </TD>
-                <TD align="right" className="font-medium text-gray-900">
+                <TD align="right" className="font-semibold text-gray-900">
                   {b.total}
                 </TD>
                 <TD align="right" className="text-xs">
@@ -127,10 +147,10 @@ export function BatchesTable({
                   <span className="text-green-700">{b.dispatchedCount}</span>
                 </TD>
                 <TD className="font-mono text-xs text-gray-600">
-                  {formatSerial("master", b.serialStart)} – {formatSerial("master", b.serialEnd)}
+                  {serialRange(b.serialStartLabel, b.serialEndLabel)}
                 </TD>
-                <TD>
-                  <Badge tone={statusTone(b.status)}>{b.status}</Badge>
+                <TD align="center">
+                  <Badge tone={statusTone(b.status)}>{fmtStatus(b.status)}</Badge>
                 </TD>
                 <TD>
                   <div className="flex items-center justify-end gap-1">

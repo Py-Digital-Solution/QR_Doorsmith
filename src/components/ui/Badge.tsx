@@ -30,7 +30,10 @@ export function statusTone(status: string): BadgeTone {
     case "blocked":
       return "red";
     case "dispatched":
+    case "in_warehouse":
       return "blue";
+    case "archived":
+      return "gray";
     default:
       return "gray";
   }

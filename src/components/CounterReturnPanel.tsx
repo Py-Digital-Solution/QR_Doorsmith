@@ -14,7 +14,11 @@ type ReturnState =
   | { phase: "success"; serialNo: string; sku: string; pointsReversed: number; khatiName: string; counterName: string }
   | { phase: "error"; message: string };
 
-export function CounterReturnPanel() {
+export function CounterReturnPanel({
+  endpoint = "/api/counter/return",
+}: {
+  endpoint?: string;
+}) {
   const [state, setState] = useState<ReturnState>({ phase: "idle" });
   const [manual, setManual] = useState("");
   const isProcessing = useRef(false);
@@ -28,7 +32,7 @@ export function CounterReturnPanel() {
     setState({ phase: "loading", serialNo: sn });
 
     try {
-      const res = await fetch("/api/counter/return", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ serialNo: sn }),

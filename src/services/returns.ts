@@ -18,8 +18,25 @@ export async function listCounterReturns(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   search?: string,
 ): Promise<Paginated<ReturnDTO>> {
+  return listReturns(pagination, search, counterId);
+}
+
+/** All returns across every counter — admin view. */
+export async function listAllReturns(
+  pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  search?: string,
+): Promise<Paginated<ReturnDTO>> {
+  return listReturns(pagination, search);
+}
+
+async function listReturns(
+  pagination: Pagination,
+  search?: string,
+  counterId?: string,
+): Promise<Paginated<ReturnDTO>> {
   await connectDB();
-  const q: Record<string, unknown> = { counterId };
+  const q: Record<string, unknown> = {};
+  if (counterId) q.counterId = counterId;
   if (search) q.$or = [
     { serialNo: { $regex: search, $options: "i" } },
     { sku: { $regex: search, $options: "i" } },

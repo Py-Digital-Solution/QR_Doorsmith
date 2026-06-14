@@ -1,5 +1,6 @@
 import type {
   InputHTMLAttributes,
+  Ref,
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
@@ -16,10 +17,12 @@ function borderCls(invalid?: boolean) {
 export function Input({
   invalid,
   className = "",
+  ref,
   ...props
-}: { invalid?: boolean } & InputHTMLAttributes<HTMLInputElement>) {
+}: { invalid?: boolean; ref?: Ref<HTMLInputElement> } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
+      ref={ref}
       className={`${base} ${borderCls(invalid)} ${className}`}
       {...props}
     />
