@@ -17,7 +17,6 @@
 
 import express from "express";
 import qrcode from "qrcode";
-import pino from "pino";
 import {
   makeWASocket,
   useMultiFileAuthState,
@@ -41,7 +40,15 @@ if (!SECRET) {
   );
 }
 
-const logger = pino({ level: "warn" });
+// Minimal pino-compatible logger for Baileys — avoids pino's node:os dependency
+// which requires Node 14.18+. Baileys only calls child() + warn/error at runtime.
+const noop = function() {};
+const logger = {
+  level: "silent",
+  trace: noop, debug: noop, info: noop,
+  warn: noop,  error: noop, fatal: noop,
+  child: function() { return logger; },
+};
 
 // ─── State ────────────────────────────────────────────────────────────────────
 /** @type {"disconnected"|"connecting"|"connected"} */
