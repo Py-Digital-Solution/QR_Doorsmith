@@ -3,6 +3,7 @@ import { connectDB } from "@/db/mongoose";
 import { Otp } from "@/models/Otp";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { env } from "@/lib/env";
+import { waSend } from "@/services/whatsapp";
 
 const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_ATTEMPTS = 5;
@@ -21,8 +22,10 @@ async function sendOtp(phone: string, code: string): Promise<void> {
     console.log(`\n[OTP][dev] ${phone} → ${code}  (not actually sent)\n`);
     return;
   }
-  throw new Error(
-    "OTP delivery not configured. Set OTP_DEV_MODE=true for development.",
+  await waSend(
+    phone,
+    `🔐 *DoorSmith लॉगिन कोड | Login Code*\n\nआपका लॉगिन कोड है: *${code}*\nYour login code is: *${code}*\n\n5 मिनट में समाप्त होगा। किसी के साथ साझा न करें।\nExpires in 5 minutes. Do not share with anyone.`,
+    "otp",
   );
 }
 

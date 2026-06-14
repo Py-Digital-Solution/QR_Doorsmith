@@ -262,10 +262,12 @@ export type CounterInventory = {
 
 export async function getCounterInventory(counterId: string): Promise<CounterInventory> {
   await connectDB();
+  // Exclude scanned codes — they've been consumed by a khati and left the counter
+  const notScanned = { $ne: "scanned" as const };
   const [masters, smalls, products] = await Promise.all([
-    QrCode.countDocuments({ counterId, type: "master" }),
-    QrCode.countDocuments({ counterId, type: "small" }),
-    QrCode.countDocuments({ counterId, type: "product" }),
+    QrCode.countDocuments({ counterId, type: "master", status: notScanned }),
+    QrCode.countDocuments({ counterId, type: "small", status: notScanned }),
+    QrCode.countDocuments({ counterId, type: "product", status: notScanned }),
   ]);
   return { masters, smalls, products, total: masters + smalls + products };
 }
@@ -287,7 +289,8 @@ export async function listCounterCodes(
   search?: string,
 ): Promise<Paginated<CounterCodeDTO>> {
   await connectDB();
-  const q: Record<string, unknown> = { counterId };
+  // Exclude scanned codes — consumed by a khati, no longer in counter's inventory
+  const q: Record<string, unknown> = { counterId, status: { $ne: "scanned" as const } };
   if (filter?.type) q.type = filter.type;
   if (search) q.$or = [{ serialNo: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
   const { page, pageSize } = pagination;

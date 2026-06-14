@@ -62,7 +62,7 @@ export default async function CounterHome({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" description="Your counter overview." />
+      <PageHeader title="Khatis & Inventory" description="Manage your registered khatis and view stock." />
 
       {/* Inventory summary */}
       <div>

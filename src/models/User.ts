@@ -38,6 +38,16 @@ const userSchema = new Schema(
     // Khati rewards (Phase 4). Default 0 so old documents behave correctly.
     points: { type: Number, default: 0 },
     lifetimePoints: { type: Number, default: 0 },
+    // KYC registration profile
+    address: { type: String },
+    dob: { type: Date },
+    kycStatus: {
+      type: String,
+      enum: ["not_submitted", "pending_counter", "pending_sales_rep", "pending_admin", "approved", "rejected"],
+      default: "not_submitted",
+    },
+    // One-time token included in the WhatsApp registration link; cleared on approval
+    registrationToken: { type: String, sparse: true, unique: true },
   },
   { timestamps: true },
 );

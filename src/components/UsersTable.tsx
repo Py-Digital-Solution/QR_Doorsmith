@@ -1,6 +1,7 @@
 import type { UserDTO } from "@/services/users";
 import { UserActions } from "./UserActions";
 import { Badge, statusTone } from "./ui/Badge";
+import { Avatar } from "./Avatar";
 import {
   TableWrapper,
   Table,
@@ -62,7 +63,12 @@ export function UsersTable({
           <tbody>
             {users.map((u) => (
               <TR key={u.id} interactive>
-                <TD className="font-medium text-gray-900">{u.name || "—"}</TD>
+                <TD>
+                  <div className="flex items-center gap-2.5">
+                    <Avatar name={u.name} photoUrl={u.photoUrl} size={32} />
+                    <span className="font-medium text-gray-900">{u.name || "—"}</span>
+                  </div>
+                </TD>
                 <TD>
                   <Badge tone="brand">{u.role}</Badge>
                 </TD>

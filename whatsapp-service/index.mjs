@@ -101,12 +101,13 @@ async function startSocket() {
       console.log("[wa] Disconnected — reason: " + reason);
 
       if (reason === DisconnectReason.loggedOut || reason === DisconnectReason.badSession) {
-        // Session invalidated or corrupted — delete auth and wait for fresh QR
-        console.log("[wa] Bad/expired session — clearing auth, awaiting new QR");
+        // Session invalidated or corrupted — delete auth then reconnect fresh for QR
+        console.log("[wa] Bad/expired session — clearing auth, reconnecting for fresh QR");
         status = "disconnected";
         connectedPhone = null;
         sock = null;
         await fsPromises.rmdir(AUTH_DIR, { recursive: true }).catch(function() {});
+        await startSocket();
       } else if (reason !== DisconnectReason.connectionReplaced) {
         // Transient error — reconnect automatically
         console.log("[wa] Reconnecting…");

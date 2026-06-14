@@ -15,11 +15,11 @@ export function getFirebaseApp() {
   const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
   if (!appCheckInitialized && typeof window !== "undefined") {
-    // In development, use Firebase's debug token so reCAPTCHA is bypassed on localhost.
-    // Firebase will log the debug token to the console on first run —
-    // register it once in Firebase Console → App Check → Apps → Manage debug tokens.
-    if (process.env.NODE_ENV === "development") {
-      // @ts-expect-error – Firebase debug global, not in types
+    // Development: use Firebase debug token so App Check is satisfied without reCAPTCHA.
+    // On first run Firebase logs the debug token to the browser console — copy it and
+    // register it once at: Firebase Console → App Check → Your app → Manage debug tokens.
+    if (process.env.NODE_ENV !== "production") {
+      // @ts-expect-error – Firebase App Check debug global
       self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
     }
 

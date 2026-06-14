@@ -2,6 +2,7 @@ import "server-only";
 import { connectDB } from "@/db/mongoose";
 import { Redemption } from "@/models/Redemption";
 import { User } from "@/models/User";
+import { PointTransaction } from "@/models/PointTransaction";
 import { getSetting } from "@/services/settings";
 import { paginated, type Pagination, type Paginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
@@ -134,12 +135,23 @@ export async function approveRedemption(id: string, counterId: string, otp: stri
   const result = await User.findOneAndUpdate(
     { _id: r.khatiId, points: { $gte: r.points } },
     { $inc: { points: -r.points } },
-  );
+    { returnDocument: "after" },
+  ).lean();
   if (!result) throw new Error("Khati has insufficient points.");
 
   await Redemption.findByIdAndUpdate(id, {
     $set: { status: "approved", processedBy: counterId },
   });
+
+  // Ledger entry — redemption locks (deducts) points from the khati balance.
+  PointTransaction.create({
+    khatiId: r.khatiId,
+    redemptionId: r._id,
+    type: "redemption_lock",
+    points: -r.points,
+    balanceAfter: result.points ?? 0,
+    description: "Points redeemed",
+  }).catch((e) => console.error("[pt] Failed to write redemption PointTransaction:", e));
 }
 
 export async function rejectRedemption(id: string, counterId: string): Promise<void> {

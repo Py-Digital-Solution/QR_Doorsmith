@@ -1,5 +1,9 @@
 import "server-only";
 import { env } from "@/lib/env";
+import { connectDB } from "@/db/mongoose";
+import { WaLog } from "@/models/WaLog";
+import { getSetting } from "@/services/settings";
+import { sendWaFailureAlert } from "@/services/email";
 
 type WaStatus = "disconnected" | "connecting" | "connected";
 
@@ -56,15 +60,49 @@ export async function waDisconnect(): Promise<void> {
   if (!res.ok) throw new Error("Failed to disconnect");
 }
 
-export async function waSend(phone: string, message: string): Promise<void> {
-  const res = await fetch(base("/send"), {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ phone, message }),
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? "Failed to send WhatsApp message");
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  return phone;
+}
+
+export async function waSend(phone: string, message: string, type = "message"): Promise<void> {
+  const normalizedPhone = normalizePhone(phone);
+  let errorMsg: string | undefined;
+  try {
+    const res = await fetch(base("/send"), {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ phone: normalizedPhone, message }),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { error?: string }).error ?? "Failed to send WhatsApp message");
+    }
+  } catch (err) {
+    errorMsg = err instanceof Error ? err.message : String(err);
+    // Log failure to DB then notify admin — non-blocking
+    connectDB()
+      .then(() =>
+        WaLog.create({ phone: normalizedPhone, message, type, status: "failed", error: errorMsg })
+      )
+      .then(() => getSetting<string>("notification_email", ""))
+      .then((raw) => {
+        const emails = raw.split(",").map((e) => e.trim()).filter(Boolean);
+        return Promise.all(
+          emails.map((to) =>
+            sendWaFailureAlert({ to, phone: normalizedPhone, type, error: errorMsg!, message }),
+          ),
+        );
+      })
+      .catch((e) => console.error("[wa] Failed to log/notify WA failure:", e));
+    throw err;
   }
+
+  // Log success — non-blocking
+  connectDB()
+    .then(() => WaLog.create({ phone: normalizedPhone, message, type, status: "sent" }))
+    .catch((e) => console.error("[wa] Failed to log WA success:", e));
 }

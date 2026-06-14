@@ -100,7 +100,7 @@ export function DispatchClient({
   const available = results.filter((r) => !serials.includes(r.serialNo));
 
   return (
-    <div className="max-w-2xl space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
+    <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
       <h2 className="text-sm font-semibold text-gray-900">New dispatch</h2>
 
       {/* Counter */}

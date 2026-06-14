@@ -1,10 +1,12 @@
 import "server-only";
+import { randomBytes } from "crypto";
 import { connectDB } from "@/db/mongoose";
 import { User, type UserRole, type UserStatus } from "@/models/User";
 import { hashPassword } from "@/lib/password";
 import { canCreate } from "@/lib/rbac";
 import { isDuplicateKeyError } from "@/lib/db-errors";
 import { isDistributorEnabled } from "@/services/settings";
+import { waSend } from "@/services/whatsapp";
 import {
   DEFAULT_PAGE_SIZE,
   paginated,
@@ -23,6 +25,15 @@ function canManageTarget(
 ): boolean {
   if (actorRole === "admin") return true;
   return String(target.createdBy ?? "") === actorId;
+}
+
+function normalizePhone(phone: string): string {
+  const trimmed = phone.trim();
+  if (trimmed.startsWith("+")) return trimmed;
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  return trimmed;
 }
 
 export type CreateUserInput = {
@@ -71,10 +82,23 @@ export async function createUser(input: CreateUserInput) {
     const counterId =
       input.actorRole === "counter" ? input.actorId : input.counterId;
     if (!counterId) throw new Error("Please select which counter this khati belongs to.");
-    const existing = await User.findOne({ phone: input.phone });
+    const phone = normalizePhone(input.phone);
+    const existing = await User.findOne({ phone });
     if (existing) throw new Error("A user with this phone already exists.");
     try {
-      return await User.create({ ...base, phone: input.phone.trim(), counterId });
+      const registrationToken = randomBytes(24).toString("base64url");
+      const newKhati = await User.create({ ...base, phone, counterId, registrationToken, status: "pending" });
+      const { headers } = await import("next/headers");
+      const hdrs = await headers();
+      const proto = hdrs.get("x-forwarded-proto") ?? "https";
+      const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
+      const appUrl = `${proto}://${host}`;
+      waSend(
+        phone,
+        `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका खाती खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour khati account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+        "welcome",
+      ).catch((err) => console.error("[wa] Welcome message failed:", err));
+      return newKhati;
     } catch (e) {
       if (isDuplicateKeyError(e)) throw new Error("A user with this phone already exists.");
       throw e;
@@ -105,6 +129,9 @@ export type UserDTO = {
   email: string;
   phone: string;
   status: string;
+  photoUrl?: string;
+  kycStatus?: string;
+  hasRegistrationToken?: boolean;
 };
 
 export type UpdateUserInput = {
@@ -150,6 +177,9 @@ export async function deleteUser(input: {
   }
   const target = await User.findById(input.id);
   if (!target) throw new Error("User not found.");
+  if (target.role === "khati" && input.actorRole !== "admin") {
+    throw new Error("Only an admin can delete a khati account.");
+  }
   if (!canManageTarget(input.actorRole, input.actorId, target)) {
     throw new Error("You are not allowed to delete this user.");
   }
@@ -182,6 +212,9 @@ export async function listUsers(
     email: d.email ?? "",
     phone: d.phone ?? "",
     status: String(d.status),
+    photoUrl: d.photoUrl ?? undefined,
+    kycStatus: d.kycStatus ?? undefined,
+    hasRegistrationToken: !!d.registrationToken,
   }));
 
   return paginated(items, total, pagination);

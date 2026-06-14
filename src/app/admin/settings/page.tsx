@@ -1,9 +1,12 @@
 import { isDistributorEnabled, getSetting } from "@/services/settings";
 import { getCompanyBranding } from "@/services/branding";
+import { listWaLogs } from "@/services/walog";
 import { DistributorToggle } from "@/components/DistributorToggle";
 import { MinPointsForm } from "@/components/MinPointsForm";
 import { WhatsAppPanel } from "@/components/WhatsAppPanel";
 import { BrandingForm } from "@/components/BrandingForm";
+import { NotificationEmailForm } from "@/components/NotificationEmailForm";
+import { WaLogTable } from "@/components/WaLogTable";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TabNav } from "@/components/ui/Tabs";
 
@@ -12,9 +15,9 @@ const BASE = "/admin/settings";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; waPage?: string }>;
 }) {
-  const { tab = "general" } = await searchParams;
+  const { tab = "general", waPage } = await searchParams;
 
   const tabs = [
     { href: `${BASE}?tab=general`, label: "General", active: tab === "general" },
@@ -30,7 +33,7 @@ export default async function SettingsPage({
       <div className="max-w-2xl">
         {tab === "general" && <GeneralTab />}
         {tab === "branding" && <BrandingTab />}
-        {tab === "whatsapp" && <WhatsAppTab />}
+        {tab === "whatsapp" && <WhatsAppTab waPage={Number(waPage ?? "1") || 1} />}
       </div>
     </div>
   );
@@ -61,14 +64,36 @@ async function BrandingTab() {
   );
 }
 
-function WhatsAppTab() {
+async function WhatsAppTab({ waPage }: { waPage: number }) {
+  const [notificationEmail, logsData] = await Promise.all([
+    getSetting<string>("notification_email", ""),
+    listWaLogs(waPage, 20),
+  ]);
+
+  const basePath = `/admin/settings?tab=whatsapp`;
+
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-gray-500">
-        Link a WhatsApp number to send OTPs, welcome messages, and redemption
-        notifications directly to users.
-      </p>
-      <WhatsAppPanel />
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-xs text-gray-500">
+          Link a WhatsApp number to send OTPs, welcome messages, and redemption
+          notifications directly to users.
+        </p>
+        <WhatsAppPanel />
+      </div>
+
+      <NotificationEmailForm initial={notificationEmail} />
+
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-gray-800">Message audit log</h2>
+        <WaLogTable
+          items={logsData.items}
+          page={logsData.page}
+          pageCount={logsData.pageCount}
+          total={logsData.total}
+          basePath={basePath}
+        />
+      </div>
     </div>
   );
 }

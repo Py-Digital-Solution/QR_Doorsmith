@@ -9,6 +9,7 @@ import {
   updateQrCode,
   deleteQrCode,
 } from "@/services/qr";
+import { logAudit } from "@/services/audit";
 import type { QrStatus } from "@/lib/qr";
 
 export type ActionState = { error?: string; ok?: boolean; total?: number };
@@ -57,9 +58,14 @@ export async function updateQrCodeAction(
   input: { status?: QrStatus; productId?: string },
   batchId: string,
 ): Promise<{ error?: string; ok?: boolean }> {
-  if (!(await requireAdmin())) return { error: "Not authorized." };
+  const session = await requireAdmin();
+  if (!session) return { error: "Not authorized." };
   try {
     await updateQrCode(codeId, { ...input, adminOverride: true });
+    logAudit({
+      actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
+      action: "qr_code_edit", entityType: "qrCode", entityId: codeId, meta: { ...input },
+    });
     revalidatePath(`/admin/qr/${batchId}`);
     return { ok: true };
   } catch (e) {
@@ -71,9 +77,14 @@ export async function deleteQrCodeAction(
   codeId: string,
   batchId: string,
 ): Promise<{ error?: string; ok?: boolean }> {
-  if (!(await requireAdmin())) return { error: "Not authorized." };
+  const session = await requireAdmin();
+  if (!session) return { error: "Not authorized." };
   try {
     await deleteQrCode(codeId);
+    logAudit({
+      actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
+      action: "qr_code_delete", entityType: "qrCode", entityId: codeId,
+    });
     revalidatePath(`/admin/qr/${batchId}`);
     revalidatePath("/admin/qr");
     return { ok: true };
@@ -101,6 +112,10 @@ export async function generateBatchAction(
         labelHeightMm: Number(formData.get("labelHeightMm") ?? 0) || undefined,
         columns: Number(formData.get("columns") ?? 0) || undefined,
       },
+    });
+    logAudit({
+      actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
+      action: "qr_batch_create", entityType: "qrBatch", meta: { total: res.total },
     });
     revalidatePath("/admin/qr");
     return { ok: true, total: res.total };

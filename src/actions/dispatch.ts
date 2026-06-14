@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { createDispatch } from "@/services/dispatch";
+import { logAudit } from "@/services/audit";
 
 export type ActionState = {
   error?: string;
@@ -24,6 +25,11 @@ export async function createDispatchAction(input: {
       createdBy: session.user.id,
       counterId: input.counterId,
       serials: input.serials,
+    });
+    logAudit({
+      actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
+      action: "dispatch_create", entityType: "dispatch", entityId: res.dispatchId,
+      meta: { counterId: input.counterId, billNo: res.billNo, totalCodes: res.totalCodes },
     });
     revalidatePath("/admin/dispatch");
     revalidatePath("/admin/qr");

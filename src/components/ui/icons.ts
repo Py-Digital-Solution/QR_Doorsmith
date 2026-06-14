@@ -39,6 +39,14 @@ import {
   Camera,
   Undo2,
   PlayCircle,
+  UserCheck,
+  TrendingUp,
+  Wallet,
+  BarChart3,
+  Percent,
+  Award,
+  Clock,
+  Receipt,
   type LucideIcon,
 } from "lucide-react";
 
@@ -88,6 +96,14 @@ export const ICONS = {
   camera: Camera,
   undo: Undo2,
   "play-circle": PlayCircle,
+  "user-check": UserCheck,
+  "trending-up": TrendingUp,
+  wallet: Wallet,
+  "bar-chart": BarChart3,
+  percent: Percent,
+  award: Award,
+  clock: Clock,
+  receipt: Receipt,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

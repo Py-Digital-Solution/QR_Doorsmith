@@ -1,13 +1,15 @@
 import { auth } from "@/auth";
 import Link from "next/link";
 import { ScanLine, Coins, ChevronRight } from "lucide-react";
-import { getKhatiStats, listKhatiScans } from "@/services/khati";
+import { listKhatiScans } from "@/services/khati";
+import { getKhatiDashboard } from "@/services/analytics";
+import { StatCard } from "@/components/ui/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export default async function KhatiHome() {
   const session = await auth();
   const [stats, scans] = await Promise.all([
-    getKhatiStats(session!.user.id),
+    getKhatiDashboard(session!.user.id),
     listKhatiScans(session!.user.id, { page: 1, pageSize: 5 }),
   ]);
 
@@ -26,7 +28,22 @@ export default async function KhatiHome() {
         <p className="mt-2 text-xs text-gray-400">
           Lifetime earned:{" "}
           <span className="font-medium text-gray-600">{stats.lifetimePoints}</span>
+          {stats.rank && (
+            <>
+              {" · "}Rank{" "}
+              <span className="font-medium text-brand-dark">#{stats.rank}</span>
+            </>
+          )}
         </p>
+      </div>
+
+      {/* My stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Scans Today" value={stats.scansToday} icon="scan" tone="blue" />
+        <StatCard label="Earned This Week" value={stats.earnedWeek} icon="trending-up" tone="green" />
+        <StatCard label="Total Scans" value={stats.scansTotal} icon="qr-code" tone="brand" />
+        <StatCard label="Redeemed" value={stats.redeemedTotal} icon="gift" tone="brand"
+          hint={stats.redemptionsPending > 0 ? `${stats.redemptionsPending} pending` : undefined} />
       </div>
 
       {/* Quick actions */}

@@ -7,10 +7,10 @@ import type { UserRole } from "@/models/User";
 
 /** Landing route for each role after login. */
 export const ROLE_HOME: Record<UserRole, string> = {
-  admin: "/admin/users",
-  sales_rep: "/sales",
-  distributor: "/sales", // distributor shares the sales-style area
-  counter: "/counter",
+  admin: "/admin/dashboards/overview",
+  sales_rep: "/sales/dashboard",
+  distributor: "/sales/dashboard",
+  counter: "/counter/dashboard",
   khati: "/khati",
 };
 
@@ -29,6 +29,7 @@ export function canCreate(actor: UserRole, target: UserRole): boolean {
 
 /** Route-prefix → roles permitted to access it. */
 export const AREA_ROLES: Record<string, UserRole[]> = {
+  "/admin/kyc": ["admin", "sales_rep", "distributor"],
   "/admin": ["admin"],
   "/sales": ["sales_rep", "distributor"],
   "/counter": ["counter"],

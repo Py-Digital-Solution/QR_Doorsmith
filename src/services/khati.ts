@@ -3,6 +3,7 @@ import { connectDB } from "@/db/mongoose";
 import { QrCode } from "@/models/QrCode";
 import { User } from "@/models/User";
 import { Return } from "@/models/Return";
+import { PointTransaction } from "@/models/PointTransaction";
 import { paginated, type Pagination, type Paginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 export type KhatiStats = {
@@ -97,12 +98,19 @@ export async function processQrScan(
       { $inc: { points: totalPts, lifetimePoints: totalPts } },
       { returnDocument: "after" },
     ).lean();
+    const newBal = updated?.points ?? totalPts;
+    PointTransaction.create({
+      khatiId, qrCodeId: code._id, type: "scan_small_box",
+      points: totalPts, balanceAfter: newBal,
+      description: `Small box scan: ${productCodes.length} products`,
+      sku: code.sku, serialNo: code.serialNo,
+    }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
 
     return {
       serialNo: code.serialNo,
       sku: code.sku ?? "",
       pointsEarned: totalPts,
-      newBalance: updated?.points ?? totalPts,
+      newBalance: newBal,
       type: "small",
       productsScanned: productCodes.length,
     };
@@ -120,12 +128,19 @@ export async function processQrScan(
     { $inc: { points: pts, lifetimePoints: pts } },
     { returnDocument: "after" },
   ).lean();
+  const newBalance = updated?.points ?? pts;
+  PointTransaction.create({
+    khatiId, qrCodeId: code._id, type: "scan_product",
+    points: pts, balanceAfter: newBalance,
+    description: `Product scan`,
+    sku: code.sku, serialNo: code.serialNo,
+  }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
 
   return {
     serialNo: code.serialNo,
     sku: code.sku ?? "",
     pointsEarned: pts,
-    newBalance: updated?.points ?? pts,
+    newBalance: newBalance,
     type: "product",
   };
 }
@@ -172,16 +187,18 @@ export async function processQrReturn(
   const khatiName = khati.name ?? "Unknown";
   const counterName = counter?.name ?? "Unknown Counter";
 
-  await User.findByIdAndUpdate(code.scannedByKhatiId, {
-    $inc: { points: -pts },
-  });
+  const updatedKhati = await User.findByIdAndUpdate(
+    code.scannedByKhatiId,
+    { $inc: { points: -pts } },
+    { returnDocument: "after" },
+  ).lean();
 
   await QrCode.findByIdAndUpdate(code._id, {
     $set: { status: "active", returned: true, returnedAt: new Date() },
     // scannedByKhatiId and scannedAt kept so the entry stays in khati history
   });
 
-  await Return.create({
+  const ret = await Return.create({
     counterId,
     khatiId: code.scannedByKhatiId,
     serialNo: code.serialNo,
@@ -190,6 +207,17 @@ export async function processQrReturn(
     counterName,
     khatiName,
   });
+
+  PointTransaction.create({
+    khatiId: code.scannedByKhatiId,
+    qrCodeId: code._id,
+    returnId: ret._id,
+    type: "return_reversal",
+    points: -pts,
+    balanceAfter: updatedKhati?.points ?? 0,
+    description: `Return reversal by ${counterName}`,
+    sku: code.sku, serialNo: code.serialNo,
+  }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
 
   return {
     serialNo: code.serialNo,

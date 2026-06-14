@@ -1,10 +1,16 @@
 "use server";
 
+import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { createUser, updateUser, deleteUser } from "@/services/users";
+import { logAudit } from "@/services/audit";
 import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { sendWelcomeEmail } from "@/services/email";
+import { waSend } from "@/services/whatsapp";
+import { connectDB } from "@/db/mongoose";
+import { User } from "@/models/User";
 import type { UserRole, UserStatus } from "@/models/User";
 
 export type ActionState = { error?: string; ok?: boolean };
@@ -63,6 +69,7 @@ export async function createUserAction(
       await sendWelcomeEmail({ to: email, name, role, password }).catch(() => {});
     }
 
+    logAudit({ actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "", action: "user_create", entityType: "user", meta: { role, name } });
     revalidateAreas();
     return { ok: true };
   } catch (e) {
@@ -98,6 +105,44 @@ export async function updateUserAction(
   }
 }
 
+export async function resendRegistrationLinkAction(userId: string): Promise<ActionState> {
+  const session = await auth();
+  if (session?.user?.role !== "admin" && session?.user?.role !== "counter") {
+    return { error: "Not authorized." };
+  }
+  try {
+    await connectDB();
+    const user = await User.findById(userId);
+    if (!user || user.role !== "khati") return { error: "Khati not found." };
+    if (user.kycStatus === "approved") return { error: "This khati is already approved." };
+    if (!user.phone) return { error: "No phone number on record." };
+
+    // Reuse existing token or generate a fresh one
+    let token = user.registrationToken;
+    if (!token) {
+      token = randomBytes(24).toString("base64url");
+      user.registrationToken = token;
+      await user.save();
+    }
+
+    const hdrs = await headers();
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
+    const appUrl = `${proto}://${host}`;
+
+    await waSend(
+      user.phone,
+      `🔗 *DoorSmith पंजीकरण लिंक | Registration Link*\n\nनमस्ते *${user.name}*, आपका DoorSmith पंजीकरण लिंक नीचे है:\nHi *${user.name}*, here is your DoorSmith registration link:\n\n${appUrl}/register/${token}\n\nअपना खाता सक्रिय करने के लिए पंजीकरण पूरा करें।\nPlease complete your registration to activate your account.`,
+      "welcome",
+    );
+
+    revalidatePath("/admin/users");
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to resend link." };
+  }
+}
+
 export async function deleteUserAction(id: string): Promise<ActionState> {
   const session = await auth();
   if (!session?.user) return { error: "Not authenticated." };
@@ -108,6 +153,7 @@ export async function deleteUserAction(id: string): Promise<ActionState> {
       actorId: session.user.id,
       id,
     });
+    logAudit({ actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "", action: "user_delete", entityType: "user", entityId: id });
     revalidateAreas();
     return { ok: true };
   } catch (e) {

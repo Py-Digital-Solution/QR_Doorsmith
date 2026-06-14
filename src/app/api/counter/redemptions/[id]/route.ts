@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { approveRedemption, rejectRedemption } from "@/services/redemption";
+import { logAudit } from "@/services/audit";
 
 export const runtime = "nodejs";
 
@@ -22,8 +23,16 @@ export async function POST(
       const otp = String(body?.otp ?? "").trim();
       if (!otp) return NextResponse.json({ error: "OTP is required to approve." }, { status: 400 });
       await approveRedemption(id, session.user.id, otp);
+      logAudit({
+        actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
+        action: "redemption_settle", entityType: "redemption", entityId: id,
+      });
     } else if (action === "reject") {
       await rejectRedemption(id, session.user.id);
+      logAudit({
+        actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
+        action: "redemption_reject", entityType: "redemption", entityId: id,
+      });
     } else {
       return NextResponse.json({ error: "Invalid action." }, { status: 400 });
     }

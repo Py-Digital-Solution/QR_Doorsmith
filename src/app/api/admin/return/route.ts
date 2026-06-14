@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { processQrReturn } from "@/services/khati";
+import { logAudit } from "@/services/audit";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,10 @@ export async function POST(req: Request) {
   try {
     // adminOverride: book the return against the product's own counter, no ownership check.
     const result = await processQrReturn(session.user.id, serialNo, { adminOverride: true });
+    logAudit({
+      actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
+      action: "return_create", entityType: "qrCode", meta: { serialNo, sku: result.sku, pointsReversed: result.pointsReversed, khatiName: result.khatiName, adminOverride: true },
+    });
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     return NextResponse.json(

@@ -1,0 +1,192 @@
+import { auth } from "@/auth";
+import Link from "next/link";
+import { connectDB } from "@/db/mongoose";
+import { User } from "@/models/User";
+import { parsePageParams } from "@/lib/pagination";
+import { listPointTransactions, summarizePointTransactions, ledgerTypeLabel } from "@/services/ledger";
+import type { PtType } from "@/models/PointTransaction";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatCard } from "@/components/ui/StatCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/Pagination";
+
+const TYPES: PtType[] = [
+  "scan_product",
+  "scan_small_box",
+  "return_reversal",
+  "redemption_lock",
+  "manual_adjustment",
+];
+
+const TYPE_TONE: Record<string, string> = {
+  scan_product: "bg-green-50 text-green-700 ring-green-600/20",
+  scan_small_box: "bg-green-50 text-green-700 ring-green-600/20",
+  return_reversal: "bg-red-50 text-red-600 ring-red-200",
+  redemption_lock: "bg-brand-light text-brand-dark ring-brand/20",
+  redemption_unlock: "bg-blue-50 text-blue-600 ring-blue-200",
+  manual_adjustment: "bg-gray-100 text-gray-600 ring-gray-300",
+};
+
+async function getNetworkKhatiIds(salesId: string): Promise<string[]> {
+  await connectDB();
+  const counters = await User.find({ role: "counter", createdBy: salesId }).select("_id").lean();
+  const counterIdStrs = counters.map((c) => String(c._id));
+  if (counterIdStrs.length === 0) return [];
+  const khatis = await User.find({ role: "khati", createdBy: { $in: counterIdStrs } }).select("_id").lean();
+  return khatis.map((k) => String(k._id));
+}
+
+export default async function SalesLedgerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string; type?: string }>;
+}) {
+  const session = await auth();
+  const sp = await searchParams;
+  const pagination = parsePageParams(sp);
+  const q = sp.q ?? "";
+  const type = (TYPES.includes(sp.type as PtType) ? sp.type : undefined) as PtType | undefined;
+
+  const khatiIds = await getNetworkKhatiIds(session!.user.id);
+
+  const filter = { khatiIds, search: q || undefined, type };
+  const [page, summary] = await Promise.all([
+    listPointTransactions(filter, pagination),
+    summarizePointTransactions(filter),
+  ]);
+
+  const baseParams = new URLSearchParams();
+  if (q) baseParams.set("q", q);
+  if (type) baseParams.set("type", type);
+  baseParams.set("pageSize", String(pagination.pageSize));
+  const basePath = `/sales/ledger?${baseParams.toString()}`;
+
+  function pillHref(t?: PtType) {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (t) p.set("type", t);
+    return `/sales/ledger?${p.toString()}`;
+  }
+
+  if (khatiIds.length === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Points Ledger" description="Point movements across your network's khatis." />
+        <EmptyState
+          icon="receipt"
+          title="No khatis in your network"
+          description="Create counters and khatis to see point transactions here."
+          action={<Link href="/sales" className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">Manage Counters</Link>}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Points Ledger"
+        description="Every point movement across your network — scans, returns, and redemptions."
+      />
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard label="Points Earned" value={summary.totalEarned} icon="trending-up" tone="green" />
+        <StatCard label="Points Deducted" value={summary.totalDeducted} icon="undo" tone="red" />
+        <StatCard label="Net Points" value={summary.net} icon="coins" tone="brand" />
+        <StatCard label="Total Entries" value={summary.entryCount} icon="receipt" tone="blue" />
+      </div>
+
+      {/* Filters */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={pillHref(undefined)}
+            className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${
+              !type ? "bg-brand text-white ring-brand" : "bg-white text-gray-600 ring-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            All
+          </Link>
+          {TYPES.map((t) => (
+            <Link
+              key={t}
+              href={pillHref(t)}
+              className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${
+                type === t ? "bg-brand text-white ring-brand" : "bg-white text-gray-600 ring-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              {ledgerTypeLabel(t)}
+            </Link>
+          ))}
+        </div>
+
+        <form method="get" className="flex gap-2">
+          {type && <input type="hidden" name="type" value={type} />}
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="Search by serial no. or SKU…"
+            className="min-w-[180px] flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+          >
+            Search
+          </button>
+        </form>
+      </div>
+
+      {/* Table */}
+      {page.items.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-white shadow-card">
+          <EmptyState icon="receipt" title="No transactions" description="No point movements match these filters yet." />
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-card">
+          <table className="min-w-full text-sm">
+            <thead className="border-b border-gray-100 bg-gray-50/50">
+              <tr className="text-left text-xs font-semibold uppercase text-gray-500">
+                <th className="px-4 py-2.5">Khati</th>
+                <th className="px-4 py-2.5">Type</th>
+                <th className="px-4 py-2.5">Detail</th>
+                <th className="px-4 py-2.5 text-right">Points</th>
+                <th className="px-4 py-2.5 text-right">Balance</th>
+                <th className="px-4 py-2.5 text-right">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {page.items.map((e) => (
+                <tr key={e.id} className="hover:bg-gray-50/50">
+                  <td className="px-4 py-2.5 font-medium text-gray-900">{e.khatiName}</td>
+                  <td className="px-4 py-2.5">
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${TYPE_TONE[e.type] ?? TYPE_TONE.manual_adjustment}`}>
+                      {ledgerTypeLabel(e.type)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-gray-500">
+                    {e.serialNo ? <span className="font-mono text-xs">{e.serialNo}</span> : e.description || "—"}
+                  </td>
+                  <td className={`px-4 py-2.5 text-right font-bold ${e.points >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {e.points >= 0 ? `+${e.points}` : e.points}
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-gray-600">{e.balanceAfter}</td>
+                  <td className="px-4 py-2.5 text-right text-xs text-gray-400">{e.createdAt.slice(0, 16).replace("T", " ")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Pagination
+        page={page.page}
+        pageCount={page.pageCount}
+        total={page.total}
+        pageSize={page.pageSize}
+        basePath={basePath}
+      />
+    </div>
+  );
+}

@@ -6,6 +6,8 @@ const TONES = {
   brand: "bg-brand-light text-brand-dark",
   green: "bg-green-50 text-green-600",
   blue: "bg-blue-50 text-blue-600",
+  yellow: "bg-yellow-50 text-yellow-600",
+  red: "bg-red-50 text-red-600",
 } as const;
 
 export function StatCard({
