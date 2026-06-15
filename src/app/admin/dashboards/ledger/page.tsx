@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/Pagination";
+import { LedgerTable } from "@/components/LedgerTable";
 
 const TYPES: PtType[] = [
   "scan_product",
@@ -14,15 +15,6 @@ const TYPES: PtType[] = [
   "redemption_lock",
   "manual_adjustment",
 ];
-
-const TYPE_TONE: Record<string, string> = {
-  scan_product: "bg-green-50 text-green-700 ring-green-600/20",
-  scan_small_box: "bg-green-50 text-green-700 ring-green-600/20",
-  return_reversal: "bg-red-50 text-red-600 ring-red-200",
-  redemption_lock: "bg-brand-light text-brand-dark ring-brand/20",
-  redemption_unlock: "bg-blue-50 text-blue-600 ring-blue-200",
-  manual_adjustment: "bg-gray-100 text-gray-600 ring-gray-300",
-};
 
 export default async function LedgerDashboard({
   searchParams,
@@ -115,40 +107,7 @@ export default async function LedgerDashboard({
           <EmptyState icon="receipt" title="No transactions" description="No point movements match these filters yet." />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-card">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50/50">
-              <tr className="text-left text-xs font-semibold uppercase text-gray-500">
-                <th className="px-4 py-2.5">Khati</th>
-                <th className="px-4 py-2.5">Type</th>
-                <th className="px-4 py-2.5">Detail</th>
-                <th className="px-4 py-2.5 text-right">Points</th>
-                <th className="px-4 py-2.5 text-right">Balance</th>
-                <th className="px-4 py-2.5 text-right">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {page.items.map((e) => (
-                <tr key={e.id} className="hover:bg-gray-50/50">
-                  <td className="px-4 py-2.5 font-medium text-gray-900">{e.khatiName}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${TYPE_TONE[e.type] ?? TYPE_TONE.manual_adjustment}`}>
-                      {ledgerTypeLabel(e.type)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-500">
-                    {e.serialNo ? <span className="font-mono text-xs">{e.serialNo}</span> : e.description || "—"}
-                  </td>
-                  <td className={`px-4 py-2.5 text-right font-bold ${e.points >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {e.points >= 0 ? `+${e.points}` : e.points}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-gray-600">{e.balanceAfter}</td>
-                  <td className="px-4 py-2.5 text-right text-xs text-gray-400">{e.createdAt.slice(0, 16).replace("T", " ")}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <LedgerTable items={page.items} />
       )}
 
       <Pagination
