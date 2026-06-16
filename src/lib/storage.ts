@@ -1,4 +1,5 @@
 import "server-only";
+import { Readable } from "stream";
 import * as Minio from "minio";
 import { env } from "@/lib/env";
 
@@ -21,21 +22,12 @@ function getClient(): Minio.Client {
 async function ensureBucket(client: Minio.Client) {
   const exists = await client.bucketExists(BUCKET).catch(() => false);
   if (!exists) await client.makeBucket(BUCKET);
-  // Allow public read of avatars so <img> can load them directly.
-  const policy = JSON.stringify({
-    Version: "2012-10-17",
-    Statement: [
-      {
-        Effect: "Allow",
-        Principal: { AWS: ["*"] },
-        Action: ["s3:GetObject"],
-        Resource: [`arn:aws:s3:::${BUCKET}/avatars/*`],
-      },
-    ],
-  });
-  await client.setBucketPolicy(BUCKET, policy).catch(() => {});
 }
 
+/**
+ * Upload a file to MinIO and return the object key (not a URL).
+ * The key is stored in the DB; the browser accesses it via /api/files/[key].
+ */
 export async function uploadAvatar(
   userId: string,
   buffer: Buffer,
@@ -48,5 +40,40 @@ export async function uploadAvatar(
   await client.putObject(BUCKET, key, buffer, buffer.length, {
     "Content-Type": contentType,
   });
-  return `${env.S3_ENDPOINT!.replace(/\/$/, "")}/${BUCKET}/${key}`;
+  return key;
+}
+
+/** Stream an object from MinIO — used by the /api/files proxy route. */
+export async function getObjectStream(
+  key: string,
+): Promise<{ stream: ReadableStream; contentType: string }> {
+  const client = getClient();
+  const [nodeStream, stat] = await Promise.all([
+    client.getObject(BUCKET, key),
+    client.statObject(BUCKET, key).catch(() => null),
+  ]);
+  const contentType =
+    (stat?.metaData?.["content-type"] as string | undefined) ??
+    "application/octet-stream";
+  return { stream: Readable.toWeb(nodeStream) as ReadableStream, contentType };
+}
+
+/**
+ * Convert whatever is stored in the DB (object key or legacy full URL) to a
+ * browser-accessible proxy URL served through /api/files/[key].
+ */
+export function toPhotoUrl(stored: string | undefined | null): string {
+  if (!stored) return "";
+  // Legacy records store the full MinIO URL — extract just the key portion.
+  if (stored.startsWith("http")) {
+    try {
+      const parts = new URL(stored).pathname.split("/").filter(Boolean);
+      // pathname: /bucket/avatars/... → drop the bucket segment
+      const key = parts.slice(1).join("/");
+      return key ? `/api/files/${key}` : "";
+    } catch {
+      return "";
+    }
+  }
+  return `/api/files/${stored}`;
 }

@@ -25,7 +25,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function KycCard({ khati, showStatus }: { khati: PendingKhatiDTO; showStatus?: boolean }) {
+export function KycCard({ khati, showStatus, readOnly }: { khati: PendingKhatiDTO; showStatus?: boolean; readOnly?: boolean }) {
   const [viewOpen, setViewOpen] = useState(false);
 
   return (
@@ -68,9 +68,11 @@ export function KycCard({ khati, showStatus }: { khati: PendingKhatiDTO; showSta
             View
           </button>
         </div>
-        <div className="mt-4 border-t border-gray-100 pt-4">
-          <KycActions khatiId={khati.id} khatiName={khati.name} />
-        </div>
+        {!readOnly && (
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <KycActions khatiId={khati.id} khatiName={khati.name} />
+          </div>
+        )}
       </div>
 
       <SlideOver open={viewOpen} onClose={() => setViewOpen(false)} title="Khati Details">

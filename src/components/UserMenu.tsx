@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOutStaff } from "@/actions/auth";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
 import { Avatar } from "./Avatar";
 import type { UserRole } from "@/lib/roles";
@@ -69,13 +69,15 @@ export function UserMenu({
               </Link>
             )}
             <div className="my-1 border-t border-gray-100" />
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
-            >
-              <LogOut className="size-4" aria-hidden />
-              Sign out
-            </button>
+            <form action={signOutStaff}>
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
+              >
+                <LogOut className="size-4" aria-hidden />
+                Sign out
+              </button>
+            </form>
           </div>
         </>
       )}

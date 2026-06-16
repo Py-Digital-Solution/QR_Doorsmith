@@ -48,6 +48,8 @@ const userSchema = new Schema(
     },
     // One-time token included in the WhatsApp registration link; cleared on approval
     registrationToken: { type: String, sparse: true, unique: true },
+    // Human-readable role-scoped ID (e.g. KH-0001, SR-0001, CN-0001)
+    displayId: { type: String, unique: true, sparse: true },
   },
   { timestamps: true },
 );

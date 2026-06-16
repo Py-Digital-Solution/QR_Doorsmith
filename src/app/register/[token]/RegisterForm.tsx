@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Label } from "@/components/ui/Field";
-import { Camera, CheckCircle2, ImagePlus, X } from "lucide-react";
+import { Camera, CheckCircle2, X } from "lucide-react";
 
 export function RegisterForm({ token }: { token: string }) {
   const [state, action, pending] = useActionState<KycActionState, FormData>(
@@ -70,44 +70,21 @@ export function RegisterForm({ token }: { token: string }) {
                 <X className="size-3.5" />
               </button>
             </div>
-            <p className="text-xs text-gray-400">Tap × to remove and choose again</p>
+            <p className="text-xs text-gray-400">Tap × to retake</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {/* Upload from gallery */}
-            <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-5 transition-colors hover:border-brand hover:bg-brand-light active:scale-95">
-              <ImagePlus className="size-7 text-brand" />
-              <span className="text-center text-xs font-medium text-gray-600">
-                Upload photo
-              </span>
-              <span className="text-center text-[10px] text-gray-400">from gallery</span>
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) applyFile(file);
-                }}
-              />
-            </label>
-
-            {/* Take photo with camera */}
-            <button
-              type="button"
-              onClick={() => cameraInputRef.current?.click()}
-              className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-5 transition-colors hover:border-brand hover:bg-brand-light active:scale-95"
-            >
-              <Camera className="size-7 text-brand" />
-              <span className="text-center text-xs font-medium text-gray-600">
-                Take photo
-              </span>
-              <span className="text-center text-[10px] text-gray-400">using camera</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-6 transition-colors hover:border-brand hover:bg-brand-light active:scale-95"
+          >
+            <Camera className="size-8 text-brand" />
+            <span className="text-sm font-medium text-gray-700">Take photo</span>
+            <span className="text-xs text-gray-400">Opens your camera</span>
+          </button>
         )}
 
-        {/* Hidden input for camera capture */}
+        {/* Camera capture input */}
         <input
           ref={cameraInputRef}
           type="file"

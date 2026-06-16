@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOutKhati } from "@/actions/auth";
 import {
   Home,
   ScanLine,
@@ -25,6 +25,7 @@ import {
   Phone,
   Mail,
   PlayCircle,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { Sidebar } from "./Sidebar";
@@ -51,9 +52,11 @@ const TABS: { href: string; label: string; Icon: LucideIcon }[] = [
 export function KhatiShell({
   user,
   children,
+  banner,
 }: {
   user: { name?: string; email?: string; role: UserRole };
   children: ReactNode;
+  banner?: { image: string; enabled: boolean } | null;
 }) {
   const pathname = usePathname() ?? "";
   const [moreOpen, setMoreOpen] = useState(false);
@@ -61,6 +64,10 @@ export function KhatiShell({
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
+  const bannerKey = banner?.image
+    ? `khati_banner_${banner.image.length}_${banner.image.slice(-12)}`
+    : null;
 
   useEffect(() => {
     const standalone =
@@ -78,6 +85,17 @@ export function KhatiShell({
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
+
+  useEffect(() => {
+    if (!bannerKey) { setShowBanner(false); return; }
+    const dismissed = localStorage.getItem(bannerKey);
+    setShowBanner(!dismissed);
+  }, [bannerKey]);
+
+  function dismissBanner() {
+    if (bannerKey) localStorage.setItem(bannerKey, "1");
+    setShowBanner(false);
+  }
 
   async function installApp() {
     if (!installPrompt) return;
@@ -114,6 +132,28 @@ export function KhatiShell({
         {/* ── Page content ───────────────────────────────────────────────── */}
         {/* pb-24 on mobile gives room for the fixed bottom nav */}
         <main className="flex-1 overflow-y-auto">
+          {/* Promotional banner — floats at top of content, dismissible per-device */}
+          {showBanner && banner?.image && (
+            <div className="sticky top-0 z-20 w-full">
+              <div className="relative overflow-hidden shadow-overlay">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={banner.image}
+                  alt="Announcement"
+                  className="max-h-52 w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={dismissBanner}
+                  className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+                  aria-label="Dismiss banner"
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mx-auto w-full max-w-6xl p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}
           </div>
@@ -231,11 +271,13 @@ export function KhatiShell({
 
                   <div className="mx-5 my-1 border-t border-gray-100" />
 
-                  <button onClick={() => signOut({ callbackUrl: "/login/khati" })}
-                    className="flex w-full items-center gap-3 px-5 py-3.5 text-sm text-red-500 transition-colors hover:bg-red-50">
-                    <LogOut className="size-5" aria-hidden />
-                    <span className="font-medium">Sign Out</span>
-                  </button>
+                  <form action={signOutKhati}>
+                    <button type="submit"
+                      className="flex w-full items-center gap-3 px-5 py-3.5 text-sm text-red-500 transition-colors hover:bg-red-50">
+                      <LogOut className="size-5" aria-hidden />
+                      <span className="font-medium">Sign Out</span>
+                    </button>
+                  </form>
                 </div>
                 <div className="pb-6" />
               </>

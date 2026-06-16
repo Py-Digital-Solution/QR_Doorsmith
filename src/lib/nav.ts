@@ -21,7 +21,6 @@ export const NAV: Record<UserRole, NavItem[]> = {
     { href: "/sales/dashboard", label: "Overview", icon: "dashboard" },
     { href: "/sales/ledger", label: "Points Ledger", icon: "receipt" },
     { href: "/sales", label: "Counters", icon: "store" },
-    { href: "/approvals", label: "Approvals", icon: "user-check" },
   ],
   distributor: [
     { href: "/sales/dashboard", label: "Overview", icon: "dashboard" },

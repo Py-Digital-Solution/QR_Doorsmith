@@ -27,8 +27,9 @@ function DevLoginForm() {
     e.preventDefault();
     setError(null);
     setPending(true);
+    const normalized = phone.trim().startsWith("+") ? phone.trim() : `+91${phone.trim().replace(/\D/g, "")}`;
     const res = await signIn("khati-otp", {
-      phone: phone.trim(),
+      phone: normalized,
       code: code.trim(),
       redirect: false,
     });
@@ -50,13 +51,20 @@ function DevLoginForm() {
         <form onSubmit={(e) => { e.preventDefault(); setStep("otp"); }} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Phone number</label>
-            <Input
-              type="tel"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
-            />
+            <div className="flex">
+              <span className="flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500 select-none">+91</span>
+              <Input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                placeholder="98765 43210"
+                autoComplete="tel"
+                className="rounded-l-none"
+              />
+            </div>
           </div>
           <Button type="submit" fullWidth>
             Continue
@@ -64,7 +72,7 @@ function DevLoginForm() {
         </form>
       ) : (
         <form onSubmit={submit} className="space-y-4">
-          <p className="text-sm text-gray-500">Signing in as {phone}</p>
+          <p className="text-sm text-gray-500">Signing in as +91{phone}</p>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">OTP code</label>
             <Input
@@ -123,8 +131,7 @@ function FirebaseLoginForm() {
     setSending(true);
     try {
       const auth = getFirebaseAuth();
-      const normalized = trimmed.startsWith("+") ? trimmed : `+91${trimmed}`;
-      const result = await signInWithPhoneNumber(auth, normalized, recaptchaRef.current!);
+      const result = await signInWithPhoneNumber(auth, `+91${phone}`, recaptchaRef.current!);
       confirmationRef.current = result;
       setStep("otp");
     } catch (err: unknown) {
@@ -176,15 +183,20 @@ function FirebaseLoginForm() {
         <form onSubmit={sendOtp} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Phone number</label>
-            <Input
-              type="tel"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98765 43210"
-              autoComplete="tel"
-            />
-            <p className="mt-1 text-xs text-gray-400">Include country code e.g. +91 for India</p>
+            <div className="flex">
+              <span className="flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500 select-none">+91</span>
+              <Input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                placeholder="98765 43210"
+                autoComplete="tel"
+                className="rounded-l-none"
+              />
+            </div>
           </div>
           {error && <Alert variant="error">{error}</Alert>}
           <Button type="submit" loading={sending} fullWidth>
@@ -194,7 +206,7 @@ function FirebaseLoginForm() {
       )}
       {step === "otp" && (
         <form onSubmit={verifyOtp} className="space-y-4">
-          <Alert variant="success">OTP sent to {phone}. Enter the 6-digit code.</Alert>
+          <Alert variant="success">OTP sent to +91{phone}. Enter the 6-digit code.</Alert>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">6-digit code</label>
             <Input

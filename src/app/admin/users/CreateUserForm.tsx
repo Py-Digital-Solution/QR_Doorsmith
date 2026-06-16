@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
+const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: "Admin",
   sales_rep: "Sales Rep",
@@ -39,6 +41,7 @@ export function CreateUserForm({
   );
 
   const [role, setRole] = useState<UserRole>(allowedRoles[0]);
+  const [khatiPhone, setKhatiPhone] = useState("");
   const [phone, setPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("idle");
@@ -92,7 +95,7 @@ export function CreateUserForm({
       });
       // Explicitly render and wait for reCAPTCHA to be ready before sending
       await recaptchaRef.current.render();
-      const e164 = phone.startsWith("+") ? phone : `+91${phone.replace(/\D/g, "")}`;
+      const e164 = `+91${phone}`;
       confirmationRef.current = await signInWithPhoneNumber(auth, e164, recaptchaRef.current);
       setPhoneStep("awaiting_code");
     } catch (err) {
@@ -154,7 +157,21 @@ export function CreateUserForm({
           <>
             <div>
               <Label>Phone</Label>
-              <Input name="phone" type="tel" required placeholder="+91 98765 43210" />
+              <input type="hidden" name="phone" value={khatiPhone.length > 0 ? `+91${khatiPhone}` : ""} />
+              <div className="flex">
+                <span className="flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500 select-none">+91</span>
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  required
+                  value={khatiPhone}
+                  onChange={(e) => setKhatiPhone(e.target.value.replace(/\D/g, ""))}
+                  placeholder="98765 43210"
+                  autoComplete="tel"
+                  className="rounded-l-none"
+                />
+              </div>
             </div>
 
             {counters && counters.length > 0 && (
@@ -188,17 +205,22 @@ export function CreateUserForm({
               <Label>Phone number <span className="text-xs font-normal text-gray-400">(optional)</span></Label>
 
               {/* Phone input row */}
+              <input type="hidden" name="phone" value={phone.length > 0 ? `+91${phone}` : ""} />
               <div className="flex gap-2">
-                <Input
-                  name="phone"
-                  type="tel"
-                  className="flex-1"
-                  placeholder="+91 98765 43210"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={phoneStep === "verified"}
-                />
-                {phoneEntered && phoneStep === "idle" && (
+                <div className="flex flex-1">
+                  <span className="flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500 select-none">+91</span>
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    className="flex-1 rounded-l-none"
+                    placeholder="98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                    disabled={phoneStep === "verified"}
+                  />
+                </div>
+                {FIREBASE_CONFIGURED && phoneEntered && phoneStep === "idle" && (
                   <Button
                     type="button"
                     variant="secondary"
@@ -222,10 +244,10 @@ export function CreateUserForm({
 
               {phoneError && <Alert variant="error">{phoneError}</Alert>}
 
-              {/* OTP entry */}
-              {(phoneStep === "awaiting_code" || phoneStep === "verifying") && (
+              {/* OTP entry — only shown when Firebase is configured */}
+              {FIREBASE_CONFIGURED && (phoneStep === "awaiting_code" || phoneStep === "verifying") && (
                 <div className="space-y-2">
-                  <Label>Enter OTP sent to {phone}</Label>
+                  <Label>Enter OTP sent to +91{phone}</Label>
                   <div className="flex gap-2">
                     <Input
                       type="text"
@@ -256,12 +278,6 @@ export function CreateUserForm({
                   </button>
                 </div>
               )}
-
-              {phoneStep === "idle" && !phoneEntered && (
-                <p className="text-xs text-gray-400">
-                  Enter a phone number to verify via Firebase SMS OTP.
-                </p>
-              )}
             </div>
           </>
         )}
@@ -272,13 +288,13 @@ export function CreateUserForm({
           type="submit"
           loading={createPending}
           fullWidth
-          // Block submit if phone is entered but not yet verified
-          disabled={!isKhati && phoneEntered && phoneStep !== "verified"}
+          // Block submit if Firebase is configured, phone entered, but not yet verified
+          disabled={FIREBASE_CONFIGURED && !isKhati && phoneEntered && phoneStep !== "verified"}
         >
           {createPending ? "Creating…" : "Create user"}
         </Button>
 
-        {!isKhati && phoneEntered && phoneStep !== "verified" && (
+        {FIREBASE_CONFIGURED && !isKhati && phoneEntered && phoneStep !== "verified" && (
           <p className="text-center text-xs text-amber-600">
             Verify the phone number before creating the user.
           </p>

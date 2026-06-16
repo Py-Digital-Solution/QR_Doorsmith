@@ -3,6 +3,7 @@ import { connectDB } from "@/db/mongoose";
 import { User } from "@/models/User";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import type { UserRole } from "@/lib/roles";
+import { toPhotoUrl } from "@/lib/storage";
 
 export type MyProfile = {
   id: string;
@@ -25,7 +26,7 @@ export async function getMyProfile(id: string): Promise<MyProfile | null> {
     email: u.email ?? "",
     phone: u.phone ?? "",
     status: String(u.status),
-    photoUrl: u.photoUrl ?? "",
+    photoUrl: toPhotoUrl(u.photoUrl),
   };
 }
 

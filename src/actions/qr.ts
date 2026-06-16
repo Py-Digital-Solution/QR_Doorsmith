@@ -101,8 +101,10 @@ export async function generateBatchAction(
   if (session?.user?.role !== "admin") return { error: "Not authorized." };
 
   try {
+    const productId = String(formData.get("productId") ?? "").trim();
+    if (!productId) return { error: "Please select a product." };
     const res = await generateBatch({
-      productId: String(formData.get("productId") ?? ""),
+      productId,
       createdBy: session.user.id,
       masterCount: Number(formData.get("masterCount") ?? 0),
       smallPerMaster: Number(formData.get("smallPerMaster") ?? 0),

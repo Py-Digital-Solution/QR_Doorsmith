@@ -85,7 +85,7 @@ export default async function SalesLedgerPage({
         <StatCard label="Points Earned" value={summary.totalEarned} icon="trending-up" tone="green" />
         <StatCard label="Points Deducted" value={summary.totalDeducted} icon="undo" tone="red" />
         <StatCard label="Net Points" value={summary.net} icon="coins" tone="brand" />
-        <StatCard label="Total Entries" value={summary.entryCount} icon="receipt" tone="blue" />
+        <StatCard label="Total Entries" value={summary.entryCount} icon="indian-rupee" tone="blue" />
       </div>
 
       {/* Filters */}

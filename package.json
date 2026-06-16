@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx src/db/seed.ts",
     "db:indexes": "tsx src/db/sync-indexes.ts",
-    "db:create-admin": "tsx src/db/create-admin.ts"
+    "db:create-admin": "tsx src/db/create-admin.ts",
+    "db:migrate-display-ids": "tsx src/db/migrate-display-ids.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

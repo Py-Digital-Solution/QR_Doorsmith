@@ -6,6 +6,7 @@ import { hashPassword } from "@/lib/password";
 import { canCreate } from "@/lib/rbac";
 import { isDuplicateKeyError } from "@/lib/db-errors";
 import { isDistributorEnabled } from "@/services/settings";
+import { Sequence } from "@/models/Sequence";
 import { waSend } from "@/services/whatsapp";
 import {
   DEFAULT_PAGE_SIZE,
@@ -13,6 +14,26 @@ import {
   type Pagination,
   type Paginated,
 } from "@/lib/pagination";
+import { normalizePhone } from "@/lib/phone";
+import { toPhotoUrl } from "@/lib/storage";
+
+const ROLE_PREFIX: Record<string, string> = {
+  khati: "KH",
+  sales_rep: "SR",
+  counter: "CN",
+  admin: "AD",
+  distributor: "DT",
+};
+
+async function nextDisplayId(role: string): Promise<string> {
+  const prefix = ROLE_PREFIX[role] ?? "US";
+  const seq = await Sequence.findByIdAndUpdate(
+    `user_id_${role}`,
+    { $inc: { value: 1 } },
+    { upsert: true, new: true },
+  );
+  return `${prefix}-${String(seq!.value).padStart(4, "0")}`;
+}
 
 /**
  * An actor may manage a target user if they are an admin, or if they created
@@ -25,15 +46,6 @@ function canManageTarget(
 ): boolean {
   if (actorRole === "admin") return true;
   return String(target.createdBy ?? "") === actorId;
-}
-
-function normalizePhone(phone: string): string {
-  const trimmed = phone.trim();
-  if (trimmed.startsWith("+")) return trimmed;
-  const digits = trimmed.replace(/\D/g, "");
-  if (digits.length === 10) return `+91${digits}`;
-  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
-  return trimmed;
 }
 
 export type CreateUserInput = {
@@ -68,11 +80,14 @@ export async function createUser(input: CreateUserInput) {
     throw new Error("The Distributor role is disabled. Enable it in Settings first.");
   }
 
+  const displayId = await nextDisplayId(input.role);
+
   const base = {
     role: input.role,
     name: input.name.trim(),
     status: "active" as const,
     createdBy: input.actorId,
+    displayId,
   };
 
   if (input.role === "khati") {
@@ -87,7 +102,10 @@ export async function createUser(input: CreateUserInput) {
     if (existing) throw new Error("A user with this phone already exists.");
     try {
       const registrationToken = randomBytes(24).toString("base64url");
-      const newKhati = await User.create({ ...base, phone, counterId, registrationToken, status: "pending" });
+      // Admin-created khatis are active immediately; counter-created khatis
+      // stay pending until they complete registration via the WhatsApp link.
+      const khatiStatus = input.actorRole === "admin" ? ("active" as const) : ("pending" as const);
+      const newKhati = await User.create({ ...base, phone, counterId, registrationToken, status: khatiStatus });
       const { headers } = await import("next/headers");
       const hdrs = await headers();
       const proto = hdrs.get("x-forwarded-proto") ?? "https";
@@ -124,6 +142,7 @@ export async function createUser(input: CreateUserInput) {
 
 export type UserDTO = {
   id: string;
+  displayId: string;
   role: UserRole;
   name: string;
   email: string;
@@ -157,7 +176,7 @@ export async function updateUser(input: UpdateUserInput) {
   if (input.status) target.status = input.status;
 
   if (target.role === "khati") {
-    if (input.phone) target.phone = input.phone.trim();
+    if (input.phone) target.phone = normalizePhone(input.phone);
   } else {
     if (input.email) target.email = input.email.trim().toLowerCase();
     if (input.password) target.passwordHash = await hashPassword(input.password);
@@ -207,12 +226,13 @@ export async function listUsers(
 
   const items: UserDTO[] = docs.map((d) => ({
     id: String(d._id),
+    displayId: (d as { displayId?: string }).displayId ?? "",
     role: d.role as UserRole,
     name: d.name ?? "",
     email: d.email ?? "",
     phone: d.phone ?? "",
     status: String(d.status),
-    photoUrl: d.photoUrl ?? undefined,
+    photoUrl: toPhotoUrl(d.photoUrl) || undefined,
     kycStatus: d.kycStatus ?? undefined,
     hasRegistrationToken: !!d.registrationToken,
   }));

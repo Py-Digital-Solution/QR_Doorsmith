@@ -17,56 +17,34 @@ export type QrStatus = (typeof QR_STATUSES)[number];
 export const QR_BATCH_STATUSES = ["in_warehouse", "active", "archived"] as const;
 export type QrBatchStatus = (typeof QR_BATCH_STATUSES)[number];
 
-/** "Door Knob" → "DK", "Main Door Lock" → "MDL" (max 4 letters). */
-export function productInitials(name: string): string {
-  const letters = name
-    .trim()
-    .split(/\s+/)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .filter(Boolean)
-    .join("");
-  return letters.slice(0, 4) || "XX";
-}
-
 function pad(n: number): string {
-  return String(n).padStart(2, "0");
+  return String(n).padStart(4, "0");
 }
 
-/** "MS-DK-02" */
-export function formatMasterSerial(initials: string, n: number): string {
-  return `MS-${initials}-${pad(n)}`;
+/** DS-MS-{SKU}-{N}  e.g. DS-MS-LR001-0001 */
+export function formatMasterSerial(sku: string, n: number): string {
+  return `DS-MS-${sku}-${pad(n)}`;
 }
 
-/** With master parent: "SM-MS02-DK-01". Standalone: "SM-DK-01". */
-export function formatSmallSerial(initials: string, n: number, masterN?: number): string {
-  return masterN != null
-    ? `SM-MS${pad(masterN)}-${initials}-${pad(n)}`
-    : `SM-${initials}-${pad(n)}`;
+/** DS-SM-{SKU}-{N}  e.g. DS-SM-LR001-0001 */
+export function formatSmallSerial(sku: string, n: number): string {
+  return `DS-SM-${sku}-${pad(n)}`;
 }
 
-/** Full: "PD-SM01-MS02-DK-01". Partial parents are dropped. */
-export function formatProductSerial(
-  initials: string,
-  n: number,
-  smallN?: number,
-  masterN?: number,
-): string {
-  const parts: string[] = ["PD"];
-  if (smallN != null) parts.push(`SM${pad(smallN)}`);
-  if (masterN != null) parts.push(`MS${pad(masterN)}`);
-  parts.push(initials, pad(n));
-  return parts.join("-");
+/** DS-PD-{SKU}-{N}  e.g. DS-PD-LR001-0001 */
+export function formatProductSerial(sku: string, n: number): string {
+  return `DS-PD-${sku}-${pad(n)}`;
 }
 
 /**
- * Infer QrType from a serial/query prefix.
- * "MS..." → "master", "SM..." → "small", "PD..." → "product".
+ * Infer QrType from a serial prefix.
+ * "DS-MS..." → "master", "DS-SM..." → "small", "DS-PD..." → "product".
  */
 export function inferTypeFromPrefix(q: string): QrType | undefined {
   const up = q.toUpperCase();
-  if (up.startsWith("MS")) return "master";
-  if (up.startsWith("SM")) return "small";
-  if (up.startsWith("PD")) return "product";
+  if (up.startsWith("DS-MS")) return "master";
+  if (up.startsWith("DS-SM")) return "small";
+  if (up.startsWith("DS-PD")) return "product";
   return undefined;
 }
 

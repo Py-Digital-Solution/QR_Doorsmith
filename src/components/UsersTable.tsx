@@ -44,7 +44,12 @@ export function UsersTable({
             badge={<Badge tone="brand">{u.role}</Badge>}
             actions={<UserActions user={u} isSelf={u.id === currentUserId} />}
           >
-            <p className="break-all text-gray-600">{u.email || u.phone || "—"}</p>
+            {u.displayId && (
+              <p className="font-mono text-xs text-gray-400">{u.displayId}</p>
+            )}
+            {u.email && <p className="break-all text-sm text-gray-600">{u.email}</p>}
+            {u.phone && <p className="text-sm text-gray-600">{u.phone}</p>}
+            {!u.email && !u.phone && <p className="text-sm text-gray-400">—</p>}
             <Badge tone={statusTone(u.status)}>{u.status}</Badge>
           </MobileCard>
         ))}
@@ -56,7 +61,8 @@ export function UsersTable({
           <THead>
             <TH>Name</TH>
             <TH>Role</TH>
-            <TH>Email / Phone</TH>
+            <TH>Email</TH>
+            <TH>Phone</TH>
             <TH>Status</TH>
             <TH align="right">Actions</TH>
           </THead>
@@ -71,8 +77,12 @@ export function UsersTable({
                 </TD>
                 <TD>
                   <Badge tone="brand">{u.role}</Badge>
+                  {u.displayId && (
+                    <p className="mt-0.5 font-mono text-xs text-gray-400">{u.displayId}</p>
+                  )}
                 </TD>
-                <TD className="text-gray-600">{u.email || u.phone || "—"}</TD>
+                <TD className="text-gray-600">{u.email || "—"}</TD>
+                <TD className="text-gray-600">{u.phone || "—"}</TD>
                 <TD>
                   <Badge tone={statusTone(u.status)}>{u.status}</Badge>
                 </TD>

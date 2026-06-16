@@ -1,6 +1,7 @@
 import "server-only";
 import { connectDB } from "@/db/mongoose";
 import { AuditLog, type AuditAction } from "@/models/AuditLog";
+import { User } from "@/models/User";
 
 export type AuditEntry = {
   actorId?: string;
@@ -56,10 +57,27 @@ export async function listAuditLogs(
     .limit(pageSize)
     .lean();
 
+  // Batch-resolve actor names for entries where the stored name is blank
+  const missingIds = [
+    ...new Set(
+      docs
+        .filter((d) => !d.actorName && d.actorId)
+        .map((d) => String(d.actorId)),
+    ),
+  ];
+  const nameMap: Record<string, string> = {};
+  if (missingIds.length > 0) {
+    const users = await User.find({ _id: { $in: missingIds } })
+      .select("name")
+      .lean();
+    for (const u of users) nameMap[String(u._id)] = String(u.name || "");
+  }
+
   return {
     items: docs.map((d) => ({
       id: String(d._id),
-      actorName: String(d.actorName ?? "System"),
+      actorName:
+        String(d.actorName || nameMap[String(d.actorId)] || "System"),
       actorRole: String(d.actorRole ?? ""),
       action: String(d.action),
       entityType: String(d.entityType ?? ""),

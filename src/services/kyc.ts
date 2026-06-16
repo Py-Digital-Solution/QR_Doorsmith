@@ -2,7 +2,7 @@ import "server-only";
 import { connectDB } from "@/db/mongoose";
 import { User } from "@/models/User";
 import { waSend } from "@/services/whatsapp";
-import { uploadAvatar } from "@/lib/storage";
+import { uploadAvatar, toPhotoUrl } from "@/lib/storage";
 
 export type KycStatus =
   | "not_submitted"
@@ -43,7 +43,7 @@ export async function getKhatiByToken(token: string): Promise<KhatiProfileDTO | 
     id: String(user._id),
     name: user.name ?? "",
     phone: user.phone ?? "",
-    photoUrl: user.photoUrl ?? undefined,
+    photoUrl: toPhotoUrl(user.photoUrl) || undefined,
     address: user.address ?? undefined,
     dob: user.dob ? new Date(user.dob as Date).toISOString().slice(0, 10) : undefined,
     kycStatus: (user.kycStatus as KycStatus) ?? "not_submitted",
@@ -64,7 +64,7 @@ export async function submitKhatiProfile(
   user.address = data.address.trim();
   user.dob = new Date(data.dob);
   if (data.email) user.email = data.email.toLowerCase();
-  user.kycStatus = "pending_counter";
+  user.kycStatus = "pending_admin";
 
   if (data.photoBuffer && data.photoContentType && data.photoExt) {
     try {
@@ -76,14 +76,14 @@ export async function submitKhatiProfile(
 
   await user.save();
 
-  // Notify counter
-  const counter = await User.findById(user.counterId).lean();
-  if (counter?.phone) {
+  // Notify admin
+  const admin = await User.findOne({ role: "admin" }).lean();
+  if (admin?.phone) {
     waSend(
-      counter.phone,
+      admin.phone,
       `🆕 *नई खाती पंजीकरण | New Khati Registration*\n\n*${user.name}* (${user.phone}) ने अपना प्रोफाइल जमा कर दिया है और आपकी मंजूरी का इंतज़ार कर रहे हैं।\n*${user.name}* has submitted their profile and is awaiting your approval.\n\nDoorSmith ऐप पर लॉग इन करें और मंजूरी दें।\nLog in to DoorSmith to review and approve.`,
       "kyc",
-    ).catch((err) => console.error("[kyc] Counter WA notify failed:", err));
+    ).catch((err) => console.error("[kyc] Admin WA notify failed:", err));
   }
 
   return { ok: true };
@@ -128,14 +128,25 @@ export async function listPendingForSalesRep(
   await connectDB();
   const counters = await User.find({ role: "counter", createdBy: salesRepId }).select("_id").lean();
   const counterIds = counters.map((c) => c._id);
-  return paginatedKyc({ role: "khati", counterId: { $in: counterIds }, kycStatus: "pending_sales_rep" }, opts);
+  // Sales rep has read-only view of all pending khatis in their counters.
+  return paginatedKyc({
+    role: "khati",
+    counterId: { $in: counterIds },
+    kycStatus: { $in: ["pending_counter", "pending_sales_rep", "pending_admin"] },
+  }, opts);
 }
 
 export async function listPendingForAdmin(
   opts: { page?: number; pageSize?: number; q?: string } = {},
 ): Promise<KycPage> {
   await connectDB();
-  return paginatedKyc({ role: "khati", kycStatus: "pending_admin" }, opts);
+  // Show all khatis who have submitted but aren't yet approved/rejected,
+  // regardless of which stage they're in (covers legacy pending_counter /
+  // pending_sales_rep records from the old multi-stage flow).
+  return paginatedKyc({
+    role: "khati",
+    kycStatus: { $in: ["pending_counter", "pending_sales_rep", "pending_admin"] },
+  }, opts);
 }
 
 export async function approveKyc(actorId: string, actorRole: string, khatiId: string): Promise<void> {
@@ -143,80 +154,22 @@ export async function approveKyc(actorId: string, actorRole: string, khatiId: st
   const khati = await User.findById(khatiId);
   if (!khati || khati.role !== "khati") throw new Error("Khati not found.");
 
-  if (actorRole === "counter") {
-    if (String(khati.counterId) !== actorId) throw new Error("Not authorized.");
-    if (khati.kycStatus !== "pending_counter") throw new Error("Already processed.");
+  if (actorRole !== "admin") throw new Error("Not authorized.");
+  const pendingStatuses = ["pending_counter", "pending_sales_rep", "pending_admin"];
+  if (!pendingStatuses.includes(khati.kycStatus as string)) throw new Error("Already processed.");
 
-    const counter = await User.findById(actorId).lean();
-    const salesRep = counter?.createdBy ? await User.findById(counter.createdBy).lean() : null;
-
-    if (!salesRep || salesRep.role === "admin") {
-      khati.kycStatus = "pending_admin";
-      // Notify khati — counter approved, waiting for admin
-      if (khati.phone) {
-        waSend(
-          khati.phone,
-          `✅ *काउंटर ने मंजूरी दी | Counter Approved*\n\nनमस्ते *${khati.name}*, आपके काउंटर ने आपका पंजीकरण मंजूर कर दिया है। अब यह एडमिन की अंतिम समीक्षा में है।\nHi *${khati.name}*, your counter has approved your registration. It is now under final admin review.\n\nहम जल्द ही आपको अपडेट करेंगे। 🙏\nWe will update you soon.`,
-          "kyc",
-        ).catch((err) => console.error("[kyc] Khati counter-approved WA failed:", err));
-      }
-      // Notify admin
-      const admin = salesRep?.role === "admin" ? salesRep : await User.findOne({ role: "admin" }).lean();
-      if (admin?.phone) {
-        waSend(
-          admin.phone,
-          `⏳ *अंतिम मंजूरी आवश्यक | Final Approval Required*\n\n*${khati.name}* (${khati.phone}) को काउंटर ने मंजूरी दे दी है। अब आपकी अंतिम मंजूरी की आवश्यकता है।\n*${khati.name}* has been approved by the counter and needs your final approval.\n\nDoorSmith ऐप पर लॉग इन करें।\nLog in to DoorSmith to give final approval.`,
-          "kyc",
-        ).catch((err) => console.error("[kyc] Admin WA notify failed:", err));
-      }
-    } else {
-      khati.kycStatus = "pending_sales_rep";
-      // Notify khati — counter approved, waiting for sales rep
-      if (khati.phone) {
-        waSend(
-          khati.phone,
-          `✅ *काउंटर ने मंजूरी दी | Counter Approved*\n\nनमस्ते *${khati.name}*, आपके काउंटर ने आपका पंजीकरण मंजूर कर दिया है। अब यह सेल्स टीम की समीक्षा में है।\nHi *${khati.name}*, your counter has approved your registration. It is now under sales team review.\n\nहम जल्द ही आपको अपडेट करेंगे। 🙏\nWe will update you soon.`,
-          "kyc",
-        ).catch((err) => console.error("[kyc] Khati counter-approved WA failed:", err));
-      }
-      // Notify sales rep
-      if (salesRep.phone) {
-        waSend(
-          salesRep.phone,
-          `✅ *खाती पंजीकरण समीक्षा | Khati Registration Review*\n\n*${khati.name}* (${khati.phone}) को काउंटर ने मंजूरी दे दी है। अब आपकी समीक्षा की आवश्यकता है।\n*${khati.name}* has been approved by the counter and needs your review now.\n\nDoorSmith ऐप पर लॉग इन करें और मंजूरी दें।\nLog in to DoorSmith to approve.`,
-          "kyc",
-        ).catch((err) => console.error("[kyc] Sales rep WA notify failed:", err));
-      }
-    }
-  } else if (actorRole === "sales_rep" || actorRole === "distributor") {
-    if (khati.kycStatus !== "pending_sales_rep") throw new Error("Already processed.");
-    khati.kycStatus = "approved";
-    khati.status = "active";
-    khati.registrationToken = undefined;
-    if (khati.phone) {
-      waSend(
-        khati.phone,
-        `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\nDoorSmith ऐप खोलें और लॉग इन करें — आपका खाती खाता तैयार है! 🚀\nOpen DoorSmith and log in — your khati account is ready!`,
-        "kyc",
-      ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
-    }
-  } else if (actorRole === "admin") {
-    if (khati.kycStatus !== "pending_admin") throw new Error("Already processed.");
-    khati.kycStatus = "approved";
-    khati.status = "active";
-    khati.registrationToken = undefined;
-    if (khati.phone) {
-      waSend(
-        khati.phone,
-        `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\nDoorSmith ऐप खोलें और लॉग इन करें — आपका खाती खाता तैयार है! 🚀\nOpen DoorSmith and log in — your khati account is ready!`,
-        "kyc",
-      ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
-    }
-  } else {
-    throw new Error("Not authorized.");
-  }
-
+  khati.kycStatus = "approved";
+  khati.status = "active";
+  khati.registrationToken = undefined;
   await khati.save();
+
+  if (khati.phone) {
+    waSend(
+      khati.phone,
+      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\nDoorSmith ऐप खोलें और लॉग इन करें — आपका खाती खाता तैयार है! 🚀\nOpen DoorSmith and log in — your khati account is ready!`,
+      "kyc",
+    ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
+  }
 }
 
 export async function rejectKyc(actorId: string, actorRole: string, khatiId: string, reason: string): Promise<void> {
@@ -224,15 +177,9 @@ export async function rejectKyc(actorId: string, actorRole: string, khatiId: str
   const khati = await User.findById(khatiId);
   if (!khati || khati.role !== "khati") throw new Error("Khati not found.");
 
-  const allowedStatuses: Record<string, KycStatus> = {
-    counter: "pending_counter",
-    sales_rep: "pending_sales_rep",
-    distributor: "pending_sales_rep",
-    admin: "pending_admin",
-  };
-
-  if (khati.kycStatus !== allowedStatuses[actorRole]) throw new Error("Not authorized to reject at this stage.");
-  if (actorRole === "counter" && String(khati.counterId) !== actorId) throw new Error("Not authorized.");
+  if (actorRole !== "admin") throw new Error("Not authorized.");
+  const pendingStatuses = ["pending_counter", "pending_sales_rep", "pending_admin"];
+  if (!pendingStatuses.includes(khati.kycStatus as string)) throw new Error("Not authorized to reject at this stage.");
 
   khati.kycStatus = "rejected";
   await khati.save();
@@ -251,7 +198,7 @@ function toDTO(d: Record<string, unknown>): PendingKhatiDTO {
     id: String(d._id),
     name: String(d.name ?? ""),
     phone: String(d.phone ?? ""),
-    photoUrl: d.photoUrl as string | undefined,
+    photoUrl: toPhotoUrl(d.photoUrl as string) || undefined,
     address: d.address as string | undefined,
     dob: d.dob ? new Date(d.dob as Date).toISOString().slice(0, 10) : undefined,
     kycStatus: (d.kycStatus as KycStatus) ?? "not_submitted",

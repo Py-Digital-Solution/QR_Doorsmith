@@ -69,7 +69,7 @@ export async function GET(
   }
 
   // Bill number block (right-aligned)
-  const billLabel = "Dispatch Bill / Delivery Note";
+  const billLabel = "Dispatch Receipt";
   const billLabelW = font.widthOfTextAtSize(billLabel, 9);
   text(billLabel, W - M - billLabelW, y, 9, font, gray);
 

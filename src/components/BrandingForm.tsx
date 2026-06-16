@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState, useId } from "react";
 import { Building2, Upload, X } from "lucide-react";
 import { saveBrandingAction, type BrandingState } from "@/actions/branding";
+import { displayPhone } from "@/lib/phone";
 import type { CompanyBranding } from "@/services/branding";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Field";
@@ -29,7 +30,7 @@ export function BrandingForm({ initial }: { initial: CompanyBranding }) {
   // Controlled so React 19 action submission doesn't wipe field values
   const [name, setName] = useState(initial.name);
   const [tagline, setTagline] = useState(initial.tagline);
-  const [phone, setPhone] = useState(initial.phone);
+  const [phone, setPhone] = useState(displayPhone(initial.phone ?? ""));
   const [email, setEmail] = useState(initial.email);
   const [website, setWebsite] = useState(initial.website);
   const [address, setAddress] = useState(initial.address);
@@ -148,13 +149,20 @@ export function BrandingForm({ initial }: { initial: CompanyBranding }) {
         </div>
         <div>
           <Label>Contact phone</Label>
-          <Input
-            name="company_phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+91 98765 43210"
-          />
+          <input type="hidden" name="company_phone" value={phone.length > 0 ? `+91${phone}` : ""} />
+          <div className="flex">
+            <span className="flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500 select-none">+91</span>
+            <Input
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+              placeholder="98765 43210"
+              autoComplete="tel"
+              className="rounded-l-none"
+            />
+          </div>
         </div>
         <div>
           <Label>Email</Label>

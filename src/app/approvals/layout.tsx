@@ -4,7 +4,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { NAV } from "@/lib/nav";
 
 export default async function ApprovalsLayout({ children }: { children: ReactNode }) {
-  const user = await requireRole(["admin", "sales_rep", "distributor"]);
+  const user = await requireRole(["admin", "distributor"]);
   return (
     <DashboardShell
       navItems={NAV[user.role]}

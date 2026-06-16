@@ -19,7 +19,7 @@ function BillLink({ id }: { id: string }) {
       rel="noopener noreferrer"
       className="focus-ring inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-brand-light"
     >
-      Bill PDF
+      Dispatch Receipt
     </a>
   );
 }
@@ -58,7 +58,7 @@ export function DispatchesTable({ dispatches }: { dispatches: DispatchDTO[] }) {
       <TableWrapper>
         <Table>
           <THead>
-            <TH>Bill</TH>
+            <TH>Receipt No</TH>
             <TH>Counter</TH>
             <TH align="right">Items</TH>
             <TH align="right">Codes</TH>

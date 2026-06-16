@@ -15,6 +15,26 @@ import { isDistributorEnabled } from "@/services/settings";
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    // Verify the user still exists in the database on every session read.
+    // The JWT may remain valid after a user is deleted, so we guard here
+    // where the Node runtime has Mongoose access.
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as UserRole;
+      }
+      if (token?.id) {
+        await connectDB();
+        const user = await User.findById(token.id).select("name").lean();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (!user) return null as any;
+        if (!session.user.name && user.name) session.user.name = user.name;
+      }
+      return session;
+    },
+  },
   providers: [
     Credentials({
       id: "staff",

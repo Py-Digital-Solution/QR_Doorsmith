@@ -123,9 +123,10 @@ export function UserActions({
           </div>
           <div className="space-y-0.5">
             <Detail label="Name" value={user.name} />
+            {user.displayId && <Detail label="ID" value={user.displayId} />}
             <Detail label="Role" value={user.role} />
             <Detail label="Email" value={user.email} />
-            <Detail label="Phone" value={user.phone} />
+            <Detail label="Phone" value={user.phone || "—"} />
             <div className="flex justify-between border-b border-gray-100 py-2.5 text-sm">
               <span className="text-gray-500">Status</span>
               <Badge tone={statusTone(user.status)}>{user.status}</Badge>

@@ -23,6 +23,7 @@ export function DispatchClient({
   const [results, setResults] = useState<CodeHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [scanning, setScanning] = useState(false);
   const [state, setState] = useState<ActionState>({});
   const [pending, setPending] = useState(false);
@@ -61,7 +62,7 @@ export function DispatchClient({
       clearTimeout(t);
       controller.abort();
     };
-  }, [query]);
+  }, [query, refreshKey]);
 
   // Close the dropdown on outside click.
   useEffect(() => {
@@ -76,8 +77,8 @@ export function DispatchClient({
 
   function pick(hit: CodeHit) {
     add(hit.serialNo);
-    setQuery("");
     setOpen(false);
+    setRefreshKey((k) => k + 1);
   }
 
   async function submit() {
@@ -200,13 +201,13 @@ export function DispatchClient({
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.ok && (
         <Alert variant="success">
-          Dispatched ✓ Bill {state.billNo} · {state.total} codes ·{" "}
+          Dispatched ✓ Receipt {state.billNo} · {state.total} codes ·{" "}
           <Link
             href={`/admin/dispatch/${state.dispatchId}/bill`}
             target="_blank"
             className="font-medium underline"
           >
-            Print bill
+            Print Dispatch Receipt
           </Link>
         </Alert>
       )}

@@ -38,7 +38,7 @@ export default async function DispatchPage({
       <div className="space-y-3">
         <h2 className="text-sm font-semibold">Recent dispatches</h2>
 
-        <FilterBar placeholder="Search by bill no…" exportType="dispatches" />
+        <FilterBar placeholder="Search by receipt no…" exportType="dispatches" />
 
         <DispatchesTable dispatches={result.items} />
 

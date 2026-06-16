@@ -6,7 +6,6 @@ import { QrBatch } from "@/models/QrBatch";
 import { QrCode, type QrCodeDoc } from "@/models/QrCode";
 import { Sequence } from "@/models/Sequence";
 import {
-  productInitials,
   formatMasterSerial,
   formatSmallSerial,
   formatProductSerial,
@@ -22,18 +21,12 @@ import {
 
 const MAX_BATCH = 5000; // safety ceiling (SOW targets ~2,000/day)
 
-/** Separate atomic sequence per type so each type numbers from 1 independently. */
-const TYPE_SEQ: Record<QrType, string> = {
-  master: "qr_serial_master",
-  small: "qr_serial_small",
-  product: "qr_serial_product",
-};
-
-/** Reserve a contiguous block of `count` serials for the given type; returns the start. */
-async function reserveSerials(type: QrType, count: number): Promise<number> {
+/** Reserve a contiguous block of `count` serials for the given type+SKU; returns the start. */
+async function reserveSerials(type: QrType, sku: string, count: number): Promise<number> {
   if (count === 0) return 0;
+  const key = `qr_serial_${type}_${sku}`;
   const doc = await Sequence.findByIdAndUpdate(
-    TYPE_SEQ[type],
+    key,
     { $inc: { value: count } },
     { upsert: true, returnDocument: "after" },
   ).lean();
@@ -89,13 +82,13 @@ export async function generateBatch(input: GenerateBatchInput) {
   const product = await Product.findById(input.productId);
   if (!product) throw new Error("Product not found.");
 
-  const initials = productInitials(product.name as string);
+  const sku = String(product.sku ?? "XX");
 
-  // Reserve separate serial ranges per type (each type counts independently).
+  // Reserve serial ranges per type, scoped to this product's SKU.
   const [masterStart, smallStart, productStart] = await Promise.all([
-    reserveSerials("master", totalMasters),
-    reserveSerials("small", totalSmalls),
-    reserveSerials("product", totalProducts),
+    reserveSerials("master", sku, totalMasters),
+    reserveSerials("small", sku, totalSmalls),
+    reserveSerials("product", sku, totalProducts),
   ]);
 
   // Top-level serial range stored on the batch (master → small → product priority).
@@ -140,16 +133,16 @@ export async function generateBatch(input: GenerateBatchInput) {
     for (let m = 0; m < totalMasters; m++) {
       const masterId = new Types.ObjectId();
       const mN = mSerial++;
-      docs.push({ _id: masterId, serialNo: formatMasterSerial(initials, mN), type: "master" as QrType, parentQrId: null, ...meta });
+      docs.push({ _id: masterId, serialNo: formatMasterSerial(sku, mN), type: "master" as QrType, parentQrId: null, ...meta });
 
       for (let s = 0; s < smallPerMaster; s++) {
         const smallId = new Types.ObjectId();
         const sN = sSerial++;
-        docs.push({ _id: smallId, serialNo: formatSmallSerial(initials, sN, mN), type: "small" as QrType, parentQrId: masterId, ...meta });
+        docs.push({ _id: smallId, serialNo: formatSmallSerial(sku, sN), type: "small" as QrType, parentQrId: masterId, ...meta });
 
         for (let p = 0; p < productPerSmall; p++) {
           const pN = pSerial++;
-          docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(initials, pN, sN, mN), type: "product" as QrType, parentQrId: smallId, ...meta });
+          docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(sku, pN), type: "product" as QrType, parentQrId: smallId, ...meta });
         }
       }
     }
@@ -158,18 +151,18 @@ export async function generateBatch(input: GenerateBatchInput) {
     for (let s = 0; s < totalSmalls; s++) {
       const smallId = new Types.ObjectId();
       const sN = sSerial++;
-      docs.push({ _id: smallId, serialNo: formatSmallSerial(initials, sN), type: "small" as QrType, parentQrId: null, ...meta });
+      docs.push({ _id: smallId, serialNo: formatSmallSerial(sku, sN), type: "small" as QrType, parentQrId: null, ...meta });
 
       for (let p = 0; p < productPerSmall; p++) {
         const pN = pSerial++;
-        docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(initials, pN, sN), type: "product" as QrType, parentQrId: smallId, ...meta });
+        docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(sku, pN), type: "product" as QrType, parentQrId: smallId, ...meta });
       }
     }
   } else {
     // Standalone products only.
     for (let p = 0; p < totalProducts; p++) {
       const pN = pSerial++;
-      docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(initials, pN), type: "product" as QrType, parentQrId: null, ...meta });
+      docs.push({ _id: new Types.ObjectId(), serialNo: formatProductSerial(sku, pN), type: "product" as QrType, parentQrId: null, ...meta });
     }
   }
 
@@ -204,14 +197,14 @@ export type BatchDTO = {
 
 /** Compute the formatted serial label for the batch's top-level range boundary. */
 function batchSerialLabel(
-  initials: string,
+  sku: string,
   n: number,
   masterCount: number,
   smallPerMaster: number,
 ): string {
-  if (masterCount > 0) return formatMasterSerial(initials, n);
-  if (smallPerMaster > 0) return formatSmallSerial(initials, n);
-  return formatProductSerial(initials, n);
+  if (masterCount > 0) return formatMasterSerial(sku, n);
+  if (smallPerMaster > 0) return formatSmallSerial(sku, n);
+  return formatProductSerial(sku, n);
 }
 
 /** Map of batchId → dispatched-code count, computed in a single aggregation. */
@@ -262,10 +255,10 @@ export async function listBatches(
     const prod = d.productId as { sku?: string; name?: string } | null;
     const mCount = d.masterCount ?? 0;
     const sCount = d.smallPerMaster ?? 0;
-    const initials = productInitials(prod?.name ?? "X");
+    const prodSku = prod?.sku ?? "XX";
     return {
       id: String(d._id),
-      productSku: prod?.sku ?? "—",
+      productSku: prodSku,
       productName: prod?.name ?? "",
       total: d.totalCodes,
       masterCount: mCount,
@@ -273,8 +266,8 @@ export async function listBatches(
       productPerSmall: d.productPerSmall ?? 0,
       serialStart: d.serialStart,
       serialEnd: d.serialEnd,
-      serialStartLabel: batchSerialLabel(initials, d.serialStart, mCount, sCount),
-      serialEndLabel: batchSerialLabel(initials, d.serialEnd, mCount, sCount),
+      serialStartLabel: batchSerialLabel(prodSku, d.serialStart, mCount, sCount),
+      serialEndLabel: batchSerialLabel(prodSku, d.serialEnd, mCount, sCount),
       status: String(d.status),
       createdAt: (d.createdAt as Date)?.toISOString() ?? "",
       dispatchedCount,
@@ -429,10 +422,10 @@ export async function getBatch(batchId: string): Promise<BatchDTO | null> {
   const prod = d.productId as { sku?: string; name?: string } | null;
   const mCount = d.masterCount ?? 0;
   const sCount = d.smallPerMaster ?? 0;
-  const initials = productInitials(prod?.name ?? "X");
+  const prodSku = prod?.sku ?? "XX";
   return {
     id: String(d._id),
-    productSku: prod?.sku ?? "—",
+    productSku: prodSku,
     productName: prod?.name ?? "",
     total: d.totalCodes,
     masterCount: mCount,
@@ -440,8 +433,8 @@ export async function getBatch(batchId: string): Promise<BatchDTO | null> {
     productPerSmall: d.productPerSmall ?? 0,
     serialStart: d.serialStart,
     serialEnd: d.serialEnd,
-    serialStartLabel: batchSerialLabel(initials, d.serialStart, mCount, sCount),
-    serialEndLabel: batchSerialLabel(initials, d.serialEnd, mCount, sCount),
+    serialStartLabel: batchSerialLabel(prodSku, d.serialStart, mCount, sCount),
+    serialEndLabel: batchSerialLabel(prodSku, d.serialEnd, mCount, sCount),
     status: String(d.status),
     createdAt: (d.createdAt as Date)?.toISOString() ?? "",
     dispatchedCount,

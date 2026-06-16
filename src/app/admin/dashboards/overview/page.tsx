@@ -41,9 +41,9 @@ async function getOverviewData() {
     QrCode.countDocuments({ status: "scanned", scannedAt: { $gte: todayStart } }),
     QrCode.countDocuments({ status: "scanned", scannedAt: { $gte: weekStart } }),
     QrCode.countDocuments({ status: "scanned", scannedAt: { $gte: monthStart } }),
-    // Points earned this week
+    // Points reversed this week (negative transactions — redemptions, returns)
     PointTransaction.aggregate([
-      { $match: { createdAt: { $gte: weekStart }, points: { $gt: 0 } } },
+      { $match: { createdAt: { $gte: weekStart }, points: { $lt: 0 } } },
       { $group: { _id: null, total: { $sum: "$points" } } },
     ]),
     User.countDocuments({ role: "khati", kycStatus: { $in: ["pending_counter", "pending_sales_rep", "pending_admin"] } }),
@@ -92,7 +92,7 @@ async function getOverviewData() {
   return {
     totalKhatis, activeKhatis, totalCounters, totalSalesReps,
     scansToday, scansWeek, scansMonth,
-    pointsWeek: pointsWeek[0]?.total ?? 0,
+    pointsWeek: Math.abs(pointsWeek[0]?.total ?? 0),
     pendingKyc, pendingRedemptions,
     returnsToday, returnsWeek,
     recentTransactions: recentTransactions.map((t: {
@@ -207,9 +207,9 @@ export default async function OverviewDashboard() {
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Points (7 days)</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Points Reversed (7 days)</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.pointsWeek}</p>
-              <p className="mt-1 text-xs text-gray-500">Distributed to {d.activeKhatis} active khatis</p>
+              <p className="mt-1 text-xs text-gray-500">Redeemed / returned across {d.activeKhatis} active khatis</p>
             </div>
             <span className="flex size-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
               <TrendingUp className="size-5" aria-hidden />
@@ -222,8 +222,8 @@ export default async function OverviewDashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Network Size</p>
-              <p className="mt-2 text-4xl font-bold text-gray-900">{d.totalKhatis}</p>
-              <p className="mt-1 text-xs text-gray-500">{d.activeKhatis} active · {d.totalCounters} counters · {d.totalSalesReps} reps</p>
+              <p className="mt-2 text-4xl font-bold text-gray-900">{d.totalKhatis + d.totalCounters + d.totalSalesReps}</p>
+              <p className="mt-1 text-xs text-gray-500">{d.totalKhatis} khatis · {d.totalCounters} counters · {d.totalSalesReps} reps</p>
             </div>
             <span className="flex size-10 items-center justify-center rounded-xl bg-brand-light text-brand-dark">
               <UsersIcon className="size-5" aria-hidden />

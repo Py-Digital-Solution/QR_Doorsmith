@@ -64,7 +64,8 @@ export function GenerateBatchForm({
     <form action={action} className="space-y-4">
       <div>
         <Label>Product</Label>
-        <Select name="productId" required>
+        <Select name="productId" required defaultValue="">
+          <option value="" disabled>Select a product…</option>
           {products.map((pr) => (
             <option key={pr.id} value={pr.id}>
               {pr.sku} — {pr.name}

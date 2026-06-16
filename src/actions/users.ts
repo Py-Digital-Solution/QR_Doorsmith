@@ -12,6 +12,7 @@ import { waSend } from "@/services/whatsapp";
 import { connectDB } from "@/db/mongoose";
 import { User } from "@/models/User";
 import type { UserRole, UserStatus } from "@/models/User";
+import { normalizePhone } from "@/lib/phone";
 
 export type ActionState = { error?: string; ok?: boolean };
 
@@ -33,10 +34,12 @@ export async function createUserAction(
   const email = String(formData.get("email") ?? "") || undefined;
   const password = String(formData.get("password") ?? "") || undefined;
   const name = String(formData.get("name") ?? "");
-  let phone = String(formData.get("phone") ?? "") || undefined;
+  const rawPhone = String(formData.get("phone") ?? "").trim();
+  let phone = rawPhone ? normalizePhone(rawPhone) : undefined;
 
-  // For staff with a phone: verify the Firebase ID token produced after OTP confirm
-  if (role !== "khati" && phone) {
+  // For staff with a phone: verify the Firebase ID token produced after OTP confirm.
+  // In non-production (dev/local), allow admin to save phone directly without OTP.
+  if (role !== "khati" && phone && process.env.NODE_ENV === "production") {
     const idToken = String(formData.get("firebaseIdToken") ?? "").trim();
     if (!idToken) {
       return { error: "Please verify the phone number via OTP before submitting." };

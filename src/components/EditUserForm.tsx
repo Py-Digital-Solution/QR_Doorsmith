@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { updateUserAction, type ActionState } from "@/actions/users";
+import { displayPhone } from "@/lib/phone";
 import { USER_STATUSES, type UserStatus } from "@/lib/roles";
 import type { UserDTO } from "@/services/users";
 import { Input, Select } from "./ui/Input";
@@ -24,7 +25,7 @@ export function EditUserForm({
 
   const [name, setName] = useState(user.name);
   const [status, setStatus] = useState<UserStatus>(user.status as UserStatus);
-  const [phone, setPhone] = useState(user.phone ?? "");
+  const [phone, setPhone] = useState(displayPhone(user.phone ?? ""));
   const [email, setEmail] = useState(user.email ?? "");
 
   useEffect(() => {
@@ -58,12 +59,20 @@ export function EditUserForm({
       {isKhati ? (
         <div>
           <Label>Phone</Label>
-          <Input
-            name="phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
+          <input type="hidden" name="phone" value={phone.length > 0 ? `+91${phone}` : ""} />
+          <div className="flex">
+            <span className="flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500 select-none">+91</span>
+            <Input
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+              placeholder="98765 43210"
+              autoComplete="tel"
+              className="rounded-l-none"
+            />
+          </div>
         </div>
       ) : (
         <>

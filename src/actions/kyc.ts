@@ -43,7 +43,7 @@ export async function approveKycAction(khatiId: string): Promise<KycActionState>
   try {
     await approveKyc(session.user.id, session.user.role, khatiId);
     logAudit({ actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "", action: "kyc_approve", entityType: "user", entityId: khatiId });
-    revalidatePath("/counter/kyc");
+    revalidatePath("/admin/kyc");
     revalidatePath("/approvals");
     return { ok: true };
   } catch (e) {
@@ -57,7 +57,7 @@ export async function rejectKycAction(khatiId: string, reason: string): Promise<
   try {
     await rejectKyc(session.user.id, session.user.role, khatiId, reason);
     logAudit({ actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "", action: "kyc_reject", entityType: "user", entityId: khatiId, meta: { reason } });
-    revalidatePath("/counter/kyc");
+    revalidatePath("/admin/kyc");
     revalidatePath("/approvals");
     return { ok: true };
   } catch (e) {

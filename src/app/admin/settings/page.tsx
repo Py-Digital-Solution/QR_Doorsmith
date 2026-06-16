@@ -1,8 +1,10 @@
 import { isDistributorEnabled, getSetting } from "@/services/settings";
 import { getCompanyBranding } from "@/services/branding";
+import { getBannerSettings } from "@/services/banner";
 import { listWaLogs } from "@/services/walog";
 import { DistributorToggle } from "@/components/DistributorToggle";
 import { MinPointsForm } from "@/components/MinPointsForm";
+import { BannerForm } from "@/components/BannerForm";
 import { WhatsAppPanel } from "@/components/WhatsAppPanel";
 import { BrandingForm } from "@/components/BrandingForm";
 import { NotificationEmailForm } from "@/components/NotificationEmailForm";
@@ -40,14 +42,23 @@ export default async function SettingsPage({
 }
 
 async function GeneralTab() {
-  const [distributorEnabled, minPoints] = await Promise.all([
+  const [distributorEnabled, minPoints, banner] = await Promise.all([
     isDistributorEnabled(),
     getSetting<number>("min_redemption_points", 0),
+    getBannerSettings(),
   ]);
   return (
     <div className="space-y-3">
       <DistributorToggle initial={distributorEnabled} />
       <MinPointsForm initial={minPoints} />
+
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
+        <p className="text-sm font-medium text-gray-900">Khati app banner</p>
+        <p className="mb-4 text-sm text-gray-500">
+          Upload a promotional banner that floats at the top of the khati app. Toggle it off to hide it without deleting it.
+        </p>
+        <BannerForm initial={banner} />
+      </div>
     </div>
   );
 }

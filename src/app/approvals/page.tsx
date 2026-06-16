@@ -24,11 +24,11 @@ export default async function ApprovalsPage({
       ? await listPendingForAdmin(opts)
       : await listPendingForSalesRep(session!.user.id, opts);
 
-  const title = role === "admin" ? "Final Approvals" : "Khati Approvals";
+  const title = role === "admin" ? "Khati Approvals" : "Khati Registrations";
   const description =
     role === "admin"
-      ? "These khatis have passed counter and sales rep checks and await your final approval."
-      : "These khatis have been approved by their counter and await your review.";
+      ? "Review and approve khati registrations submitted from the field."
+      : "Khatis registered under your counters awaiting admin approval. View only.";
 
   const fp = new URLSearchParams();
   if (q) fp.set("q", q);
@@ -56,7 +56,7 @@ export default async function ApprovalsPage({
       ) : (
         <div className="space-y-3">
           {result.items.map((k) => (
-            <KycCard key={k.id} khati={k} showStatus={role === "admin"} />
+            <KycCard key={k.id} khati={k} showStatus readOnly={role !== "admin"} />
           ))}
         </div>
       )}

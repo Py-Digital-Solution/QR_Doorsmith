@@ -37,9 +37,9 @@ export default async function CounterDispatchesPage({
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Dispatch history" description="Bills dispatched to your counter." />
+      <PageHeader title="Dispatch history" description="Dispatch receipts sent to your counter." />
 
-      <FilterBar placeholder="Search by bill no…" exportType="counter-dispatches" />
+      <FilterBar placeholder="Search by receipt no…" exportType="counter-dispatches" />
 
       {result.items.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white shadow-card">
@@ -53,7 +53,7 @@ export default async function CounterDispatchesPage({
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-sm font-medium text-gray-900">{d.billNo}</span>
                   <a href={`/admin/dispatch/${d.id}/bill`} target="_blank" rel="noopener noreferrer" className={billLink}>
-                    Bill PDF
+                    Dispatch Receipt
                   </a>
                 </div>
                 <div className="mt-1 flex gap-3 text-xs text-gray-500">
@@ -68,7 +68,7 @@ export default async function CounterDispatchesPage({
           <TableWrapper>
             <Table>
               <THead>
-                <TH>Bill No</TH>
+                <TH>Receipt No</TH>
                 <TH>Date</TH>
                 <TH align="right">Units</TH>
                 <TH align="right">Codes</TH>
@@ -83,7 +83,7 @@ export default async function CounterDispatchesPage({
                     <TD align="right" className="text-xs text-gray-600">{d.totalCodes}</TD>
                     <TD align="right">
                       <a href={`/admin/dispatch/${d.id}/bill`} target="_blank" rel="noopener noreferrer" className={billLink}>
-                        Bill PDF
+                        Dispatch Receipt
                       </a>
                     </TD>
                   </TR>

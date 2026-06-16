@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOutStaff } from "@/actions/auth";
 import { MoreHorizontal, User, Settings, LogOut, ChevronRight } from "lucide-react";
 import { ICONS } from "./ui/icons";
 import { Avatar } from "./Avatar";
@@ -150,13 +150,15 @@ export function MobileNav({
 
               <div className="mx-5 my-1 border-t border-gray-100" />
 
-              <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="flex w-full items-center gap-3 px-5 py-3.5 text-sm text-red-500 transition-colors hover:bg-red-50"
-              >
-                <LogOut className="size-5" aria-hidden />
-                <span className="font-medium">Sign Out</span>
-              </button>
+              <form action={signOutStaff}>
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-3 px-5 py-3.5 text-sm text-red-500 transition-colors hover:bg-red-50"
+                >
+                  <LogOut className="size-5" aria-hidden />
+                  <span className="font-medium">Sign Out</span>
+                </button>
+              </form>
             </div>
             <div className="pb-4" />
           </div>
