@@ -16,6 +16,23 @@ import { normalizePhone } from "@/lib/phone";
 
 export type ActionState = { error?: string; ok?: boolean };
 
+/** Verifies a WhatsApp OTP code server-side. Used as fallback when Firebase SMS fails. */
+export async function verifyPhoneOtpAction(
+  phone: string,
+  code: string,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user) return { error: "Not authenticated." };
+  try {
+    const { verifyOtp } = await import("@/services/otp");
+    const ok = await verifyOtp(normalizePhone(phone), code);
+    if (!ok) return { error: "Incorrect or expired OTP. Try again." };
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Verification failed." };
+  }
+}
+
 function revalidateAreas() {
   revalidatePath("/admin/users");
   revalidatePath("/admin/dispatch"); // counter list in dispatch form updates
@@ -37,19 +54,24 @@ export async function createUserAction(
   const rawPhone = String(formData.get("phone") ?? "").trim();
   let phone = rawPhone ? normalizePhone(rawPhone) : undefined;
 
-  // For staff with a phone: verify the Firebase ID token produced after OTP confirm.
-  // In non-production (dev/local), allow admin to save phone directly without OTP.
+  // For staff with a phone: require OTP verification in production.
+  // Accepts either a Firebase ID token (SMS path) or a WhatsApp OTP-verified phone.
   if (role !== "khati" && phone && process.env.NODE_ENV === "production") {
     const idToken = String(formData.get("firebaseIdToken") ?? "").trim();
-    if (!idToken) {
+    const waVerifiedPhone = String(formData.get("waVerifiedPhone") ?? "").trim();
+
+    if (idToken) {
+      try {
+        const decoded = await verifyFirebaseIdToken(idToken);
+        if (decoded.phone_number) phone = decoded.phone_number;
+      } catch {
+        return { error: "Phone verification failed or expired. Please re-verify." };
+      }
+    } else if (waVerifiedPhone) {
+      // WhatsApp OTP path: phone was verified server-side via verifyPhoneOtpAction.
+      phone = normalizePhone(waVerifiedPhone);
+    } else {
       return { error: "Please verify the phone number via OTP before submitting." };
-    }
-    try {
-      const decoded = await verifyFirebaseIdToken(idToken);
-      // Use the Firebase-confirmed number as the authoritative phone value
-      if (decoded.phone_number) phone = decoded.phone_number;
-    } catch {
-      return { error: "Phone verification failed or expired. Please re-verify." };
     }
   }
 

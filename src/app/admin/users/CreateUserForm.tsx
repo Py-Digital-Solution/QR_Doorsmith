@@ -6,7 +6,7 @@ import {
   RecaptchaVerifier,
   type ConfirmationResult,
 } from "firebase/auth";
-import { createUserAction, type ActionState } from "@/actions/users";
+import { createUserAction, verifyPhoneOtpAction, type ActionState } from "@/actions/users";
 import { getFirebaseAuth } from "@/lib/firebase-client";
 import type { UserRole } from "@/models/User";
 import { Input, Select } from "@/components/ui/Input";
@@ -47,6 +47,8 @@ export function CreateUserForm({
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("idle");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [firebaseIdToken, setFirebaseIdToken] = useState<string | null>(null);
+  const [whatsappSent, setWhatsappSent] = useState(false);
+  const [waVerifiedPhone, setWaVerifiedPhone] = useState<string | null>(null);
 
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
@@ -73,6 +75,8 @@ export function CreateUserForm({
     setOtpCode("");
     setPhoneError(null);
     setFirebaseIdToken(null);
+    setWhatsappSent(false);
+    setWaVerifiedPhone(null);
     confirmationRef.current = null;
     clearRecaptcha();
   }, [role, phone]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -84,40 +88,75 @@ export function CreateUserForm({
   async function handleSendOtp() {
     setPhoneStep("sending");
     setPhoneError(null);
+    setWhatsappSent(false);
 
-    // Always start from a clean slate — prevents "already rendered" error
     clearRecaptcha();
 
-    try {
-      const auth = getFirebaseAuth();
-      recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-      });
-      // Explicitly render and wait for reCAPTCHA to be ready before sending
-      await recaptchaRef.current.render();
-      const e164 = `+91${phone}`;
-      confirmationRef.current = await signInWithPhoneNumber(auth, e164, recaptchaRef.current);
-      setPhoneStep("awaiting_code");
-    } catch (err) {
+    const e164 = `+91${phone}`;
+
+    // Fire Firebase SMS and WhatsApp OTP in parallel — proceed if at least one succeeds.
+    const auth = getFirebaseAuth();
+    recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+    await recaptchaRef.current.render();
+
+    const [firebaseResult, waResult] = await Promise.allSettled([
+      signInWithPhoneNumber(auth, e164, recaptchaRef.current),
+      fetch("/api/otp/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: e164 }),
+      }),
+    ]);
+
+    if (firebaseResult.status === "fulfilled") {
+      confirmationRef.current = firebaseResult.value;
+    } else {
+      confirmationRef.current = null;
       clearRecaptcha();
-      setPhoneError(err instanceof Error ? err.message : "Failed to send OTP.");
-      setPhoneStep("idle");
     }
+
+    const waOk = waResult.status === "fulfilled" && waResult.value.ok;
+    setWhatsappSent(waOk);
+
+    if (firebaseResult.status === "rejected" && !waOk) {
+      setPhoneError("Could not send OTP via SMS or WhatsApp. Please try again.");
+      setPhoneStep("idle");
+      return;
+    }
+
+    setPhoneStep("awaiting_code");
   }
 
   async function handleVerifyOtp() {
-    if (!confirmationRef.current || !otpCode) return;
+    if (!otpCode) return;
     setPhoneStep("verifying");
     setPhoneError(null);
-    try {
-      const result = await confirmationRef.current.confirm(otpCode);
-      const token = await result.user.getIdToken();
-      setFirebaseIdToken(token);
-      setPhoneStep("verified");
-    } catch {
-      setPhoneError("Incorrect OTP. Please try again.");
-      setPhoneStep("awaiting_code");
+
+    // 1. Try Firebase SMS code first.
+    if (confirmationRef.current) {
+      try {
+        const result = await confirmationRef.current.confirm(otpCode);
+        const token = await result.user.getIdToken();
+        setFirebaseIdToken(token);
+        setPhoneStep("verified");
+        return;
+      } catch {
+        // Firebase code wrong or expired — fall through to WhatsApp code.
+      }
     }
+
+    // 2. Try WhatsApp OTP code (server-verified).
+    if (whatsappSent) {
+      const res = await verifyPhoneOtpAction(`+91${phone}`, otpCode);
+      if (res.ok) {
+        setWaVerifiedPhone(`+91${phone}`);
+        setPhoneStep("verified");
+        return;
+      }
+    }
+
+    setPhoneError("Incorrect or expired OTP. Please try again.");
+    setPhoneStep("awaiting_code");
   }
 
   return (
@@ -146,6 +185,9 @@ export function CreateUserForm({
         <input type="hidden" name="role" value={role} />
         {firebaseIdToken && (
           <input type="hidden" name="firebaseIdToken" value={firebaseIdToken} />
+        )}
+        {waVerifiedPhone && !firebaseIdToken && (
+          <input type="hidden" name="waVerifiedPhone" value={waVerifiedPhone} />
         )}
 
         <div>
@@ -272,7 +314,7 @@ export function CreateUserForm({
                   <button
                     type="button"
                     className="text-xs text-brand underline"
-                    onClick={() => { setPhoneStep("idle"); setOtpCode(""); }}
+                    onClick={() => { setPhoneStep("idle"); setOtpCode(""); setWhatsappSent(false); setWaVerifiedPhone(null); }}
                   >
                     Resend OTP
                   </button>
