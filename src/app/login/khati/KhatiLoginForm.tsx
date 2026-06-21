@@ -123,54 +123,83 @@ function FirebaseLoginForm() {
     return () => { verifier.clear(); recaptchaRef.current = null; };
   }, []);
 
+  // tracks whether WhatsApp OTP was successfully dispatched (enables fallback verification)
+  const [whatsappSent, setWhatsappSent] = useState(false);
+
   async function sendOtp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     const trimmed = phone.trim();
     if (!trimmed) { setError("Enter your phone number."); return; }
     setSending(true);
-    try {
-      const auth = getFirebaseAuth();
-      const result = await signInWithPhoneNumber(auth, `+91${phone}`, recaptchaRef.current!);
-      confirmationRef.current = result;
-      setStep("otp");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send code.";
-      if (msg.includes("invalid-phone-number")) {
-        setError("Invalid phone number. Include country code e.g. +919876543210");
-      } else if (msg.includes("too-many-requests")) {
-        setError("Too many attempts. Please wait and try again.");
-      } else {
-        setError(msg);
-      }
+    setWhatsappSent(false);
+
+    const normalized = `+91${trimmed}`;
+
+    // Fire Firebase SMS and WhatsApp OTP in parallel — proceed if at least one succeeds.
+    const [firebaseResult, waResult] = await Promise.allSettled([
+      signInWithPhoneNumber(getFirebaseAuth(), normalized, recaptchaRef.current!),
+      fetch("/api/otp/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: normalized }),
+      }),
+    ]);
+
+    if (firebaseResult.status === "fulfilled") {
+      confirmationRef.current = firebaseResult.value;
+    } else {
+      confirmationRef.current = null;
       recaptchaRef.current?.clear();
-      const auth = getFirebaseAuth();
-      recaptchaRef.current = new RecaptchaVerifier(auth, recaptchaContainerId, { size: "invisible" });
-    } finally {
-      setSending(false);
+      recaptchaRef.current = new RecaptchaVerifier(getFirebaseAuth(), recaptchaContainerId, { size: "invisible" });
     }
+
+    const waOk = waResult.status === "fulfilled" && waResult.value.ok;
+    setWhatsappSent(waOk);
+
+    if (firebaseResult.status === "rejected" && !waOk) {
+      setError("Could not send OTP via SMS or WhatsApp. Please try again.");
+      setSending(false);
+      return;
+    }
+
+    setStep("otp");
+    setSending(false);
   }
 
   async function verifyOtp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!code.trim()) { setError("Enter the code."); return; }
-    if (!confirmationRef.current) { setError("Session expired. Refresh and try again."); return; }
     setVerifying(true);
+
     try {
-      const result = await confirmationRef.current.confirm(code.trim());
-      const idToken = await result.user.getIdToken();
-      const res = await signIn("khati-otp", { idToken, redirect: false });
-      if (!res || res.error) {
-        setError("Login failed. Make sure your number is registered as a khati.");
-        return;
+      // 1. Try Firebase SMS code first (if Firebase session exists).
+      if (confirmationRef.current) {
+        try {
+          const result = await confirmationRef.current.confirm(code.trim());
+          const idToken = await result.user.getIdToken();
+          const res = await signIn("khati-otp", { idToken, redirect: false });
+          if (res && !res.error) { window.location.href = "/"; return; }
+        } catch {
+          // Firebase code wrong or expired — fall through to WhatsApp code.
+        }
       }
-      window.location.href = "/";
+
+      // 2. Try WhatsApp OTP code (server-generated, verified against DB).
+      if (whatsappSent) {
+        const res = await signIn("khati-otp", {
+          phone: `+91${phone}`,
+          code: code.trim(),
+          redirect: false,
+        });
+        if (res && !res.error) { window.location.href = "/"; return; }
+      }
+
+      setError("Wrong or expired code. Check your SMS or WhatsApp and try again.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Verification failed.";
-      if (msg.includes("invalid-verification-code")) setError("Wrong code. Check and try again.");
-      else if (msg.includes("code-expired")) setError("Code expired. Request a new one.");
-      else setError(msg);
+      setError(msg);
     } finally {
       setVerifying(false);
     }
@@ -206,7 +235,9 @@ function FirebaseLoginForm() {
       )}
       {step === "otp" && (
         <form onSubmit={verifyOtp} className="space-y-4">
-          <Alert variant="success">OTP sent to +91{phone}. Enter the 6-digit code.</Alert>
+          <Alert variant="success">
+            OTP sent to +91{phone} via SMS{whatsappSent ? " and WhatsApp" : ""}. Enter the 6-digit code.
+          </Alert>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">6-digit code</label>
             <Input

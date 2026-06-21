@@ -90,12 +90,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Dev shortcut: magic OTP bypasses Firebase (matches client-side NODE_ENV check).
           // Normalize same as Firebase production: bare 10-digit → +91xxxxxxxxxx.
           resolvedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
-        } else if (process.env.OTP_DEV_MODE === "true" && phone) {
-          // OTP_DEV_MODE: verify through the OTP service (1111 accepted there too).
+        } else if (phone && code) {
+          // WhatsApp OTP fallback: server-generated code sent via WhatsApp, verified against DB.
+          // Works in both production and dev (dev magic code 1111 is accepted by verifyOtp).
           const { verifyOtp } = await import("@/services/otp");
           const ok = await verifyOtp(phone, code);
           if (!ok) return null;
-          resolvedPhone = phone;
+          resolvedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
         } else {
           return null;
         }
