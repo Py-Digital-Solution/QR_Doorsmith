@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DoorSmith",
-  description: "Khati Rewards — scan QR codes and earn points",
+  description: "Khati Rewards  scan QR codes and earn points",
   applicationName: "DoorSmith Khati Rewards",
   appleWebApp: {
     capable: true,

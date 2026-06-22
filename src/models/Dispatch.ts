@@ -3,7 +3,7 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
 export const DISPATCH_STATUSES = ["dispatched"] as const;
 
 /**
- * Dispatch ("bill") — warehouse sends one or more scanned units (and everything
+ * Dispatch ("bill")  warehouse sends one or more scanned units (and everything
  * inside them) to a counter. A unit can be a master box, a small box, or a
  * single unique product code (client feedback 2026-06-08). Auto-assigned: on
  * creation the contained codes are linked to the counter and activated.

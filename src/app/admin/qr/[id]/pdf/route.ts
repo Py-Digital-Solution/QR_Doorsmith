@@ -12,7 +12,7 @@ const PAGE_H = 297 * MM;
 const MARGIN = 10 * MM;
 
 /**
- * Build an SVG path (in module units, 0..n) for a QR code — drawn as a single
+ * Build an SVG path (in module units, 0..n) for a QR code  drawn as a single
  * vector path per code. Far faster than encoding/embedding a PNG per code.
  */
 function qrSvgPath(text: string): { d: string; n: number } {

@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * One-time backfill — creates PointTransaction entries for all historical
+ * One-time backfill  creates PointTransaction entries for all historical
  * QR scans, returns, and approved redemptions that pre-date the ledger.
  * Safe to call multiple times: skips any event already recorded
  * (checked by qrCodeId / returnId / redemptionId uniqueness).
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
       if (ev.kind === "scan") {
         const d = ev.doc;
         if (existingQrSet.has(String(d._id))) {
-          // Already recorded — still need to advance running balance
+          // Already recorded  still need to advance running balance
           const pts = d.type === "small"
             ? (childTotals.get(String(d._id)) ?? 0)
             : (d.rewardPoints ?? 0);

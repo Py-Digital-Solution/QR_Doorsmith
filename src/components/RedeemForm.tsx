@@ -55,7 +55,7 @@ export function RedeemForm({
         <CircleCheck className="mx-auto mb-2 size-7 text-brand" aria-hidden />
         <p className="font-semibold text-gray-900">Redemption request sent!</p>
         <p className="mt-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
-          Your OTP — show this to your counter
+          Your OTP  show this to your counter
         </p>
         <div className="mt-2 rounded-xl border-2 border-brand/40 bg-white py-3 px-6 inline-block">
           <span className="font-mono text-4xl font-bold tracking-[0.25em] text-brand">

@@ -23,7 +23,7 @@ const ROLE_LABEL: Record<string, string> = {
 const MAX_TABS = 4;
 
 /**
- * Mobile bottom navigation for staff roles — same pattern as the Khati app:
+ * Mobile bottom navigation for staff roles  same pattern as the Khati app:
  * a fixed bottom tab bar (first few nav items) plus a "More" bottom sheet that
  * holds the overflow nav items and account actions (Profile / Settings / Sign out).
  */

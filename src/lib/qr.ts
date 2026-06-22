@@ -1,4 +1,4 @@
-/** Pure QR constants/helpers — safe for client + server (no DB imports). */
+/** Pure QR constants/helpers  safe for client + server (no DB imports). */
 
 export const QR_TYPES = ["master", "small", "product"] as const;
 export type QrType = (typeof QR_TYPES)[number];

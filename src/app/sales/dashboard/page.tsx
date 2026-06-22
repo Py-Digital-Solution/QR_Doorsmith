@@ -156,7 +156,7 @@ export default async function SalesDashboard() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-orange-800">{d.pendingRedemptions} redemption{d.pendingRedemptions > 1 ? "s" : ""} pending</p>
-                  <p className="text-xs text-orange-600">Across your counters — awaiting approval</p>
+                  <p className="text-xs text-orange-600">Across your counters  awaiting approval</p>
                 </div>
               </div>
               <Link

@@ -44,7 +44,7 @@ function DevLoginForm() {
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
-        Dev mode — OTP is always <strong>1111</strong>
+        Dev mode  OTP is always <strong>1111</strong>
       </div>
 
       {step === "phone" ? (
@@ -136,7 +136,7 @@ function FirebaseLoginForm() {
 
     const normalized = `+91${trimmed}`;
 
-    // Fire Firebase SMS and WhatsApp OTP in parallel — proceed if at least one succeeds.
+    // Fire Firebase SMS and WhatsApp OTP in parallel  proceed if at least one succeeds.
     const [firebaseResult, waResult] = await Promise.allSettled([
       signInWithPhoneNumber(getFirebaseAuth(), normalized, recaptchaRef.current!),
       fetch("/api/otp/request", {
@@ -182,7 +182,7 @@ function FirebaseLoginForm() {
           const res = await signIn("khati-otp", { idToken, redirect: false });
           if (res && !res.error) { window.location.href = "/"; return; }
         } catch {
-          // Firebase code wrong or expired — fall through to WhatsApp code.
+          // Firebase code wrong or expired  fall through to WhatsApp code.
         }
       }
 

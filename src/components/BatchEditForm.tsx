@@ -51,7 +51,7 @@ export function BatchEditForm({
       <div>
         <Label>Product</Label>
         <Select value={productId} onChange={(e) => setProductId(e.target.value)}>
-          <option value="">— Keep current —</option>
+          <option value=""> Keep current </option>
           {products.map((p) => (
             <option key={p.id} value={p.id}>
               {p.sku} · {p.name}

@@ -5,7 +5,7 @@ import { Settings } from "../models";
 
 /**
  * Idempotent seed. Run with: npm run db:seed
- * Seeds global defaults — notably the Distributor toggle, OFF by default
+ * Seeds global defaults  notably the Distributor toggle, OFF by default
  * per SOW 1.2 (admin activates it later).
  */
 async function main() {
@@ -17,7 +17,7 @@ async function main() {
       $setOnInsert: {
         value: false,
         description:
-          "SOW 1.2 — Distributor role deactivated by default; admin can enable.",
+          "SOW 1.2  Distributor role deactivated by default; admin can enable.",
       },
     },
     { upsert: true },

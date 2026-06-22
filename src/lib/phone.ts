@@ -8,7 +8,7 @@ export function normalizePhone(raw: string): string {
   if (digits.length === 10) return `+91${digits}`;
   if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
   if (digits.length === 13 && digits.startsWith("091")) return `+${digits.slice(1)}`;
-  // already has + prefix — return as-is
+  // already has + prefix  return as-is
   if (trimmed.startsWith("+")) return trimmed;
   return trimmed;
 }

@@ -8,7 +8,7 @@ import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { isDistributorEnabled } from "@/services/settings";
 
 /**
- * Full auth instance (Node runtime — uses Mongoose + bcrypt).
+ * Full auth instance (Node runtime  uses Mongoose + bcrypt).
  * Two Credentials providers:
  *   - "staff"     → email + password (admin, sales_rep, distributor, counter)
  *   - "khati-otp" → phone + OTP code (khati end users)

@@ -78,7 +78,7 @@ export default async function SalesLedgerPage({
     <div className="space-y-6">
       <PageHeader
         title="Points Ledger"
-        description="Every point movement across your network — scans, returns, and redemptions."
+        description="Every point movement across your network  scans, returns, and redemptions."
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

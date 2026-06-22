@@ -49,7 +49,7 @@ export async function processQrScan(
   if (code.type === "master") throw new Error("Master box QR codes cannot be scanned for points.");
   if (code.type !== "product" && code.type !== "small") throw new Error("Only product or small box QR codes earn points.");
   if (code.status === "scanned") throw new Error("This QR code has already been scanned.");
-  if (code.status !== "active") throw new Error("QR code is not active — it must be dispatched to a counter first.");
+  if (code.status !== "active") throw new Error("QR code is not active  it must be dispatched to a counter first.");
   if (!code.counterId) throw new Error("QR code has not been dispatched to a counter.");
 
   const khati = await User.findById(khatiId).select("counterId createdBy points").lean();
@@ -66,7 +66,7 @@ export async function processQrScan(
   // Already-scanned products (status !== "active") are deliberately excluded so
   // they stay owned by the khati who scanned them first. Ownership is tracked
   // per product via scannedByKhatiId, so returns reverse points from the exact
-  // owner — never from whoever happened to scan the box.
+  // owner  never from whoever happened to scan the box.
   if (code.type === "small") {
     const productCodes = await QrCode.find({
       parentQrId: code._id,
@@ -167,7 +167,7 @@ export async function processQrReturn(
   const code = await QrCode.findOne({ serialNo: serialNo.trim() }).lean();
   if (!code) throw new Error("QR code not found.");
   if (code.type !== "product") throw new Error("Only product QR codes can be returned.");
-  if (code.status !== "scanned") throw new Error("This code has not been scanned — nothing to return.");
+  if (code.status !== "scanned") throw new Error("This code has not been scanned  nothing to return.");
   if (!code.counterId) throw new Error("This product was never dispatched to a counter.");
   // A counter may only return its own codes. An admin can return any code and
   // the return is booked against the counter the product actually belongs to.
@@ -261,7 +261,7 @@ export async function listKhatiScans(
       .lean(),
   ]);
 
-  // A small-box scan credits the sum of its product children — never the box's
+  // A small-box scan credits the sum of its product children  never the box's
   // own rewardPoints snapshot. So in history we show ONE row per scanned box
   // carrying that real total, and fold its child products into it (rather than
   // listing the box AND every child, which double-counts).
@@ -284,7 +284,7 @@ export async function listKhatiScans(
 
   const all: (ScanHistoryItem & { _ts: number })[] = [
     ...scanDocs
-      // Drop child products of a scanned small box — represented by the box row.
+      // Drop child products of a scanned small box  represented by the box row.
       .filter((d) => !(d.type === "product" && d.parentQrId && boxIdSet.has(String(d.parentQrId))))
       .map((d) => ({
         id: String(d._id),

@@ -97,7 +97,7 @@ export function ProductForm({
           <Input
             ref={skuRef}
             name="sku"
-            placeholder="e.g. SKU-20260001 — leave blank to auto-generate"
+            placeholder="e.g. SKU-20260001  leave blank to auto-generate"
             autoComplete="off"
             value={sku}
             onChange={(e) => setSku(e.target.value)}
@@ -172,7 +172,7 @@ export function ProductForm({
         <Label>
           Video links{" "}
           <span className="font-normal text-gray-400">
-            (YouTube / Instagram / Facebook — optional)
+            (YouTube / Instagram / Facebook  optional)
           </span>
         </Label>
         <div className="space-y-2">

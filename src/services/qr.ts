@@ -75,7 +75,7 @@ export async function generateBatch(input: GenerateBatchInput) {
         : productPerSmall;
   const total = totalMasters + totalSmalls + totalProducts;
 
-  if (total <= 0) throw new Error("Nothing to generate — set at least one count.");
+  if (total <= 0) throw new Error("Nothing to generate  set at least one count.");
   if (total > MAX_BATCH)
     throw new Error(`Batch too large (${total}). Max ${MAX_BATCH} codes per batch.`);
 
@@ -302,7 +302,7 @@ export async function getBatchCodes(batchId: string): Promise<QrCodeDTO[]> {
 // ---- edit / delete (client feedback: "Edit and delete in QR") ----
 
 /**
- * A code is "locked" once it has left the warehouse — dispatched to a counter
+ * A code is "locked" once it has left the warehouse  dispatched to a counter
  * or scanned by a khati. Locked codes cannot be edited or deleted (a carpenter
  * may already be holding the printed label and the points ledger depends on it).
  * Confirmed rule: edit/delete only while a code is still in the warehouse.
@@ -320,7 +320,7 @@ async function assertBatchUnlocked(batchId: string): Promise<void> {
   const locked = await QrCode.countDocuments({ batchId, ...LOCKED_FILTER });
   if (locked > 0) {
     throw new Error(
-      `Cannot modify this batch — ${locked} code(s) are already dispatched or scanned.`,
+      `Cannot modify this batch  ${locked} code(s) are already dispatched or scanned.`,
     );
   }
 }
@@ -472,7 +472,7 @@ export async function listBatchCodes(
       status: String(d.status),
       sku: d.sku ?? "",
       parentSerial: (d.parentQrId as { serialNo?: string } | null)?.serialNo ?? null,
-      counterLabel: counter ? counter.name || counter.email || "—" : null,
+      counterLabel: counter ? counter.name || counter.email || "" : null,
       locked: Boolean(d.counterId || d.dispatchId || d.scannedByKhatiId || d.status === "scanned"),
     };
   });
@@ -500,7 +500,7 @@ export async function updateQrCode(
   const code = await QrCode.findById(codeId);
   if (!code) throw new Error("QR code not found.");
   if (!input.adminOverride && (code.counterId || code.dispatchId || code.scannedByKhatiId || code.status === "scanned")) {
-    throw new Error("Cannot edit — this code is already dispatched or scanned.");
+    throw new Error("Cannot edit  this code is already dispatched or scanned.");
   }
 
   if (input.productId && String(input.productId) !== String(code.productId)) {
@@ -537,7 +537,7 @@ export async function deleteQrCode(codeId: string) {
   const ids = await collectWithDescendants(code._id as Types.ObjectId);
   const locked = await QrCode.countDocuments({ _id: { $in: ids }, ...LOCKED_FILTER });
   if (locked > 0) {
-    throw new Error("Cannot delete — this code or one of its children is dispatched/scanned.");
+    throw new Error("Cannot delete  this code or one of its children is dispatched/scanned.");
   }
 
   const res = await QrCode.deleteMany({ _id: { $in: ids } });

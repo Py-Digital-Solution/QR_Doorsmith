@@ -31,7 +31,7 @@ export async function setDistributorEnabledAction(
     await setSetting(
       "distributor_enabled",
       enabled,
-      "SOW 1.2 — Distributor role on/off (admin controlled).",
+      "SOW 1.2  Distributor role on/off (admin controlled).",
     );
     revalidatePath("/admin/settings");
     revalidatePath("/admin/users");

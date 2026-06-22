@@ -40,7 +40,7 @@ const qrCodeSchema = new Schema(
     // scan lifecycle (filled in Phase 4)
     scannedByKhatiId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     scannedAt: { type: Date, default: null },
-    // return lifecycle — scannedByKhatiId is kept for history; returned=true means points were reversed
+    // return lifecycle  scannedByKhatiId is kept for history; returned=true means points were reversed
     returned: { type: Boolean, default: false },
     returnedAt: { type: Date, default: null },
   },

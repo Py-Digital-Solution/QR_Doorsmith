@@ -7,7 +7,7 @@ const ALIGN: Record<Align, string> = {
   center: "text-center",
 };
 
-/** Desktop table chrome — hidden on mobile (pair with MobileCardList). */
+/** Desktop table chrome  hidden on mobile (pair with MobileCardList). */
 export function TableWrapper({
   className = "",
   children,
@@ -86,7 +86,7 @@ export function TD({
   );
 }
 
-/** Mobile stacked-card list — hidden on sm+ (pair with TableWrapper). */
+/** Mobile stacked-card list  hidden on sm+ (pair with TableWrapper). */
 export function MobileCardList({
   className = "",
   children,

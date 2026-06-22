@@ -135,7 +135,7 @@ export function WhatsAppPanel() {
     );
   }
 
-  // ── Connecting — show QR ──────────────────────────────────────────────────
+  // ── Connecting  show QR ──────────────────────────────────────────────────
   if (state.status === "connecting") {
     return (
       <div className="space-y-4">
@@ -155,7 +155,7 @@ export function WhatsAppPanel() {
             <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-card">
               <Image
                 src={qr}
-                alt="WhatsApp QR code — scan with your phone"
+                alt="WhatsApp QR code  scan with your phone"
                 width={220}
                 height={220}
                 unoptimized

@@ -38,7 +38,7 @@ export function DispatchClient({
     setSerials((prev) => prev.filter((x) => x !== s));
   }
 
-  // Live search — type is inferred server-side from the serial prefix.
+  // Live search  type is inferred server-side from the serial prefix.
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
@@ -116,7 +116,7 @@ export function DispatchClient({
         </Select>
       </div>
 
-      {/* Searchable picker — no type dropdown, prefix identifies type */}
+      {/* Searchable picker  no type dropdown, prefix identifies type */}
       <div>
         <Label>Add QR codes</Label>
         <div className="flex gap-2">

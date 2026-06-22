@@ -53,7 +53,7 @@ import {
 
 /**
  * Single icon surface for the app. Nav configs (server-side) reference icons
- * by string key; client components resolve them through this map — component
+ * by string key; client components resolve them through this map  component
  * functions can't cross the server→client boundary.
  */
 export const ICONS = {

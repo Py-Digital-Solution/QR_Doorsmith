@@ -5,7 +5,7 @@ import { getAuth, type DecodedIdToken } from "firebase-admin/auth";
 function getAdminApp(): App {
   if (getApps().length > 0) return getApps()[0]!;
 
-  // FIREBASE_ADMIN_PRIVATE_KEY may have literal \n from env — expand them.
+  // FIREBASE_ADMIN_PRIVATE_KEY may have literal \n from env  expand them.
   const privateKey = (process.env.FIREBASE_ADMIN_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
 
   return initializeApp({

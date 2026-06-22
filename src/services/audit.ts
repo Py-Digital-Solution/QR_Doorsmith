@@ -13,7 +13,7 @@ export type AuditEntry = {
   meta?: Record<string, unknown>;
 };
 
-/** Fire-and-forget audit write — never throws. */
+/** Fire-and-forget audit write  never throws. */
 export function logAudit(entry: AuditEntry): void {
   connectDB()
     .then(() => AuditLog.create(entry))

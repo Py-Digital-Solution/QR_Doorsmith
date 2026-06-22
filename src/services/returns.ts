@@ -21,7 +21,7 @@ export async function listCounterReturns(
   return listReturns(pagination, search, counterId);
 }
 
-/** All returns across every counter — admin view. */
+/** All returns across every counter  admin view. */
 export async function listAllReturns(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   search?: string,

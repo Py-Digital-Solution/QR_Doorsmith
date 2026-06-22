@@ -53,7 +53,7 @@ export function KhatiScanPanel() {
     } catch {
       setState({ phase: "error", message: "Network error. Please try again." });
     }
-    // Keep isProcessing true — only reset when user taps "Scan next" / "Try again".
+    // Keep isProcessing true  only reset when user taps "Scan next" / "Try again".
   }, []);
 
   function reset() {
@@ -64,7 +64,7 @@ export function KhatiScanPanel() {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Camera — always mounted so it stays warm; overlay covers it on result */}
+      {/* Camera  always mounted so it stays warm; overlay covers it on result */}
       <div className="relative w-full max-w-xs">
         <QrScanner onScan={handleScan} />
 

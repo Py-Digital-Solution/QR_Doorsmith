@@ -44,6 +44,6 @@ next-env.d.ts
 # stray node_modules fragment
 /op6o9ym/
 
-# whatsapp microservice — ignore its own deps and lock file
+# whatsapp microservice  ignore its own deps and lock file
 whatsapp-service/node_modules/
 whatsapp-service/package-lock.json

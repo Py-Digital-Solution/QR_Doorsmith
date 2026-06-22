@@ -59,7 +59,7 @@ function buildQuery(filter: LedgerFilter): Record<string, unknown> {
   return q;
 }
 
-/** Paginated ledger feed — newest first. Resolves khati names in one batch. */
+/** Paginated ledger feed  newest first. Resolves khati names in one batch. */
 export async function listPointTransactions(
   filter: LedgerFilter = {},
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
@@ -80,13 +80,13 @@ export async function listPointTransactions(
   // Resolve khati names in one query.
   const ids = [...new Set(docs.map((d) => String(d.khatiId)))];
   const users = await User.find({ _id: { $in: ids } }).select("name phone").lean();
-  const nameMap = new Map(users.map((u) => [String(u._id), u.name || u.phone || "—"]));
+  const nameMap = new Map(users.map((u) => [String(u._id), u.name || u.phone || ""]));
 
   return paginated(
     docs.map((d) => ({
       id: String(d._id),
       khatiId: String(d.khatiId),
-      khatiName: nameMap.get(String(d.khatiId)) ?? "—",
+      khatiName: nameMap.get(String(d.khatiId)) ?? "",
       type: d.type as PtType,
       points: d.points ?? 0,
       balanceAfter: d.balanceAfter ?? 0,

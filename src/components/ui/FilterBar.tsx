@@ -29,7 +29,7 @@ function FilterBarInner({ placeholder, exportType }: FilterBarProps) {
     return `${pathname}?${params.toString()}`;
   }
 
-  // Debounced search — replace (not push) to avoid polluting history
+  // Debounced search  replace (not push) to avoid polluting history
   useEffect(() => {
     const t = setTimeout(() => {
       startTransition(() => {

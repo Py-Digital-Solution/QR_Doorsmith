@@ -100,7 +100,7 @@ function ProductDetail({ product }: { product: ProductDTO }) {
                     >
                       <iframe
                         src={embedUrl}
-                        title={`${product.name} — video ${idx + 1}`}
+                        title={`${product.name}  video ${idx + 1}`}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                         className="absolute inset-0 h-full w-full"

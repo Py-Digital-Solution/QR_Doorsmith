@@ -83,7 +83,7 @@ export async function waSend(phone: string, message: string, type = "message"): 
     }
   } catch (err) {
     errorMsg = err instanceof Error ? err.message : String(err);
-    // Log failure to DB then notify admin — non-blocking
+    // Log failure to DB then notify admin  non-blocking
     connectDB()
       .then(() =>
         WaLog.create({ phone: normalizedPhone, message, type, status: "failed", error: errorMsg })
@@ -101,7 +101,7 @@ export async function waSend(phone: string, message: string, type = "message"): 
     throw err;
   }
 
-  // Log success — non-blocking
+  // Log success  non-blocking
   connectDB()
     .then(() => WaLog.create({ phone: normalizedPhone, message, type, status: "sent" }))
     .catch((e) => console.error("[wa] Failed to log WA success:", e));

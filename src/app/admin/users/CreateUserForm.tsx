@@ -94,7 +94,7 @@ export function CreateUserForm({
 
     const e164 = `+91${phone}`;
 
-    // Fire Firebase SMS and WhatsApp OTP in parallel — proceed if at least one succeeds.
+    // Fire Firebase SMS and WhatsApp OTP in parallel  proceed if at least one succeeds.
     const auth = getFirebaseAuth();
     recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
     await recaptchaRef.current.render();
@@ -141,7 +141,7 @@ export function CreateUserForm({
         setPhoneStep("verified");
         return;
       } catch {
-        // Firebase code wrong or expired — fall through to WhatsApp code.
+        // Firebase code wrong or expired  fall through to WhatsApp code.
       }
     }
 

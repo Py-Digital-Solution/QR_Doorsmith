@@ -12,7 +12,7 @@
  * Auth: every request must carry  Authorization: Bearer <WA_SERVICE_SECRET>
  * Set WA_SERVICE_SECRET and WA_SERVICE_PORT in environment (or .env file).
  *
- * Node 12 compatible — no ??, no ?., no fs.rm (use rmdir recursive instead).
+ * Node 12 compatible  no ??, no ?., no fs.rm (use rmdir recursive instead).
  */
 
 import express from "express";
@@ -36,11 +36,11 @@ const AUTH_DIR = resolve(__dir, "auth_info");
 
 if (!SECRET) {
   console.warn(
-    "[wa] WA_SERVICE_SECRET is not set — the service is open to anyone on the network!",
+    "[wa] WA_SERVICE_SECRET is not set  the service is open to anyone on the network!",
   );
 }
 
-// Minimal pino-compatible logger for Baileys — avoids pino's node:os dependency
+// Minimal pino-compatible logger for Baileys  avoids pino's node:os dependency
 // which requires Node 14.18+. Baileys only calls child() + warn/error at runtime.
 const noop = function() {};
 const logger = {
@@ -79,16 +79,16 @@ async function startSocket() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      // New QR code available — convert to data-URI PNG
+      // New QR code available  convert to data-URI PNG
       currentQr = await qrcode.toDataURL(qr);
       status = "connecting";
-      console.log("[wa] QR refreshed — waiting for scan");
+      console.log("[wa] QR refreshed  waiting for scan");
     }
 
     if (connection === "open") {
       const user = sock.user || {};
       const jid = user.id || "";
-      // jid is like "919876543210:0@s.whatsapp.net" — extract the number
+      // jid is like "919876543210:0@s.whatsapp.net"  extract the number
       connectedPhone = "+" + jid.split(":")[0].split("@")[0];
       status = "connected";
       currentQr = null;
@@ -98,18 +98,18 @@ async function startSocket() {
     if (connection === "close") {
       const boomError = lastDisconnect && lastDisconnect.error;
       const reason = new Boom(boomError).output.statusCode;
-      console.log("[wa] Disconnected — reason: " + reason);
+      console.log("[wa] Disconnected  reason: " + reason);
 
       if (reason === DisconnectReason.loggedOut || reason === DisconnectReason.badSession) {
-        // Session invalidated or corrupted — delete auth then reconnect fresh for QR
-        console.log("[wa] Bad/expired session — clearing auth, reconnecting for fresh QR");
+        // Session invalidated or corrupted  delete auth then reconnect fresh for QR
+        console.log("[wa] Bad/expired session  clearing auth, reconnecting for fresh QR");
         status = "disconnected";
         connectedPhone = null;
         sock = null;
         await fsPromises.rmdir(AUTH_DIR, { recursive: true }).catch(function() {});
         await startSocket();
       } else if (reason !== DisconnectReason.connectionReplaced) {
-        // Transient error — reconnect automatically
+        // Transient error  reconnect automatically
         console.log("[wa] Reconnecting…");
         await startSocket();
       }
@@ -129,7 +129,7 @@ async function stopSocket() {
 
 // Auto-connect on startup if auth already exists
 if (existsSync(AUTH_DIR + "/creds.json")) {
-  console.log("[wa] Existing session found — reconnecting");
+  console.log("[wa] Existing session found  reconnecting");
   startSocket().catch(console.error);
 }
 

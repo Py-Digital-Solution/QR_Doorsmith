@@ -13,7 +13,7 @@ const productSchema = new Schema(
     salesPrice: { type: Number, required: true, min: 0 },
     rewardPoints: { type: Number, required: true, min: 0 },
     description: { type: String, trim: true },
-    // SOW 1.3 — installation video links (YouTube/Instagram/Facebook) shown to khatis.
+    // SOW 1.3  installation video links (YouTube/Instagram/Facebook) shown to khatis.
     videoLinks: { type: [String], default: [] },
     status: {
       type: String,

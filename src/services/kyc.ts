@@ -166,7 +166,7 @@ export async function approveKyc(actorId: string, actorRole: string, khatiId: st
   if (khati.phone) {
     waSend(
       khati.phone,
-      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\nDoorSmith ऐप खोलें और लॉग इन करें — आपका खाती खाता तैयार है! 🚀\nOpen DoorSmith and log in — your khati account is ready!`,
+      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\nDoorSmith ऐप खोलें और लॉग इन करें  आपका खाती खाता तैयार है! 🚀\nOpen DoorSmith and log in  your khati account is ready!`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
   }

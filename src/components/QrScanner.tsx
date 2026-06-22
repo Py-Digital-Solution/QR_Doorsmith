@@ -6,7 +6,7 @@ import type QrScannerType from "qr-scanner";
 /**
  * Camera QR scanner backed by qr-scanner (Nimiq).
  * Uses native BarcodeDetector on Android Chrome (fastest path),
- * falls back to WASM on iOS/Firefox — both faster than html5-qrcode.
+ * falls back to WASM on iOS/Firefox  both faster than html5-qrcode.
  */
 export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);

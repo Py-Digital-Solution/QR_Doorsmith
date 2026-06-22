@@ -5,7 +5,7 @@ import { env } from "../lib/env";
  * MongoDB connection (self-hosted on the Oracle Cloud VM).
  *
  * Oracle's mongod is configured as a SINGLE-NODE REPLICA SET so that
- * multi-document transactions work — these are required for safe point-ledger
+ * multi-document transactions work  these are required for safe point-ledger
  * updates (credit + balance write must be atomic; see Docs/PROJECT_PLAN.md).
  *
  * On Vercel many short-lived serverless instances run concurrently, so we cache

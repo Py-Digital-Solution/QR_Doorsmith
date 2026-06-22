@@ -43,7 +43,7 @@ export async function uploadAvatar(
   return key;
 }
 
-/** Stream an object from MinIO — used by the /api/files proxy route. */
+/** Stream an object from MinIO  used by the /api/files proxy route. */
 export async function getObjectStream(
   key: string,
 ): Promise<{ stream: ReadableStream; contentType: string }> {
@@ -64,7 +64,7 @@ export async function getObjectStream(
  */
 export function toPhotoUrl(stored: string | undefined | null): string {
   if (!stored) return "";
-  // Legacy records store the full MinIO URL — extract just the key portion.
+  // Legacy records store the full MinIO URL  extract just the key portion.
   if (stored.startsWith("http")) {
     try {
       const parts = new URL(stored).pathname.split("/").filter(Boolean);

@@ -113,7 +113,7 @@ export async function createUser(input: CreateUserInput) {
       const appUrl = `${proto}://${host}`;
       waSend(
         phone,
-        `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका खाती खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour khati account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+        `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका खाती खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें  इसमें केवल एक मिनट लगेगा।\nYour khati account has been created. Complete your registration using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
         "welcome",
       ).catch((err) => console.error("[wa] Welcome message failed:", err));
       return newKhati;

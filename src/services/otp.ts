@@ -2,7 +2,6 @@ import "server-only";
 import { connectDB } from "@/db/mongoose";
 import { Otp } from "@/models/Otp";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { env } from "@/lib/env";
 import { waSend } from "@/services/whatsapp";
 
 const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -13,15 +12,7 @@ function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-/**
- * Pluggable sender. Phase 1 dev mode logs the code to the server console.
- * Phase 8 swaps this for Firebase SMS / WhatsApp Cloud API.
- */
 async function sendOtp(phone: string, code: string): Promise<void> {
-  if (env.OTP_DEV_MODE) {
-    console.log(`\n[OTP][dev] ${phone} → ${code}  (not actually sent)\n`);
-    return;
-  }
   await waSend(
     phone,
     `🔐 *DoorSmith लॉगिन कोड | Login Code*\n\nआपका लॉगिन कोड है: *${code}*\nYour login code is: *${code}*\n\n5 मिनट में समाप्त होगा। किसी के साथ साझा न करें।\nExpires in 5 minutes. Do not share with anyone.`,
@@ -53,9 +44,6 @@ export async function requestOtp(phone: string): Promise<void> {
 }
 
 export async function verifyOtp(phone: string, code: string): Promise<boolean> {
-  // Dev shortcut: magic code bypasses DB lookup so local testing needs no SMS.
-  if (env.OTP_DEV_MODE && code.trim() === "1111") return true;
-
   await connectDB();
   const otp = await Otp.findOne({ phone });
   if (!otp) return false;

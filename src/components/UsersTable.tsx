@@ -49,7 +49,7 @@ export function UsersTable({
             )}
             {u.email && <p className="break-all text-sm text-gray-600">{u.email}</p>}
             {u.phone && <p className="text-sm text-gray-600">{u.phone}</p>}
-            {!u.email && !u.phone && <p className="text-sm text-gray-400">—</p>}
+            {!u.email && !u.phone && <p className="text-sm text-gray-400"></p>}
             <Badge tone={statusTone(u.status)}>{u.status}</Badge>
           </MobileCard>
         ))}
@@ -81,8 +81,8 @@ export function UsersTable({
                     <p className="mt-0.5 font-mono text-xs text-gray-400">{u.displayId}</p>
                   )}
                 </TD>
-                <TD className="text-gray-600">{u.email || "—"}</TD>
-                <TD className="text-gray-600">{u.phone || "—"}</TD>
+                <TD className="text-gray-600">{u.email || ""}</TD>
+                <TD className="text-gray-600">{u.phone || ""}</TD>
                 <TD>
                   <Badge tone={statusTone(u.status)}>{u.status}</Badge>
                 </TD>

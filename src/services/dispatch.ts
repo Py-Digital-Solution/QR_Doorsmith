@@ -58,10 +58,10 @@ async function collectUndispatchedDescendants(
 }
 
 /**
- * Create a dispatch bill: validate the scanned serials (any level — master box,
+ * Create a dispatch bill: validate the scanned serials (any level  master box,
  * small box, or a single unique product code), link each scanned unit plus all
  * of its descendants to the chosen counter, activate them, and record the bill.
- * (Should become transactional once the Mongo replica set is configured — see
+ * (Should become transactional once the Mongo replica set is configured  see
  * Docs/SECURITY.md.)
  */
 export async function createDispatch(input: {
@@ -223,7 +223,7 @@ function escapeRegex(s: string): string {
 }
 
 /**
- * Search codes available to dispatch (still in the warehouse — counterId null),
+ * Search codes available to dispatch (still in the warehouse  counterId null),
  * optionally filtered by type and a serial-number substring. Powers the
  * Dispatch screen's searchable Type dropdown.
  */
@@ -262,7 +262,7 @@ export type CounterInventory = {
 
 export async function getCounterInventory(counterId: string): Promise<CounterInventory> {
   await connectDB();
-  // Exclude scanned codes — they've been consumed by a khati and left the counter
+  // Exclude scanned codes  they've been consumed by a khati and left the counter
   const notScanned = { $ne: "scanned" as const };
   const [masters, smalls, products] = await Promise.all([
     QrCode.countDocuments({ counterId, type: "master", status: notScanned }),
@@ -289,7 +289,7 @@ export async function listCounterCodes(
   search?: string,
 ): Promise<Paginated<CounterCodeDTO>> {
   await connectDB();
-  // Exclude scanned codes — consumed by a khati, no longer in counter's inventory
+  // Exclude scanned codes  consumed by a khati, no longer in counter's inventory
   const q: Record<string, unknown> = { counterId, status: { $ne: "scanned" as const } };
   if (filter?.type) q.type = filter.type;
   if (search) q.$or = [{ serialNo: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];

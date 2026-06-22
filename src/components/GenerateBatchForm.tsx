@@ -68,7 +68,7 @@ export function GenerateBatchForm({
           <option value="" disabled>Select a product…</option>
           {products.map((pr) => (
             <option key={pr.id} value={pr.id}>
-              {pr.sku} — {pr.name}
+              {pr.sku}  {pr.name}
             </option>
           ))}
         </Select>

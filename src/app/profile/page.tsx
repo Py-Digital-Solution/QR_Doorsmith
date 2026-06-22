@@ -8,7 +8,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between border-b border-gray-100 py-2 text-sm last:border-0">
       <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-900">{value || "—"}</span>
+      <span className="font-medium text-gray-900">{value || ""}</span>
     </div>
   );
 }
@@ -30,7 +30,7 @@ export default async function ProfilePage() {
         <div className="flex items-center gap-4">
           <Avatar name={profile.name || profile.email} photoUrl={profile.photoUrl} size={56} />
           <div>
-            <p className="font-medium text-gray-900">{profile.name || "—"}</p>
+            <p className="font-medium text-gray-900">{profile.name || ""}</p>
             <span className="mt-0.5 inline-flex items-center rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
               {profile.role}
             </span>

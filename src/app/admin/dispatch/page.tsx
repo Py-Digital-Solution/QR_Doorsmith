@@ -30,7 +30,7 @@ export default async function DispatchPage({
     <div className="space-y-4">
       <PageHeader
         title="Dispatch"
-        description="Scan any unit — master box, small box, or a unique product code — and send stock to a counter."
+        description="Scan any unit  master box, small box, or a unique product code  and send stock to a counter."
       />
 
       <DispatchClient counters={counters} />

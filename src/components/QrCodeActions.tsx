@@ -86,7 +86,7 @@ export function QrCodeActions({
         </button>
       ))}
 
-      {/* Delete — only for codes that haven't left the warehouse */}
+      {/* Delete  only for codes that haven't left the warehouse */}
       {!code.locked && (
         confirm ? (
           <>

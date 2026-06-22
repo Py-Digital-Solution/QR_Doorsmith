@@ -1,5 +1,5 @@
 # Netlify deploy config for the DoorSmith Next.js app.
-# Deploy the REPO ROOT — Netlify builds it and serves via the Next.js runtime.
+# Deploy the REPO ROOT  Netlify builds it and serves via the Next.js runtime.
 # (There is no static folder to publish; this is a dynamic server app.)
 
 [build]

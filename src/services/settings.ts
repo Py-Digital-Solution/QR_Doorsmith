@@ -21,7 +21,7 @@ export async function setSetting(
   );
 }
 
-/** Convenience: is the Distributor role enabled? (SOW 1.2 — off by default.) */
+/** Convenience: is the Distributor role enabled? (SOW 1.2  off by default.) */
 export function isDistributorEnabled(): Promise<boolean> {
   return getSetting<boolean>("distributor_enabled", false);
 }

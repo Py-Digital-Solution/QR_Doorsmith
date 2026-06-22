@@ -106,7 +106,7 @@ export default async function CounterRedemptionsPage({
                     <TD align="right" className="font-bold text-brand">{r.points}</TD>
                     <TD><Badge tone={statusTone(r.status)}>{r.status}</Badge></TD>
                     <TD>
-                      {r.status === "pending" ? <RedemptionActions id={r.id} /> : <span className="text-xs text-gray-400">—</span>}
+                      {r.status === "pending" ? <RedemptionActions id={r.id} /> : <span className="text-xs text-gray-400"></span>}
                     </TD>
                   </TR>
                 ))}

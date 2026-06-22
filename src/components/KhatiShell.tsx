@@ -132,7 +132,7 @@ export function KhatiShell({
         {/* ── Page content ───────────────────────────────────────────────── */}
         {/* pb-24 on mobile gives room for the fixed bottom nav */}
         <main className="flex-1 overflow-y-auto">
-          {/* Promotional banner — floats at top of content, dismissible per-device */}
+          {/* Promotional banner  floats at top of content, dismissible per-device */}
           {showBanner && banner?.image && (
             <div className="sticky top-0 z-20 w-full">
               <div className="relative overflow-hidden shadow-overlay">
@@ -363,7 +363,7 @@ export function KhatiShell({
                 </div>
                 <div className="space-y-3 px-5 py-4">
                   <p className="text-sm text-gray-500">
-                    Install this app on your iPhone for quick access — no App Store needed.
+                    Install this app on your iPhone for quick access  no App Store needed.
                   </p>
 
                   {[

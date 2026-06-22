@@ -1,7 +1,7 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 
 /**
- * Settings — global key/value flags.
+ * Settings  global key/value flags.
  * Seeded with `distributor_enabled = false` because the Distributor role is
  * deactivated by default (SOW 1.2); the admin can enable it later.
  */

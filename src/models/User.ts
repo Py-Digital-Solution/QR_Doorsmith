@@ -2,7 +2,7 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
 import { USER_ROLES, USER_STATUSES } from "../lib/roles";
 
 /**
- * User — every actor in the system (SOW 1.2 five-role hierarchy).
+ * User  every actor in the system (SOW 1.2 five-role hierarchy).
  * Khatis (carpenters) authenticate by phone (OTP); staff by email + password.
  *
  * NOTE: MongoDB does not enforce referential integrity, so `createdBy` and

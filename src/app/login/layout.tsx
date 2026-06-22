@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 export default function LoginLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      {/* Left — branding / details (hidden on small screens) */}
+      {/* Left  branding / details (hidden on small screens) */}
       <aside className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-brand-navy p-12 text-white lg:flex">
         {/* subtle brand glow */}
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
@@ -26,7 +26,7 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
           </h2>
           <p className="text-gray-300">
             A QR-based rewards platform that incentivises khatis through retail
-            counters — scan, earn, and redeem with ease.
+            counters  scan, earn, and redeem with ease.
           </p>
           <ul className="space-y-3 text-sm text-gray-200">
             <li className="flex items-center gap-2.5">
@@ -55,7 +55,7 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
         </p>
       </aside>
 
-      {/* Right — form */}
+      {/* Right  form */}
       <main className="flex w-full items-center justify-center bg-gray-50 p-6 lg:w-1/2">
         <div className="w-full max-w-sm">{children}</div>
       </main>

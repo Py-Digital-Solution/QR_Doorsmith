@@ -18,12 +18,6 @@ const envSchema = z.object({
   // Bootstrap first admin (used by `npm run db:create-admin`).
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().min(8).optional(),
-  // OTP dev mode: log code to console instead of sending via Firebase/WhatsApp.
-  OTP_DEV_MODE: z
-    .enum(["true", "false"])
-    .default("true")
-    .transform((v) => v === "true"),
-
   // --- File storage / MinIO (Phase 0/2, optional for now) ---
   S3_ENDPOINT: z.string().optional(),
   S3_ACCESS_KEY: z.string().optional(),

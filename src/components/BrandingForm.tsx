@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-const MAX_BYTES = 500 * 1024; // 500 KB — keeps MongoDB doc size sane
+const MAX_BYTES = 500 * 1024; // 500 KB  keeps MongoDB doc size sane
 
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

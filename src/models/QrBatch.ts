@@ -2,7 +2,7 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
 import { QR_BATCH_STATUSES } from "../lib/qr";
 
 /**
- * A generation batch (SOW 1.8 — "Batch Activation & Status Control").
+ * A generation batch (SOW 1.8  "Batch Activation & Status Control").
  * Records who generated it, the structure, the reserved serial range, the
  * print sheet/label config, and the batch status for the audit trail.
  */

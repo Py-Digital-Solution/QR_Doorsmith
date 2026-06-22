@@ -1,4 +1,4 @@
-# Security Hardening — DoorSmith
+# Security Hardening  DoorSmith
 
 Status of the current setup and the steps to harden it before go-live. Items
 marked **[app]** are done in code; **[infra]** require action on the Oracle VM.
@@ -14,7 +14,7 @@ marked **[app]** are done in code; **[infra]** require action on the Oracle VM.
 ---
 
 ## 1. Rotate credentials **[infra]**
-Both the Mongo password and the MinIO keys were shared in plaintext — rotate them.
+Both the Mongo password and the MinIO keys were shared in plaintext  rotate them.
 
 **MongoDB** (in `mongosh`, authenticated as admin):
 ```js
@@ -62,7 +62,7 @@ mongodb://USER:PASS@141.148.206.190:27017/doorsmith?replicaSet=rs0&authSource=ad
 ---
 
 ## 3. Enable TLS **[infra]**
-**MongoDB** — `/etc/mongod.conf`:
+**MongoDB**  `/etc/mongod.conf`:
 ```yaml
 net:
   tls:
@@ -71,7 +71,7 @@ net:
 ```
 Connect with `?tls=true` in the URI (already in `.env.example`).
 
-**MinIO** — drop a cert + key into the certs dir and restart:
+**MinIO**  drop a cert + key into the certs dir and restart:
 ```bash
 ~/.minio/certs/public.crt
 ~/.minio/certs/private.key
@@ -104,4 +104,4 @@ Use a real cert (Let's Encrypt via a domain pointing at the VM) or a private CA.
 ## Known limitations (future)
 - A suspended/deleted user keeps access until their JWT expires (no live
   session revocation yet). Mitigate by shortening session lifetime if needed.
-- No automated DB backups yet — script `mongodump` to MinIO/R2 on a cron.
+- No automated DB backups yet  script `mongodump` to MinIO/R2 on a cron.

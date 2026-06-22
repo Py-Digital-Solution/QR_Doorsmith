@@ -62,7 +62,7 @@ export function PwaInstallBanner() {
     );
   }
 
-  // ── iOS Safari — show manual steps immediately ──
+  // ── iOS Safari  show manual steps immediately ──
   if (isIOS) {
     return (
       <div className="mb-5 rounded-xl border border-brand/20 bg-brand-light p-4 shadow-card">

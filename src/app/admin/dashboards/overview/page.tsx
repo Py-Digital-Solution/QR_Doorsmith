@@ -41,7 +41,7 @@ async function getOverviewData() {
     QrCode.countDocuments({ status: "scanned", scannedAt: { $gte: todayStart } }),
     QrCode.countDocuments({ status: "scanned", scannedAt: { $gte: weekStart } }),
     QrCode.countDocuments({ status: "scanned", scannedAt: { $gte: monthStart } }),
-    // Points reversed this week (negative transactions — redemptions, returns)
+    // Points reversed this week (negative transactions  redemptions, returns)
     PointTransaction.aggregate([
       { $match: { createdAt: { $gte: weekStart }, points: { $lt: 0 } } },
       { $group: { _id: null, total: { $sum: "$points" } } },
@@ -116,7 +116,7 @@ async function getOverviewData() {
       createdAt: u.createdAt as Date,
     })),
     topCounters: topCounters.map((r: { _id: unknown; scans: number }) => ({
-      name: counterNameMap.get(String(r._id)) ?? "—",
+      name: counterNameMap.get(String(r._id)) ?? "",
       scans: r.scans,
     })),
     redemptionsPending: redemptionMap["pending"] ?? 0,

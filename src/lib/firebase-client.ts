@@ -16,7 +16,7 @@ export function getFirebaseApp() {
 
   if (!appCheckInitialized && typeof window !== "undefined") {
     // Development: use Firebase debug token so App Check is satisfied without reCAPTCHA.
-    // On first run Firebase logs the debug token to the browser console — copy it and
+    // On first run Firebase logs the debug token to the browser console  copy it and
     // register it once at: Firebase Console → App Check → Your app → Manage debug tokens.
     if (process.env.NODE_ENV !== "production") {
       // @ts-expect-error – Firebase App Check debug global

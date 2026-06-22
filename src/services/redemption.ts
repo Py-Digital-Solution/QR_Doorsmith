@@ -111,7 +111,7 @@ export async function listCounterRedemptions(
       const k = d.khatiId as { name?: string; phone?: string } | null;
       return {
         id: String(d._id),
-        khatiName: k?.name || k?.phone || "—",
+        khatiName: k?.name || k?.phone || "",
         khatiPhone: k?.phone || "",
         points: d.points,
         status: d.status,
@@ -143,7 +143,7 @@ export async function approveRedemption(id: string, counterId: string, otp: stri
     $set: { status: "approved", processedBy: counterId },
   });
 
-  // Ledger entry — redemption locks (deducts) points from the khati balance.
+  // Ledger entry  redemption locks (deducts) points from the khati balance.
   PointTransaction.create({
     khatiId: r.khatiId,
     redemptionId: r._id,

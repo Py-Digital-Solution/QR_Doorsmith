@@ -1,6 +1,6 @@
 /**
  * One-time migration: assign displayId values to all existing users that
- * don't have one yet. Idempotent — safe to run multiple times.
+ * don't have one yet. Idempotent  safe to run multiple times.
  *
  * Run with: npm run db:migrate-display-ids
  */

@@ -27,7 +27,7 @@ export async function embedLogo(
       mimeType = header.replace("data:", "").replace(";base64", "");
       buf = Buffer.from(b64, "base64").buffer as ArrayBuffer;
     } else {
-      // External URL — fetch with a 5-second timeout so PDFs don't hang
+      // External URL  fetch with a 5-second timeout so PDFs don't hang
       const res = await fetch(logoUrl, {
         signal: AbortSignal.timeout(5000),
       });

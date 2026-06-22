@@ -1,5 +1,5 @@
 /**
- * Pure role/status constants — NO database imports, so this is safe to import
+ * Pure role/status constants  NO database imports, so this is safe to import
  * from client components as well as server code and CLI scripts.
  */
 export const USER_ROLES = [
