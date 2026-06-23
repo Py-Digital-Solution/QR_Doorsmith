@@ -167,7 +167,7 @@ export async function approveKyc(actorId: string, actorRole: string, khatiId: st
   if (khati.phone) {
     waSend(
       khati.phone,
-      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\nDoorSmith ऐप खोलें और लॉग इन करें  आपका खाती खाता तैयार है! 🚀\nOpen DoorSmith and log in  your khati account is ready!`,
+      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\nhttps://app.doorsmith.in/login/khati\n\nआपका खाती खाता तैयार है! 🚀\nYour khati account is ready!`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
   }
@@ -188,7 +188,7 @@ export async function rejectKyc(actorId: string, actorRole: string, khatiId: str
   if (khati.phone) {
     waSend(
       khati.phone,
-      `❌ *खाती पंजीकरण अस्वीकृत | Khati Registration Rejected*\n\nप्रिय *${khati.name}*, दुर्भाग्यवश आपका DoorSmith पंजीकरण अभी स्वीकृत नहीं हो सका।\nDear *${khati.name}*, unfortunately your DoorSmith registration could not be approved at this time.\n\n*कारण | Reason:* ${reason || "कोई कारण नहीं दिया गया | No reason provided."}\n\nकृपया सहायता के लिए अपने काउंटर से संपर्क करें।\nPlease contact your counter for further assistance.`,
+      `❌ *खाती पंजीकरण अस्वीकृत | Khati Registration Rejected*\n\nप्रिय *${khati.name}*, दुर्भाग्यवश आपका DoorSmith पंजीकरण अभी स्वीकृत नहीं हो सका।\nDear *${khati.name}*, unfortunately your DoorSmith registration could not be approved at this time.\n\n*कारण | Reason:*\n${reason || "कोई कारण नहीं दिया गया | No reason provided."}\n\n📞 कृपया सहायता के लिए अपने काउंटर से संपर्क करें।\nPlease contact your counter for further assistance.`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati rejection WA failed:", err));
   }
