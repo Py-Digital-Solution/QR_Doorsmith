@@ -59,7 +59,7 @@ export function AuditLogTable({ logs }: { logs: AuditLogDTO[] }) {
             {logs.map((log) => (
               <tr key={log.id} className="hover:bg-gray-50">
                 <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">
-                  {new Date(log.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(log.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </td>
                 <td className="px-4 py-3">
                   <p className="font-medium text-gray-900">{log.actorName}</p>
@@ -90,7 +90,7 @@ export function AuditLogTable({ logs }: { logs: AuditLogDTO[] }) {
       <SlideOver open={!!selected} onClose={() => setSelected(null)} title="Audit Event">
         {selected && (
           <div className="space-y-0.5">
-            <Detail label="Time" value={new Date(selected.createdAt).toLocaleString()} />
+            <Detail label="Time" value={new Date(selected.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} />
             <Detail label="Actor" value={`${selected.actorName} (${selected.actorRole})`} />
             <Detail label="Action" value={selected.action.replace(/_/g, " ")} />
             <Detail label="Entity type" value={selected.entityType} />

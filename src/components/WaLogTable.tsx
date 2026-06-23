@@ -54,7 +54,7 @@ export function WaLogTable({
                     <Badge tone={TYPE_TONE[log.type] ?? "gray"}>{log.type}</Badge>
                     {log.status === "failed" && <Badge tone="red">failed</Badge>}
                     <span className="ml-auto text-xs text-gray-400">
-                      {new Date(log.createdAt).toLocaleString()}
+                      {new Date(log.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
                     </span>
                   </div>
                   <p className="mt-0.5 truncate text-xs text-gray-500">{log.messagePreview}</p>
@@ -140,7 +140,7 @@ export function WaLogTable({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Sent at</span>
-                  <span className="text-gray-800">{new Date(selected.createdAt).toLocaleString()}</span>
+                  <span className="text-gray-800">{new Date(selected.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</span>
                 </div>
               </div>
 

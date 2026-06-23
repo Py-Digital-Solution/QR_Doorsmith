@@ -113,7 +113,7 @@ export async function createUser(input: CreateUserInput) {
       const appUrl = `${proto}://${host}`;
       waSend(
         phone,
-        `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका खाती खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें  इसमें केवल एक मिनट लगेगा।\nYour khati account has been created. Complete your registration using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+        `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका खाती खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें  इसमें केवल एक मिनट लगेगा।\nYour khati account has been created. Complete your registration using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/khati/login\nAfter registration, log in here: ${appUrl}/khati/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
         "welcome",
       ).catch((err) => console.error("[wa] Welcome message failed:", err));
       return newKhati;
@@ -126,12 +126,15 @@ export async function createUser(input: CreateUserInput) {
   if (!input.email || !input.password) {
     throw new Error("Email and password are required for staff accounts.");
   }
+  if (!input.phone) {
+    throw new Error("Phone number is required for all users.");
+  }
   const email = input.email.trim().toLowerCase();
   const existing = await User.findOne({ email });
   if (existing) throw new Error("A user with this email already exists.");
   const passwordHash = await hashPassword(input.password);
   const extra: Record<string, unknown> = {};
-  if (input.phone) extra.phone = input.phone.trim();
+  extra.phone = normalizePhone(input.phone);
   try {
     return await User.create({ ...base, email, passwordHash, ...extra });
   } catch (e) {

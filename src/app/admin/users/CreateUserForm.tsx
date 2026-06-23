@@ -244,7 +244,7 @@ export function CreateUserForm({
 
             {/* Phone + Firebase OTP */}
             <div className="space-y-2">
-              <Label>Phone number <span className="text-xs font-normal text-gray-400">(optional)</span></Label>
+              <Label>Phone number <span className="text-red-500">*</span></Label>
 
               {/* Phone input row */}
               <input type="hidden" name="phone" value={phone.length > 0 ? `+91${phone}` : ""} />

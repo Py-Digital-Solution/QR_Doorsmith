@@ -56,7 +56,7 @@ export function KycCard({ khati, showStatus, readOnly }: { khati: PendingKhatiDT
             )}
             {khati.submittedAt && (
               <p className="mt-1 text-xs text-gray-400">
-                Submitted {new Date(khati.submittedAt).toLocaleString()}
+                Submitted {new Date(khati.submittedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
               </p>
             )}
           </div>
@@ -109,7 +109,7 @@ export function KycCard({ khati, showStatus, readOnly }: { khati: PendingKhatiDT
             {khati.submittedAt && (
               <Detail
                 label="Submitted At"
-                value={new Date(khati.submittedAt).toLocaleString()}
+                value={new Date(khati.submittedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
               />
             )}
           </div>

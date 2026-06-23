@@ -35,9 +35,7 @@ export async function sendWelcomeEmail({
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
         <tr>
           <td style="background:#f6821f;padding:32px 40px;text-align:center">
-            <div style="display:inline-block;background:#fff;border-radius:10px;padding:10px 20px;margin-bottom:16px">
-              <span style="font-size:22px;font-weight:900;color:#f6821f">Door</span><span style="font-size:22px;font-weight:900;color:#0f2444">Smith</span>
-            </div>
+            <img src="https://app.doorsmith.in/logo.png" alt="DoorSmith" style="height:40px;margin-bottom:16px;display:inline-block" />
             <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700">Welcome to DoorSmith!</h1>
             <p style="margin:8px 0 0;color:#ffe8d0;font-size:14px">Your Carpenter Rewards Platform</p>
           </td>
