@@ -27,9 +27,14 @@ export async function submitRegistrationAction(
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     if (photo.size > 5 * 1024 * 1024) return { error: "Photo must be under 5 MB." };
-    photoBuffer = Buffer.from(await photo.arrayBuffer());
-    photoContentType = photo.type;
-    photoExt = photo.name.split(".").pop() ?? "jpg";
+    try {
+      const arrayBuf = await photo.arrayBuffer();
+      photoBuffer = Buffer.from(arrayBuf);
+      photoContentType = photo.type || "image/jpeg";
+      photoExt = photo.name.split(".").pop()?.toLowerCase() || "jpg";
+    } catch (err) {
+      return { error: "Failed to process photo. Please try again." };
+    }
   }
 
   const result = await submitKhatiProfile(token, { address, dob, email, photoBuffer, photoContentType, photoExt });
