@@ -17,7 +17,7 @@ export async function GET(
 ) {
   const session = await auth();
   const role = session?.user?.role;
-  if (role !== "admin" && role !== "counter") {
+  if (!role || !["admin", "counter", "sales_rep", "distributor"].includes(role)) {
     return new Response("Forbidden", { status: 403 });
   }
 

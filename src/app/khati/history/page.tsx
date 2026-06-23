@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { listKhatiScans } from "@/services/khati";
 import { parsePageParams } from "@/lib/pagination";
+import { formatISTDateTime } from "@/lib/datetime";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterBar } from "@/components/ui/FilterBar";
@@ -73,7 +74,7 @@ export default async function KhatiHistoryPage({
                 <div>
                   <p className="font-mono text-sm font-medium text-gray-900">{s.serialNo}</p>
                   {s.sku && <p className="text-xs text-gray-400">{s.sku}</p>}
-                  <p className="text-xs text-gray-400">{s.scannedAt.slice(0, 16).replace("T", " ")}</p>
+                  <p className="text-xs text-gray-400">{formatISTDateTime(s.scannedAt)}</p>
                   {s.isReturn && <p className="text-xs font-medium text-red-500">Product returned</p>}
                 </div>
                 <PointsBadge points={s.points} isReturn={s.isReturn} />
@@ -97,7 +98,7 @@ export default async function KhatiHistoryPage({
                       {s.isReturn && <p className="text-xs font-medium text-red-500">Product returned</p>}
                     </TD>
                     <TD className="text-xs text-gray-500">{s.sku || "—"}</TD>
-                    <TD className="text-xs text-gray-500">{s.scannedAt.slice(0, 16).replace("T", " ")}</TD>
+                    <TD className="text-xs text-gray-500">{formatISTDateTime(s.scannedAt)}</TD>
                     <TD align="right">
                       <PointsBadge points={s.points} isReturn={s.isReturn} />
                     </TD>

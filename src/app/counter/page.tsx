@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import Link from "next/link";
-import { listUsers } from "@/services/users";
+import { listCounterKhatis } from "@/services/users";
 import { getCounterInventory } from "@/services/dispatch";
 import { parsePageParams } from "@/lib/pagination";
 import { CreateUserPanel } from "@/components/CreateUserPanel";
-import { UsersTable } from "@/components/UsersTable";
+import { CounterKhatisTable } from "@/components/CounterKhatisTable";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterBar } from "@/components/ui/FilterBar";
@@ -51,7 +51,7 @@ export default async function CounterHome({
   const q = sp.q ?? "";
 
   const [result, inventory] = await Promise.all([
-    listUsers({ role: "khati", createdBy: session!.user.id, search: q || undefined }, pagination),
+    listCounterKhatis(session!.user.id, pagination, q || undefined),
     getCounterInventory(session!.user.id),
   ]);
 
@@ -62,7 +62,13 @@ export default async function CounterHome({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Khatis & Inventory" description="Manage your registered khatis and view stock." />
+      <PageHeader
+        title="Khatis"
+        description="Manage your registered khatis and view stock."
+        actions={
+          <CreateUserPanel allowedRoles={["khati"]} label="Create khati" title="Register khati" />
+        }
+      />
 
       {/* Inventory summary */}
       <div>
@@ -82,17 +88,9 @@ export default async function CounterHome({
 
       {/* Khatis */}
       <div className="space-y-3">
-        <PageHeader
-          title="Khatis"
-          description="Khatis registered at your counter."
-          actions={
-            <CreateUserPanel allowedRoles={["khati"]} label="Create khati" title="Register khati" />
-          }
-        />
-
         <FilterBar placeholder="Search by name…" exportType="counter-khatis" />
 
-        <UsersTable users={result.items} currentUserId={session!.user.id} />
+        <CounterKhatisTable khatis={result.items} currentUserId={session!.user.id} />
 
         <Pagination
           page={result.page}

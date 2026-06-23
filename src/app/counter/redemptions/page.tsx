@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { listCounterRedemptions } from "@/services/redemption";
 import { parsePageParams } from "@/lib/pagination";
+import { formatISTDate } from "@/lib/datetime";
 import { Pagination } from "@/components/Pagination";
 import { RedemptionActions } from "@/components/RedemptionActions";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -75,7 +76,7 @@ export default async function CounterRedemptionsPage({
                   <div>
                     <p className="font-medium text-gray-900">{r.khatiName}</p>
                     {r.khatiPhone && <p className="text-xs text-gray-400">{r.khatiPhone}</p>}
-                    <p className="text-xs text-gray-400">{r.createdAt.slice(0, 10)}</p>
+                    <p className="text-xs text-gray-400">{formatISTDate(r.createdAt)}</p>
                   </div>
                   <p className="text-xl font-bold text-brand">{r.points} pts</p>
                 </div>
@@ -102,7 +103,7 @@ export default async function CounterRedemptionsPage({
                       <p className="font-medium text-gray-900">{r.khatiName}</p>
                       {r.khatiPhone && <p className="text-xs text-gray-400">{r.khatiPhone}</p>}
                     </TD>
-                    <TD className="text-xs text-gray-500">{r.createdAt.slice(0, 10)}</TD>
+                    <TD className="text-xs text-gray-500">{formatISTDate(r.createdAt)}</TD>
                     <TD align="right" className="font-bold text-brand">{r.points}</TD>
                     <TD><Badge tone={statusTone(r.status)}>{r.status}</Badge></TD>
                     <TD>

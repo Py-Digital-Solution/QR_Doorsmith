@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { listCounterDispatches } from "@/services/dispatch";
 import { parsePageParams } from "@/lib/pagination";
+import { formatISTDate } from "@/lib/datetime";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterBar } from "@/components/ui/FilterBar";
@@ -52,12 +53,12 @@ export default async function CounterDispatchesPage({
               <div key={d.id} className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-card">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-sm font-medium text-gray-900">{d.billNo}</span>
-                  <a href={`/admin/dispatch/${d.id}/bill`} target="_blank" rel="noopener noreferrer" className={billLink}>
+                  <a href={`/api/dispatch/${d.id}/bill`} target="_blank" rel="noopener noreferrer" className={billLink}>
                     Dispatch Receipt
                   </a>
                 </div>
                 <div className="mt-1 flex gap-3 text-xs text-gray-500">
-                  <span>{d.createdAt.slice(0, 10)}</span>
+                  <span>{formatISTDate(d.createdAt)}</span>
                   <span>{d.unitCount} unit(s)</span>
                   <span>{d.totalCodes} codes</span>
                 </div>
@@ -78,11 +79,11 @@ export default async function CounterDispatchesPage({
                 {result.items.map((d) => (
                   <TR key={d.id} interactive>
                     <TD className="font-mono text-xs font-medium text-gray-900">{d.billNo}</TD>
-                    <TD className="text-xs text-gray-500">{d.createdAt.slice(0, 10)}</TD>
+                    <TD className="text-xs text-gray-500">{formatISTDate(d.createdAt)}</TD>
                     <TD align="right" className="text-xs text-gray-600">{d.unitCount}</TD>
                     <TD align="right" className="text-xs text-gray-600">{d.totalCodes}</TD>
                     <TD align="right">
-                      <a href={`/admin/dispatch/${d.id}/bill`} target="_blank" rel="noopener noreferrer" className={billLink}>
+                      <a href={`/api/dispatch/${d.id}/bill`} target="_blank" rel="noopener noreferrer" className={billLink}>
                         Dispatch Receipt
                       </a>
                     </TD>

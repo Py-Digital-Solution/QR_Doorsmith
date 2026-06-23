@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { CounterReturnPanel } from "@/components/CounterReturnPanel";
 import { listAllReturns } from "@/services/returns";
 import { parsePageParams } from "@/lib/pagination";
+import { formatISTDate } from "@/lib/datetime";
 import { Pagination } from "@/components/Pagination";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -70,7 +71,7 @@ export default async function AdminReturnsPage({
                   <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
                     <Store className="size-3.5 shrink-0 text-brand" aria-hidden />
                     <span className="font-medium text-gray-600">{r.counterName}</span>
-                    <span className="ml-auto text-gray-400">{r.createdAt.slice(0, 10)}</span>
+                    <span className="ml-auto text-gray-400">{formatISTDate(r.createdAt)}</span>
                   </div>
                 </div>
               ))}
@@ -99,7 +100,7 @@ export default async function AdminReturnsPage({
                           {r.counterName}
                         </div>
                       </TD>
-                      <TD className="text-xs text-gray-500">{r.createdAt.slice(0, 10)}</TD>
+                      <TD className="text-xs text-gray-500">{formatISTDate(r.createdAt)}</TD>
                       <TD align="right">
                         <span className="font-semibold text-red-600">−{r.pointsReversed}</span>
                       </TD>

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { getKhatiStats } from "@/services/khati";
 import { listKhatiRedemptions } from "@/services/redemption";
 import { getSetting } from "@/services/settings";
+import { formatISTDate } from "@/lib/datetime";
 import { parsePageParams } from "@/lib/pagination";
 import { Pagination } from "@/components/Pagination";
 import { RedeemForm } from "@/components/RedeemForm";
@@ -61,7 +62,7 @@ export default async function KhatiRedemptionsPage({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{r.points} points</p>
-                      <p className="text-xs text-gray-400">{r.createdAt.slice(0, 10)}</p>
+                      <p className="text-xs text-gray-400">{formatISTDate(r.createdAt)}</p>
                     </div>
                     <Badge tone={statusTone(r.status)}>{r.status}</Badge>
                   </div>

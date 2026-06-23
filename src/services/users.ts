@@ -243,6 +243,57 @@ export async function listUsers(
   return paginated(items, total, pagination);
 }
 
+export type CounterKhatiRow = UserDTO & { totalPoints: number; rank: number };
+
+/**
+ * Khatis registered at a counter, each annotated with their total (lifetime)
+ * points and rank within that counter's khatis (1 = highest). Sorted by points
+ * desc so the ranking reads top-down.
+ */
+export async function listCounterKhatis(
+  counterId: string,
+  pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+  search?: string,
+): Promise<Paginated<CounterKhatiRow>> {
+  await connectDB();
+
+  // Rank map across ALL of this counter's khatis (independent of search/paging).
+  const ranked = await User.find({ role: "khati", createdBy: counterId })
+    .select("_id lifetimePoints")
+    .sort({ lifetimePoints: -1 })
+    .lean();
+  const rankMap = new Map<string, number>();
+  ranked.forEach((u, i) => rankMap.set(String(u._id), i + 1));
+
+  const query: Record<string, unknown> = { role: "khati", createdBy: counterId };
+  if (search) query.name = { $regex: search, $options: "i" };
+
+  const { page, pageSize } = pagination;
+  const total = await User.countDocuments(query);
+  const docs = await User.find(query)
+    .sort({ lifetimePoints: -1 })
+    .skip((page - 1) * pageSize)
+    .limit(pageSize)
+    .lean();
+
+  const items: CounterKhatiRow[] = docs.map((d) => ({
+    id: String(d._id),
+    displayId: (d as { displayId?: string }).displayId ?? "",
+    role: d.role as UserRole,
+    name: d.name ?? "",
+    email: d.email ?? "",
+    phone: d.phone ?? "",
+    status: String(d.status),
+    photoUrl: toPhotoUrl(d.photoUrl) || undefined,
+    kycStatus: d.kycStatus ?? undefined,
+    hasRegistrationToken: !!d.registrationToken,
+    totalPoints: (d as { lifetimePoints?: number }).lifetimePoints ?? 0,
+    rank: rankMap.get(String(d._id)) ?? 0,
+  }));
+
+  return paginated(items, total, pagination);
+}
+
 /** All counters as {id,label} for select inputs (dispatch). */
 export async function listCounters(): Promise<{ id: string; label: string }[]> {
   await connectDB();

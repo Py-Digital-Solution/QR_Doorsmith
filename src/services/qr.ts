@@ -576,6 +576,15 @@ export async function getBatchPrintData(
     .select("serialNo type sku")
     .lean();
 
+  // Print products first, then the box codes (small, then master) at the end.
+  const TYPE_ORDER: Record<string, number> = { product: 0, small: 1, master: 2 };
+  const ordered = [...codes].sort((a, b) => {
+    const ta = TYPE_ORDER[String(a.type)] ?? 0;
+    const tb = TYPE_ORDER[String(b.type)] ?? 0;
+    if (ta !== tb) return ta - tb;
+    return a.serialNo.localeCompare(b.serialNo);
+  });
+
   return {
     productSku: codes[0]?.sku ?? "",
     labelWidthMm: batch.sheetConfig?.labelWidthMm ?? 40,
@@ -586,6 +595,6 @@ export async function getBatchPrintData(
       small: batch.qrSizes?.smallSize ?? 15,
       product: batch.qrSizes?.productSize ?? 10,
     },
-    codes: codes.map((c) => ({ serialNo: c.serialNo, type: String(c.type) })),
+    codes: ordered.map((c) => ({ serialNo: c.serialNo, type: String(c.type) })),
   };
 }

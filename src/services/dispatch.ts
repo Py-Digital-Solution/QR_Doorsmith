@@ -280,12 +280,14 @@ export type CounterInventory = {
 
 export async function getCounterInventory(counterId: string): Promise<CounterInventory> {
   await connectDB();
-  // Exclude scanned codes (consumed by khati) and returned codes (awaiting re-dispatch)
-  const baseFilter = { status: { $ne: "scanned" as const }, returned: { $ne: true } };
+  const cid = new Types.ObjectId(counterId);
+  // Show every code dispatched to the counter (active / scanned / returned alike);
+  // the inventory list surfaces each code's status. Counts = total dispatched per type.
+  const baseFilter = { counterId: cid };
   const [masters, smalls, products] = await Promise.all([
-    QrCode.countDocuments({ counterId, type: "master", ...baseFilter }),
-    QrCode.countDocuments({ counterId, type: "small", ...baseFilter }),
-    QrCode.countDocuments({ counterId, type: "product", ...baseFilter }),
+    QrCode.countDocuments({ ...baseFilter, type: "master" }),
+    QrCode.countDocuments({ ...baseFilter, type: "small" }),
+    QrCode.countDocuments({ ...baseFilter, type: "product" }),
   ]);
   return { masters, smalls, products, total: masters + smalls + products };
 }
@@ -307,8 +309,10 @@ export async function listCounterCodes(
   search?: string,
 ): Promise<Paginated<CounterCodeDTO>> {
   await connectDB();
-  // Exclude scanned codes (consumed by khati) and returned codes (awaiting re-dispatch)
-  const q: Record<string, unknown> = { counterId, status: { $ne: "scanned" as const }, returned: { $ne: true } };
+  // Show every code dispatched to the counter; the status badge tells the counter
+  // whether each code is active, scanned by a khati, or returned.
+  const cid = new Types.ObjectId(counterId);
+  const q: Record<string, unknown> = { counterId: cid };
   if (filter?.type) q.type = filter.type;
   if (search) q.$or = [{ serialNo: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
   const { page, pageSize } = pagination;
@@ -340,7 +344,8 @@ export async function listCounterDispatches(
   search?: string,
 ): Promise<Paginated<DispatchDTO>> {
   await connectDB();
-  const q: Record<string, unknown> = { counterId };
+  const cid = new Types.ObjectId(counterId);
+  const q: Record<string, unknown> = { counterId: cid };
   if (search) q.billNo = { $regex: search, $options: "i" };
   const { page, pageSize } = pagination;
   const total = await Dispatch.countDocuments(q);

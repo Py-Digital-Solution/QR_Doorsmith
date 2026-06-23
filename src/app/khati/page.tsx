@@ -4,6 +4,7 @@ import { ScanLine, Coins, ChevronRight, Star, PlayCircle, Package } from "lucide
 import { listKhatiScans } from "@/services/khati";
 import { getKhatiDashboard } from "@/services/analytics";
 import { listProducts } from "@/services/products";
+import { formatISTDate } from "@/lib/datetime";
 import { StatCard } from "@/components/ui/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -148,7 +149,7 @@ export default async function KhatiHome() {
                 <div>
                   <p className="font-mono text-xs font-medium text-gray-900">{s.serialNo}</p>
                   {s.sku && <p className="text-xs text-gray-400">{s.sku}</p>}
-                  <p className="text-xs text-gray-400">{s.scannedAt.slice(0, 10)}</p>
+                  <p className="text-xs text-gray-400">{formatISTDate(s.scannedAt)}</p>
                   {s.isReturn && (
                     <span className="mt-0.5 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">
                       Product returned

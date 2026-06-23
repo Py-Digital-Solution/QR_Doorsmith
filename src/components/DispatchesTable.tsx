@@ -1,4 +1,5 @@
 import type { DispatchDTO } from "@/services/dispatch";
+import { formatISTDate } from "@/lib/datetime";
 import {
   TableWrapper,
   Table,
@@ -49,7 +50,7 @@ export function DispatchesTable({ dispatches }: { dispatches: DispatchDTO[] }) {
           >
             <p className="text-sm text-gray-700">→ {d.counterLabel}</p>
             <p>{d.unitCount} item(s) · {d.totalCodes} codes</p>
-            <p className="text-gray-400">{d.createdAt.slice(0, 10)}</p>
+            <p className="text-gray-400">{formatISTDate(d.createdAt)}</p>
           </MobileCard>
         ))}
       </MobileCardList>
@@ -74,7 +75,7 @@ export function DispatchesTable({ dispatches }: { dispatches: DispatchDTO[] }) {
                 <TD align="right" className="font-medium text-gray-900">
                   {d.totalCodes}
                 </TD>
-                <TD className="text-gray-600">{d.createdAt.slice(0, 10)}</TD>
+                <TD className="text-gray-600">{formatISTDate(d.createdAt)}</TD>
                 <TD align="right">
                   <BillLink id={d.id} />
                 </TD>

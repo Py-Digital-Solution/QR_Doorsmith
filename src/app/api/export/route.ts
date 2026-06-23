@@ -12,6 +12,7 @@ import { listCounterRedemptions, listKhatiRedemptions } from "@/services/redempt
 import { listKhatiScans } from "@/services/khati";
 import { getCompanyBranding, type CompanyBranding } from "@/services/branding";
 import { embedLogo } from "@/lib/pdf-logo";
+import { formatISTDate, formatISTFull } from "@/lib/datetime";
 
 const ALL = { page: 1, pageSize: 10000 };
 
@@ -76,7 +77,7 @@ async function buildTablePdf(
   }
 
   // Title + date (right side)
-  const dateStr = `Exported: ${new Date().toLocaleString("en-IN")}`;
+  const dateStr = `Exported: ${formatISTFull()}`;
   const titleW = bold.widthOfTextAtSize(title, 11);
   const dateW = regular.widthOfTextAtSize(dateStr, 7);
   state.page.drawText(title, { x: W - margin - titleW, y: state.y - 14, size: 11, font: bold, color: navy });
@@ -138,7 +139,7 @@ function toXlsx(
   if (branding.tagline) headerRows.push([branding.tagline]);
   if (contactLine) headerRows.push([contactLine]);
   if (branding.address) headerRows.push([branding.address]);
-  headerRows.push([`Report: ${title}`, `Exported: ${new Date().toLocaleString("en-IN")}`]);
+  headerRows.push([`Report: ${title}`, `Exported: ${formatISTFull()}`]);
   headerRows.push([]); // blank separator before data
   headerRows.push(headers);
   headerRows.push(...rows);
@@ -226,7 +227,7 @@ export async function GET(req: NextRequest) {
       case "dispatches": {
         const result = await listDispatches(ALL, q);
         return respond(format, "Dispatches", ["Bill No", "Counter", "Units", "Total Codes", "Date"],
-          result.items.map((d) => [d.billNo, d.counterLabel, String(d.unitCount), String(d.totalCodes), d.createdAt.slice(0, 10)]), branding);
+          result.items.map((d) => [d.billNo, d.counterLabel, String(d.unitCount), String(d.totalCodes), formatISTDate(d.createdAt)]), branding);
       }
 
       case "counter-khatis": {
@@ -253,32 +254,32 @@ export async function GET(req: NextRequest) {
       case "counter-dispatches": {
         const result = await listCounterDispatches(uid, ALL, q);
         return respond(format, "Dispatch History", ["Bill No", "Units", "Total Codes", "Date"],
-          result.items.map((d) => [d.billNo, String(d.unitCount), String(d.totalCodes), d.createdAt.slice(0, 10)]), branding);
+          result.items.map((d) => [d.billNo, String(d.unitCount), String(d.totalCodes), formatISTDate(d.createdAt)]), branding);
       }
 
       case "counter-returns": {
         const result = await listCounterReturns(uid, ALL, q);
         return respond(format, "Return History", ["Serial No", "SKU", "Khati", "Counter", "Pts Reversed", "Date"],
-          result.items.map((r) => [r.serialNo, r.sku, r.khatiName, r.counterName, String(r.pointsReversed), r.createdAt.slice(0, 10)]), branding);
+          result.items.map((r) => [r.serialNo, r.sku, r.khatiName, r.counterName, String(r.pointsReversed), formatISTDate(r.createdAt)]), branding);
       }
 
       case "counter-redemptions": {
         const status = sp.get("status") ?? undefined;
         const result = await listCounterRedemptions(uid, ALL, { status, search: q });
         return respond(format, "Redemption Requests", ["Khati", "Phone", "Points", "Status", "Date"],
-          result.items.map((r) => [r.khatiName, r.khatiPhone, String(r.points), r.status, r.createdAt.slice(0, 10)]), branding);
+          result.items.map((r) => [r.khatiName, r.khatiPhone, String(r.points), r.status, formatISTDate(r.createdAt)]), branding);
       }
 
       case "khati-history": {
         const result = await listKhatiScans(uid, ALL, q);
         return respond(format, "Transaction History", ["Serial No", "SKU", "Points", "Type", "Date"],
-          result.items.map((s) => [s.serialNo, s.sku, String(s.points), s.isReturn ? "Return" : "Scan", s.scannedAt.slice(0, 10)]), branding);
+          result.items.map((s) => [s.serialNo, s.sku, String(s.points), s.isReturn ? "Return" : "Scan", formatISTDate(s.scannedAt)]), branding);
       }
 
       case "khati-redemptions": {
         const result = await listKhatiRedemptions(uid, ALL);
         return respond(format, "My Redemptions", ["Points", "Status", "Date"],
-          result.items.map((r) => [String(r.points), r.status, r.createdAt.slice(0, 10)]), branding);
+          result.items.map((r) => [String(r.points), r.status, formatISTDate(r.createdAt)]), branding);
       }
 
       default:

@@ -6,15 +6,15 @@ import { Return } from "@/models/Return";
 import { Redemption } from "@/models/Redemption";
 import { PointTransaction } from "@/models/PointTransaction";
 import { ICONS } from "@/components/ui/icons";
+import { istStartOfToday, daysAgo } from "@/lib/datetime";
 
 // ─── data ────────────────────────────────────────────────────────────────────
 
 async function getOverviewData() {
   await connectDB();
-  const now = new Date();
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-  const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const todayStart = istStartOfToday();
+  const weekStart = daysAgo(7);
+  const monthStart = daysAgo(30);
 
   const [
     totalKhatis,

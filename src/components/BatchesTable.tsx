@@ -3,6 +3,7 @@ import type { BatchDTO } from "@/services/qr";
 import { BatchActions } from "./BatchActions";
 import type { ProductOption } from "./GenerateBatchForm";
 import { Badge, statusTone } from "./ui/Badge";
+import { formatISTDate } from "@/lib/datetime";
 import {
   TableWrapper,
   Table,
@@ -97,7 +98,7 @@ export function BatchesTable({
               {serialRange(b.serialStartLabel, b.serialEndLabel)}
             </p>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-gray-400">{b.createdAt.slice(0, 10)}</span>
+              <span className="text-xs text-gray-400">{formatISTDate(b.createdAt)}</span>
               <div className="flex items-center gap-1">
                 <ManageLink id={b.id} />
                 <PdfLink id={b.id} />
@@ -126,7 +127,7 @@ export function BatchesTable({
           <tbody>
             {batches.map((b) => (
               <TR key={b.id} interactive>
-                <TD className="text-gray-600">{b.createdAt.slice(0, 10)}</TD>
+                <TD className="text-gray-600">{formatISTDate(b.createdAt)}</TD>
                 <TD>
                   <div>
                     <span className="font-mono text-xs text-gray-500">{b.productSku}</span>

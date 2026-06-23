@@ -33,9 +33,13 @@ function Detail({ label, value }: { label: string; value: string }) {
 export function UserActions({
   user,
   isSelf,
+  hideDelete = false,
+  hideEdit = false,
 }: {
   user: UserDTO;
   isSelf: boolean;
+  hideDelete?: boolean;
+  hideEdit?: boolean;
 }) {
   const [view, setView] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -91,14 +95,16 @@ export function UserActions({
         <Eye className="size-3.5" aria-hidden />
         View
       </button>
-      <button
-        onClick={() => setEdit(true)}
-        className={`${btn} text-brand-dark hover:bg-brand-light`}
-      >
-        <Pencil className="size-3.5" aria-hidden />
-        Edit
-      </button>
-      {!isSelf && (
+      {!hideEdit && (
+        <button
+          onClick={() => setEdit(true)}
+          className={`${btn} text-brand-dark hover:bg-brand-light`}
+        >
+          <Pencil className="size-3.5" aria-hidden />
+          Edit
+        </button>
+      )}
+      {!isSelf && !hideDelete && (
         <button
           onClick={() => {
             setError(null);

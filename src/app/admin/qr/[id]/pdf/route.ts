@@ -52,13 +52,12 @@ export async function GET(
 
   const cols = Math.max(1, data.columns);
   const cellW = (PAGE_W - 2 * MARGIN) / cols;
-  const labelH = data.labelHeightMm * MM;
-  const cellH = labelH + 10; // room for the serial caption
-  const rows = Math.max(1, Math.floor((PAGE_H - 2 * MARGIN) / cellH));
-  const perPage = cols * rows;
-  const maxQrSize = Math.min(cellW, labelH) - 8;
+  const maxQrSize = cellW - 8; // cap so a QR never overflows its column
 
-  // Per-type QR sizes (mm → pt), capped to fit the cell
+  const CAPTION_GAP = 12; // space under each QR for its serial caption
+  const ROW_GAP = 10; // vertical breathing room between rows
+
+  // Per-type QR sizes (mm → pt), capped to fit the column width
   const qrSizePt: Record<string, number> = {
     master: Math.min(data.qrSizes.master * MM, maxQrSize),
     small: Math.min(data.qrSizes.small * MM, maxQrSize),
@@ -79,36 +78,44 @@ export async function GET(
   }
 
   let page = addPageWithFooter();
+  let y = PAGE_H - MARGIN; // top edge of the current row
 
-  for (let i = 0; i < data.codes.length; i++) {
-    if (i > 0 && i % perPage === 0) page = addPageWithFooter();
+  // Flow layout: walk row-by-row, sizing each row to its tallest QR so rows of
+  // small product codes pack tightly instead of inheriting one fixed row height.
+  for (let rowStart = 0; rowStart < data.codes.length; rowStart += cols) {
+    const rowCodes = data.codes.slice(rowStart, rowStart + cols);
+    const rowQrMax = Math.max(...rowCodes.map((c) => qrSizePt[c.type] ?? maxQrSize));
+    const rowHeight = rowQrMax + CAPTION_GAP;
 
-    const idx = i % perPage;
-    const col = idx % cols;
-    const row = Math.floor(idx / cols);
+    // New page if this row won't fit above the bottom margin.
+    if (y - rowHeight < MARGIN) {
+      page = addPageWithFooter();
+      y = PAGE_H - MARGIN;
+    }
 
-    const cellX = MARGIN + col * cellW;
-    const cellTopY = PAGE_H - MARGIN - row * cellH;
+    rowCodes.forEach((code, col) => {
+      const cellX = MARGIN + col * cellW;
+      const qrSize = qrSizePt[code.type] ?? maxQrSize;
 
-    const codeType = data.codes[i].type; // "master" | "small" | "product"
-    const qrSize = qrSizePt[codeType] ?? maxQrSize;
+      const { d, n } = qrSvgPath(code.serialNo);
+      const scale = qrSize / n;
+      const qrX = cellX + (cellW - qrSize) / 2;
 
-    const { d, n } = qrSvgPath(data.codes[i].serialNo);
-    const scale = qrSize / n;
-    const qrX = cellX + (cellW - qrSize) / 2;
+      // drawSvgPath positions the path's (0,0) at (x, y) and renders downward.
+      page.drawSvgPath(d, { x: qrX, y, scale, color: black });
 
-    // drawSvgPath positions the path's (0,0) at (x, y) and renders downward.
-    page.drawSvgPath(d, { x: qrX, y: cellTopY, scale, color: black });
-
-    const caption = `${codeType.toUpperCase()} · ${data.codes[i].serialNo}`;
-    const fontSize = 6;
-    const textW = font.widthOfTextAtSize(caption, fontSize);
-    page.drawText(caption, {
-      x: cellX + (cellW - textW) / 2,
-      y: cellTopY - qrSize - 8,
-      size: fontSize,
-      font,
+      const caption = `${code.type.toUpperCase()} · ${code.serialNo}`;
+      const fontSize = 6;
+      const textW = font.widthOfTextAtSize(caption, fontSize);
+      page.drawText(caption, {
+        x: cellX + (cellW - textW) / 2,
+        y: y - qrSize - 8,
+        size: fontSize,
+        font,
+      });
     });
+
+    y -= rowHeight + ROW_GAP;
   }
 
   const bytes = await pdf.save();

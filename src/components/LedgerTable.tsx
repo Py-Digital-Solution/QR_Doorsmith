@@ -1,5 +1,6 @@
 import { ledgerTypeLabel } from "@/services/ledger";
 import type { LedgerEntry } from "@/services/ledger";
+import { formatISTDateTime } from "@/lib/datetime";
 
 const TYPE_TONE: Record<string, string> = {
   scan_product: "bg-green-50 text-green-700 ring-green-600/20",
@@ -19,7 +20,7 @@ function typeBadge(type: string) {
 }
 
 function fmtDate(iso: string) {
-  return iso.slice(0, 16).replace("T", " ");
+  return formatISTDateTime(iso);
 }
 
 /** Responsive points-ledger view: table on sm+, stacked cards on mobile. */

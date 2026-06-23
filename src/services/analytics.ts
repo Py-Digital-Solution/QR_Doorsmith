@@ -6,15 +6,8 @@ import { Return } from "@/models/Return";
 import { Redemption } from "@/models/Redemption";
 import { PointTransaction } from "@/models/PointTransaction";
 import { Types } from "mongoose";
+import { istStartOfToday, daysAgo } from "@/lib/datetime";
 
-function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-function daysAgo(n: number): Date {
-  return new Date(Date.now() - n * 24 * 60 * 60 * 1000);
-}
 const oid = (id: string) => new Types.ObjectId(id);
 
 /** Sum of earned points (positive entries) for a set of khatis since a date. */
@@ -48,7 +41,7 @@ export type KhatiDashboard = {
 
 export async function getKhatiDashboard(khatiId: string): Promise<KhatiDashboard> {
   await connectDB();
-  const today = startOfToday();
+  const today = istStartOfToday();
   const week = daysAgo(7);
   const month = daysAgo(30);
   const _id = oid(khatiId);
@@ -154,7 +147,7 @@ export type CounterDashboard = {
 
 export async function getCounterDashboard(counterId: string): Promise<CounterDashboard> {
   await connectDB();
-  const today = startOfToday();
+  const today = istStartOfToday();
   const week = daysAgo(7);
   const month = daysAgo(30);
   const _id = oid(counterId);
@@ -287,7 +280,7 @@ export type SalesDashboard = {
 
 export async function getSalesDashboard(salesId: string): Promise<SalesDashboard> {
   await connectDB();
-  const today = startOfToday();
+  const today = istStartOfToday();
   const week = daysAgo(7);
   const month = daysAgo(30);
 

@@ -6,6 +6,7 @@ import { Return } from "@/models/Return";
 import { Redemption } from "@/models/Redemption";
 import { PointTransaction } from "@/models/PointTransaction";
 import { waSend } from "@/services/whatsapp";
+import { istStartOfToday } from "@/lib/datetime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,8 +23,7 @@ export async function GET(req: Request) {
   }
 
   await connectDB();
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = istStartOfToday();
 
   // ── Load the people graph ───────────────────────────────────────────────
   const [khatis, counters, salesStaff, admins] = await Promise.all([
