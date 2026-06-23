@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     // requests with a 500. Whitelisting deployed origins fixes login and every
     // other Server Action on both platforms.
     serverActions: {
+      bodySizeLimit: "10mb",
       allowedOrigins: [
         // Netlify
         "qrdoorsmith.netlify.app",

@@ -54,7 +54,7 @@ export async function getKhatiByToken(token: string): Promise<KhatiProfileDTO | 
 
 export async function submitKhatiProfile(
   token: string,
-  data: { address: string; dob: string; email?: string; photoBuffer?: Buffer; photoContentType?: string; photoExt?: string },
+  data: { address: string; dob: string; email?: string; photoData?: { buffer: Buffer; contentType: string; ext: string } },
 ): Promise<{ ok: true } | { error: string }> {
   await connectDB();
   const user = await User.findOne({ registrationToken: token, role: "khati" });
@@ -66,11 +66,12 @@ export async function submitKhatiProfile(
   if (data.email) user.email = data.email.toLowerCase();
   user.kycStatus = "pending_admin";
 
-  if (data.photoBuffer && data.photoContentType && data.photoExt) {
+  if (data.photoData) {
     try {
-      user.photoUrl = await uploadAvatar(String(user._id), data.photoBuffer, data.photoContentType, data.photoExt);
-    } catch {
+      user.photoUrl = await uploadAvatar(String(user._id), data.photoData.buffer, data.photoData.contentType, data.photoData.ext);
+    } catch (err) {
       // Photo upload failure is non-fatal
+      console.error("[kyc] Photo upload failed:", err);
     }
   }
 

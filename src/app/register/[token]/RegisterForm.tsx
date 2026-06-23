@@ -8,6 +8,70 @@ import { Alert } from "@/components/ui/Alert";
 import { Label } from "@/components/ui/Field";
 import { Camera, CheckCircle2, X } from "lucide-react";
 
+const TARGET_SIZE = 500 * 1024; // 500 KB
+
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // Reduce dimensions if image is large
+        if (width > 1000 || height > 1000) {
+          const ratio = Math.min(1000 / width, 1000 / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress with progressive quality reduction
+        let quality = 0.9;
+        let compressed: Blob | null = null;
+        let attempts = 0;
+
+        const tryCompress = () => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Failed to compress image"));
+                return;
+              }
+
+              if (blob.size <= TARGET_SIZE || quality <= 0.3 || attempts >= 5) {
+                const compressedFile = new File([blob], file.name, { type: "image/jpeg" });
+                resolve(compressedFile);
+              } else {
+                quality -= 0.15;
+                attempts++;
+                tryCompress();
+              }
+            },
+            "image/jpeg",
+            quality,
+          );
+        };
+
+        tryCompress();
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+  });
+}
+
 export function RegisterForm({ token }: { token: string }) {
   const [state, action, pending] = useActionState<KycActionState, FormData>(
     submitRegistrationAction,
@@ -20,12 +84,22 @@ export function RegisterForm({ token }: { token: string }) {
   // Separate hidden input that opens the camera
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  function applyFile(file: File) {
+  async function applyFile(file: File) {
     if (!mainInputRef.current) return;
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    mainInputRef.current.files = dt.files;
-    setPreview(URL.createObjectURL(file));
+    try {
+      const compressed = await compressImage(file);
+      const dt = new DataTransfer();
+      dt.items.add(compressed);
+      mainInputRef.current.files = dt.files;
+      setPreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      console.error("Image compression failed:", err);
+      // Fallback to original file if compression fails
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      mainInputRef.current.files = dt.files;
+      setPreview(URL.createObjectURL(file));
+    }
   }
 
   if (state.ok) {

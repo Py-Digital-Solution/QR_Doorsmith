@@ -20,24 +20,24 @@ export async function submitRegistrationAction(
   if (!address) return { error: "Address is required." };
   if (!dob) return { error: "Date of birth is required." };
 
-  let photoBuffer: Buffer | undefined;
-  let photoContentType: string | undefined;
-  let photoExt: string | undefined;
+  let photoData: { buffer: Buffer; contentType: string; ext: string } | undefined;
 
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     if (photo.size > 5 * 1024 * 1024) return { error: "Photo must be under 5 MB." };
     try {
       const arrayBuf = await photo.arrayBuffer();
-      photoBuffer = Buffer.from(arrayBuf);
-      photoContentType = photo.type || "image/jpeg";
-      photoExt = photo.name.split(".").pop()?.toLowerCase() || "jpg";
+      const buffer = Buffer.from(arrayBuf);
+      const contentType = photo.type || "image/jpeg";
+      const ext = photo.name.split(".").pop()?.toLowerCase() || "jpg";
+      photoData = { buffer, contentType, ext };
     } catch (err) {
+      console.error("[kyc] Photo processing error:", err);
       return { error: "Failed to process photo. Please try again." };
     }
   }
 
-  const result = await submitKhatiProfile(token, { address, dob, email, photoBuffer, photoContentType, photoExt });
+  const result = await submitKhatiProfile(token, { address, dob, email, photoData });
   if ("error" in result) return { error: result.error };
   return { ok: true };
 }

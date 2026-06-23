@@ -83,11 +83,15 @@ export async function getKhatiDashboard(khatiId: string): Promise<KhatiDashboard
     ]),
   ]);
 
-  // Rank by lifetime points across all active khatis.
+  // Rank by lifetime points using aggregation (more efficient than countDocuments)
   const lifetime = user?.lifetimePoints ?? 0;
-  const rankAbove = lifetime > 0
-    ? await User.countDocuments({ role: "khati", status: "active", lifetimePoints: { $gt: lifetime } })
-    : null;
+  const rankAgg = lifetime > 0
+    ? await User.aggregate([
+        { $match: { role: "khati", status: "active", lifetimePoints: { $gt: lifetime } } },
+        { $count: "total" },
+      ])
+    : [];
+  const rankAbove = rankAgg[0]?.total ?? 0;
 
   return {
     points: user?.points ?? 0,
