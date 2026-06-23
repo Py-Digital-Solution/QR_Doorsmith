@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Undo2, X, Camera, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QrScanner } from "./QrScanner";
@@ -24,6 +24,14 @@ export function CounterReturnPanel({
   const isProcessing = useRef(false);
   const lastSeen = useRef<{ serial: string; at: number } | null>(null);
   const router = useRouter();
+
+  // Auto-reset after showing success for 3 seconds
+  useEffect(() => {
+    if (state.phase === "success") {
+      const timer = setTimeout(() => reset(), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.phase]);
 
   async function submit(serialNo: string) {
     const sn = serialNo.trim();

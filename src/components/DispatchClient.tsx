@@ -39,14 +39,18 @@ export function DispatchClient({
   }
 
   // Live search  type is inferred server-side from the serial prefix.
+  // Excludes descendants of already-selected codes.
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
     setSearching(true);
     const t = setTimeout(async () => {
       try {
+        const params = new URLSearchParams();
+        params.set("q", query);
+        serials.forEach((s) => params.append("selected", s));
         const res = await fetch(
-          `/api/qr/search?q=${encodeURIComponent(query)}`,
+          `/api/qr/search?${params.toString()}`,
           { signal: controller.signal },
         );
         const data = await res.json().catch(() => ({ items: [] }));
@@ -62,7 +66,7 @@ export function DispatchClient({
       clearTimeout(t);
       controller.abort();
     };
-  }, [query, refreshKey]);
+  }, [query, serials, refreshKey]);
 
   // Close the dropdown on outside click.
   useEffect(() => {

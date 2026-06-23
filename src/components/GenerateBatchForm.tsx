@@ -90,6 +90,26 @@ export function GenerateBatchForm({
 
       <details className="rounded-md border border-gray-200 p-3">
         <summary className="cursor-pointer text-xs font-medium text-gray-600">
+          QR Code sizes (optional)
+        </summary>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <Label>Master QR size (mm)</Label>
+            <Input name="masterQrSize" type="number" min={10} defaultValue={25} />
+          </div>
+          <div>
+            <Label>Small QR size (mm)</Label>
+            <Input name="smallQrSize" type="number" min={10} defaultValue={15} />
+          </div>
+          <div>
+            <Label>Product QR size (mm)</Label>
+            <Input name="productQrSize" type="number" min={10} defaultValue={10} />
+          </div>
+        </div>
+      </details>
+
+      <details className="rounded-md border border-gray-200 p-3">
+        <summary className="cursor-pointer text-xs font-medium text-gray-600">
           Print sheet settings (optional)
         </summary>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">

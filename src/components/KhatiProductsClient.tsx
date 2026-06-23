@@ -44,40 +44,14 @@ function ProductDetail({ product }: { product: ProductDTO }) {
         {product.rewardPoints} reward points
       </div>
 
-      {/* Pricing */}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Pricing</p>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">MRP</span>
-            <span className="flex items-center gap-1 text-sm font-semibold text-gray-900">
-              <IndianRupee className="size-3.5" aria-hidden />
-              {product.mrp.toLocaleString("en-IN")}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">Sale price</span>
-            <span className="flex items-center gap-1 text-sm font-semibold text-green-700">
-              <IndianRupee className="size-3.5 text-green-500" aria-hidden />
-              {product.salesPrice.toLocaleString("en-IN")}
-            </span>
-          </div>
-          {discount > 0 && (
-            <div className="flex items-center justify-between border-t border-gray-200 pt-2">
-              <span className="text-sm text-gray-500">Discount</span>
-              <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700">
-                {discount}% off
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Description */}
       {product.description && (
-        <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">Description</p>
-          <p className="text-sm text-gray-600 leading-relaxed">{product.description}</p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <Package className="size-3.5" aria-hidden />
+            Product details
+          </p>
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
         </div>
       )}
 
@@ -184,9 +158,7 @@ export function KhatiProductsClient({
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/60">
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Product</th>
-                <th className="hidden px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 sm:table-cell">MRP</th>
-                <th className="hidden px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 sm:table-cell">Sale Price</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Points</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Reward Points</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -199,12 +171,6 @@ export function KhatiProductsClient({
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900">{product.name}</p>
                     <p className="mt-0.5 text-xs text-gray-400">{product.sku}</p>
-                  </td>
-                  <td className="hidden px-4 py-3 text-right text-gray-600 sm:table-cell">
-                    ₹{product.mrp.toLocaleString("en-IN")}
-                  </td>
-                  <td className="hidden px-4 py-3 text-right font-medium text-green-700 sm:table-cell">
-                    ₹{product.salesPrice.toLocaleString("en-IN")}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="inline-flex items-center gap-1 rounded-full bg-brand-light px-2.5 py-0.5 text-xs font-bold text-brand-dark">

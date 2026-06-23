@@ -189,7 +189,7 @@ export async function processQrReturn(
 
   const updatedKhati = await User.findByIdAndUpdate(
     code.scannedByKhatiId,
-    { $inc: { points: -pts } },
+    { $inc: { points: -pts, lifetimePoints: -pts } },
     { returnDocument: "after" },
   ).lean();
 

@@ -20,12 +20,13 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const typeParam = searchParams.get("type") ?? "";
   const q = searchParams.get("q") ?? "";
+  const selected = searchParams.getAll("selected") ?? [];
 
   const explicitType = (QR_TYPES as readonly string[]).includes(typeParam)
     ? (typeParam as QrType)
     : undefined;
   const type = explicitType ?? inferTypeFromPrefix(q);
 
-  const items = await searchDispatchableCodes({ type, query: q, limit: 10 });
+  const items = await searchDispatchableCodes({ type, query: q, limit: 10, excludeDescendantsOf: selected });
   return NextResponse.json({ items });
 }

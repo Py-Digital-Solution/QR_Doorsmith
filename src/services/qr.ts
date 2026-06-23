@@ -43,12 +43,19 @@ export type SheetConfig = {
   rows?: number;
 };
 
+export type QrSizes = {
+  masterSize?: number;
+  smallSize?: number;
+  productSize?: number;
+};
+
 export type GenerateBatchInput = {
   productId: string;
   createdBy: string;
   masterCount: number;
   smallPerMaster: number;
   productPerSmall: number;
+  qrSizes?: QrSizes;
   sheetConfig?: SheetConfig;
 };
 
@@ -109,6 +116,7 @@ export async function generateBatch(input: GenerateBatchInput) {
     totalCodes: total,
     serialStart: topStart,
     serialEnd: topEnd,
+    qrSizes: input.qrSizes,
     sheetConfig: input.sheetConfig,
     status: "in_warehouse",
   });

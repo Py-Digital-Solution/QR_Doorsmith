@@ -226,17 +226,33 @@ function escapeRegex(s: string): string {
  * Search codes available to dispatch (still in the warehouse  counterId null),
  * optionally filtered by type and a serial-number substring. Powers the
  * Dispatch screen's searchable Type dropdown.
+ * Excludes codes that are descendants of already-selected parent codes.
  */
 export async function searchDispatchableCodes(input: {
   type?: QrType;
   query?: string;
   limit?: number;
+  excludeDescendantsOf?: string[];
 }): Promise<DispatchableCodeDTO[]> {
   await connectDB();
   const q: Record<string, unknown> = { counterId: null };
   if (input.type) q.type = input.type;
   const query = (input.query ?? "").trim();
   if (query) q.serialNo = { $regex: escapeRegex(query), $options: "i" };
+
+  // If parent serials are provided, collect their descendants to exclude
+  let excludeIds: Types.ObjectId[] = [];
+  if (input.excludeDescendantsOf?.length) {
+    const parents = await QrCode.find({ serialNo: { $in: input.excludeDescendantsOf } })
+      .select("_id")
+      .lean();
+    const parentIds = parents.map((p) => p._id as Types.ObjectId);
+    const seen = new Set<string>(parentIds.map((id) => String(id)));
+    excludeIds = await collectUndispatchedDescendants(parentIds, seen);
+  }
+  if (excludeIds.length > 0) {
+    q._id = { $nin: excludeIds };
+  }
 
   const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
   const docs = await QrCode.find(q)

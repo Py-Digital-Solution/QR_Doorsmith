@@ -5,7 +5,7 @@ import { ICONS } from "@/components/ui/icons";
 
 const TYPE_LABEL: Record<string, string> = {
   scan_product: "Product Scan",
-  scan_small_box: "Box Scan",
+  scan_small_box: "Small Box Scan",
   return_reversal: "Return",
   redemption_lock: "Redemption",
   redemption_unlock: "Refund",

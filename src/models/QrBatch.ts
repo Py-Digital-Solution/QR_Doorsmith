@@ -4,8 +4,17 @@ import { QR_BATCH_STATUSES } from "../lib/qr";
 /**
  * A generation batch (SOW 1.8  "Batch Activation & Status Control").
  * Records who generated it, the structure, the reserved serial range, the
- * print sheet/label config, and the batch status for the audit trail.
+ * print sheet/label config, QR sizes, and the batch status for the audit trail.
  */
+const qrSizesSchema = new Schema(
+  {
+    masterSize: Number,
+    smallSize: Number,
+    productSize: Number,
+  },
+  { _id: false },
+);
+
 const sheetConfigSchema = new Schema(
   {
     sheetWidthMm: Number,
@@ -28,6 +37,7 @@ const qrBatchSchema = new Schema(
     totalCodes: { type: Number, required: true },
     serialStart: { type: Number, required: true },
     serialEnd: { type: Number, required: true },
+    qrSizes: qrSizesSchema,
     sheetConfig: sheetConfigSchema,
     status: {
       type: String,

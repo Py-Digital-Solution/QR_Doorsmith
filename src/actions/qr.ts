@@ -109,6 +109,11 @@ export async function generateBatchAction(
       masterCount: Number(formData.get("masterCount") ?? 0),
       smallPerMaster: Number(formData.get("smallPerMaster") ?? 0),
       productPerSmall: Number(formData.get("productPerSmall") ?? 0),
+      qrSizes: {
+        masterSize: Number(formData.get("masterQrSize") ?? 0) || undefined,
+        smallSize: Number(formData.get("smallQrSize") ?? 0) || undefined,
+        productSize: Number(formData.get("productQrSize") ?? 0) || undefined,
+      },
       sheetConfig: {
         labelWidthMm: Number(formData.get("labelWidthMm") ?? 0) || undefined,
         labelHeightMm: Number(formData.get("labelHeightMm") ?? 0) || undefined,

@@ -1,16 +1,18 @@
 import { auth } from "@/auth";
 import Link from "next/link";
-import { ScanLine, Coins, ChevronRight } from "lucide-react";
+import { ScanLine, Coins, ChevronRight, Star, PlayCircle, Package } from "lucide-react";
 import { listKhatiScans } from "@/services/khati";
 import { getKhatiDashboard } from "@/services/analytics";
+import { listProducts } from "@/services/products";
 import { StatCard } from "@/components/ui/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export default async function KhatiHome() {
   const session = await auth();
-  const [stats, scans] = await Promise.all([
+  const [stats, scans, productsResult] = await Promise.all([
     getKhatiDashboard(session!.user.id),
     listKhatiScans(session!.user.id, { page: 1, pageSize: 5 }),
+    listProducts({ page: 1, pageSize: 6 }, undefined, "active"),
   ]);
 
   return (
@@ -64,6 +66,57 @@ export default async function KhatiHome() {
           <span className="text-sm font-semibold text-gray-700">Redeem</span>
         </Link>
       </div>
+
+      {/* Product tutorials */}
+      {productsResult.items.length > 0 && (
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700">Product tutorials & guides</h2>
+            {productsResult.total > 6 && (
+              <Link
+                href="/khati/products"
+                className="inline-flex items-center gap-0.5 text-xs font-medium text-brand-dark hover:underline"
+              >
+                View all
+                <ChevronRight className="size-3.5" aria-hidden />
+              </Link>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {productsResult.items.map((product) => (
+              <Link
+                key={product.id}
+                href={`/khati/products?q=${encodeURIComponent(product.name)}`}
+                className="focus-ring rounded-lg border border-gray-200 bg-white p-4 shadow-card transition-shadow hover:shadow-card-hover"
+              >
+                <div className="flex gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-light">
+                    <Package className="size-5 text-brand-dark" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="inline-flex items-center gap-1 rounded-full bg-brand-light px-2 py-0.5 text-xs font-bold text-brand-dark">
+                        <Star className="size-3" aria-hidden />
+                        {product.rewardPoints} pts
+                      </div>
+                      {product.videoLinks.length > 0 && (
+                        <div className="inline-flex items-center gap-0.5 text-xs text-gray-500">
+                          <PlayCircle className="size-3.5" aria-hidden />
+                          {product.videoLinks.length} video{product.videoLinks.length !== 1 ? 's' : ''}
+                        </div>
+                      )}
+                    </div>
+                    {product.description && (
+                      <p className="mt-2 line-clamp-2 text-xs text-gray-500">{product.description}</p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent scans */}
       <div>
