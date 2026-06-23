@@ -56,7 +56,14 @@ export async function GET(
   const cellH = labelH + 10; // room for the serial caption
   const rows = Math.max(1, Math.floor((PAGE_H - 2 * MARGIN) / cellH));
   const perPage = cols * rows;
-  const qrSize = Math.min(cellW, labelH) - 8;
+  const maxQrSize = Math.min(cellW, labelH) - 8;
+
+  // Per-type QR sizes (mm → pt), capped to fit the cell
+  const qrSizePt: Record<string, number> = {
+    master: Math.min(data.qrSizes.master * MM, maxQrSize),
+    small: Math.min(data.qrSizes.small * MM, maxQrSize),
+    product: Math.min(data.qrSizes.product * MM, maxQrSize),
+  };
 
   function addPageWithFooter(): ReturnType<typeof pdf.addPage> {
     const p = pdf.addPage([PAGE_W, PAGE_H]);
@@ -83,6 +90,9 @@ export async function GET(
     const cellX = MARGIN + col * cellW;
     const cellTopY = PAGE_H - MARGIN - row * cellH;
 
+    const codeType = data.codes[i].type; // "master" | "small" | "product"
+    const qrSize = qrSizePt[codeType] ?? maxQrSize;
+
     const { d, n } = qrSvgPath(data.codes[i].serialNo);
     const scale = qrSize / n;
     const qrX = cellX + (cellW - qrSize) / 2;
@@ -90,7 +100,7 @@ export async function GET(
     // drawSvgPath positions the path's (0,0) at (x, y) and renders downward.
     page.drawSvgPath(d, { x: qrX, y: cellTopY, scale, color: black });
 
-    const caption = `${data.codes[i].type.toUpperCase()} · ${data.codes[i].serialNo}`;
+    const caption = `${codeType.toUpperCase()} · ${data.codes[i].serialNo}`;
     const fontSize = 6;
     const textW = font.widthOfTextAtSize(caption, fontSize);
     page.drawText(caption, {

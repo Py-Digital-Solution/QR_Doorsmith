@@ -15,7 +15,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (session?.user?.role !== "admin") {
+  const role = session?.user?.role;
+  if (role !== "admin" && role !== "counter") {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -25,6 +26,11 @@ export async function GET(
     getCompanyBranding(),
   ]);
   if (!bill) return new Response("Dispatch not found", { status: 404 });
+
+  // Counter can only view their own dispatch receipts
+  if (role === "counter" && bill.counterId && bill.counterId !== session!.user.id) {
+    return new Response("Forbidden", { status: 403 });
+  }
 
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);

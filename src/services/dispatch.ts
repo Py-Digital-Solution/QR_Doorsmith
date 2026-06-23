@@ -169,6 +169,7 @@ export async function listDispatches(
 
 export type DispatchBill = {
   billNo: string;
+  counterId: string;
   counterName: string;
   counterContact: string;
   createdAt: string;
@@ -193,9 +194,10 @@ export async function getDispatchBill(id: string): Promise<DispatchBill | null> 
     .sort({ serialNo: 1 })
     .lean();
 
-  const c = d.counterId as { name?: string; email?: string; phone?: string } | null;
+  const c = d.counterId as { _id?: unknown; name?: string; email?: string; phone?: string } | null;
   return {
     billNo: d.billNo,
+    counterId: c?._id ? String(c._id) : "",
     counterName: c?.name || "—",
     counterContact: c?.email || c?.phone || "",
     createdAt: (d.createdAt as Date)?.toISOString() ?? "",
@@ -278,12 +280,12 @@ export type CounterInventory = {
 
 export async function getCounterInventory(counterId: string): Promise<CounterInventory> {
   await connectDB();
-  // Exclude scanned codes  they've been consumed by a khati and left the counter
-  const notScanned = { $ne: "scanned" as const };
+  // Exclude scanned codes (consumed by khati) and returned codes (awaiting re-dispatch)
+  const baseFilter = { status: { $ne: "scanned" as const }, returned: { $ne: true } };
   const [masters, smalls, products] = await Promise.all([
-    QrCode.countDocuments({ counterId, type: "master", status: notScanned }),
-    QrCode.countDocuments({ counterId, type: "small", status: notScanned }),
-    QrCode.countDocuments({ counterId, type: "product", status: notScanned }),
+    QrCode.countDocuments({ counterId, type: "master", ...baseFilter }),
+    QrCode.countDocuments({ counterId, type: "small", ...baseFilter }),
+    QrCode.countDocuments({ counterId, type: "product", ...baseFilter }),
   ]);
   return { masters, smalls, products, total: masters + smalls + products };
 }
@@ -305,8 +307,8 @@ export async function listCounterCodes(
   search?: string,
 ): Promise<Paginated<CounterCodeDTO>> {
   await connectDB();
-  // Exclude scanned codes  consumed by a khati, no longer in counter's inventory
-  const q: Record<string, unknown> = { counterId, status: { $ne: "scanned" as const } };
+  // Exclude scanned codes (consumed by khati) and returned codes (awaiting re-dispatch)
+  const q: Record<string, unknown> = { counterId, status: { $ne: "scanned" as const }, returned: { $ne: true } };
   if (filter?.type) q.type = filter.type;
   if (search) q.$or = [{ serialNo: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
   const { page, pageSize } = pagination;

@@ -559,6 +559,7 @@ export type BatchPrintData = {
   labelWidthMm: number;
   labelHeightMm: number;
   columns: number;
+  qrSizes: { master: number; small: number; product: number };
   codes: { serialNo: string; type: string }[];
 };
 
@@ -580,6 +581,11 @@ export async function getBatchPrintData(
     labelWidthMm: batch.sheetConfig?.labelWidthMm ?? 40,
     labelHeightMm: batch.sheetConfig?.labelHeightMm ?? 40,
     columns: batch.sheetConfig?.columns ?? 4,
+    qrSizes: {
+      master: batch.qrSizes?.masterSize ?? 25,
+      small: batch.qrSizes?.smallSize ?? 15,
+      product: batch.qrSizes?.productSize ?? 10,
+    },
     codes: codes.map((c) => ({ serialNo: c.serialNo, type: String(c.type) })),
   };
 }
