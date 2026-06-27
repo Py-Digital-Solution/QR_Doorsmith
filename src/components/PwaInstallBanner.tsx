@@ -49,9 +49,9 @@ export function PwaInstallBanner() {
   if (prompt) {
     return (
       <div className="mb-5 flex items-center gap-3 rounded-xl border border-brand/20 bg-brand-light p-3 shadow-card">
-        <Image src="/icons/icon-192.png" alt="Khati app icon" width={44} height={44} className="shrink-0 rounded-xl" />
+        <Image src="/icons/icon-192.png" alt="Karigar app icon" width={44} height={44} className="shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900">Install Khati App</p>
+          <p className="text-sm font-semibold text-gray-900">Install Karigar App</p>
           <p className="text-xs text-gray-500">Add to home screen for quick access</p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -68,7 +68,7 @@ export function PwaInstallBanner() {
       <div className="mb-5 rounded-xl border border-brand/20 bg-brand-light p-4 shadow-card">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/icons/icon-192.png" alt="Khati app icon" width={32} height={32} className="shrink-0 rounded-lg" />
+            <Image src="/icons/icon-192.png" alt="Karigar app icon" width={32} height={32} className="shrink-0 rounded-lg" />
             <p className="text-sm font-semibold text-gray-900">Add to Home Screen</p>
           </div>
           <button onClick={dismiss} className="text-xs text-gray-400 hover:text-gray-600">✕</button>

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "DoorSmith Khati Rewards",
+    name: "DoorSmith Karigar Rewards",
     short_name: "DoorSmith",
     description: "Scan product QR codes and earn reward points",
     start_url: "/khati",

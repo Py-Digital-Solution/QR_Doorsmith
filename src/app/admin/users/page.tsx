@@ -16,7 +16,7 @@ const ROLE_FILTERS: { label: string; value: string }[] = [
   { label: "Sales Rep", value: "sales_rep" },
   { label: "Distributor", value: "distributor" },
   { label: "Counter", value: "counter" },
-  { label: "Khati", value: "khati" },
+  { label: "Karigar", value: "khati" },
 ];
 
 export default async function UsersPage({

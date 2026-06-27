@@ -162,7 +162,7 @@ export async function GET(req: Request) {
       `📊 *DoorSmith प्रबंधन सारांश | Admin Summary*\n\n` +
       `नमस्ते *${admin.name}*! आज का पूरा सारांश:\n` +
       `Hello *${admin.name}*! Today's full summary:\n\n` +
-      `👷 *सक्रिय खाती | Active khatis:* ${khatis.length}\n` +
+      `👷 *सक्रिय कारीगर | Active karigars:* ${khatis.length}\n` +
       `🏪 *काउंटर | Counters:* ${counters.length}\n` +
       `🔢 *आज स्कैन | Scans today:* ${totalScans}\n` +
       `🌟 *अंक वितरित | Points distributed:* ${totalPoints}\n` +

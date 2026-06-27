@@ -17,8 +17,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Enter your phone number." }, { status: 400 });
     }
     const phone = normalizePhone(raw);
-    await requestOtp(phone);
-    return NextResponse.json({ ok: true });
+    const result = await requestOtp(phone);
+
+    // WhatsApp delivered (or a code is already in flight within the cooldown):
+    // tell the client the OTP went out over WhatsApp  no SMS fallback needed.
+    if (result.status === "sent" || result.status === "cooldown") {
+      return NextResponse.json({ ok: true, channel: "whatsapp" });
+    }
+
+    // WhatsApp unavailable (not connected / number not on WhatsApp / error):
+    // signal the client to fall back to Firebase SMS.
+    return NextResponse.json({ ok: false, fallback: true, reason: result.reason });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Could not send code.";
     return NextResponse.json({ error: message }, { status: 500 });

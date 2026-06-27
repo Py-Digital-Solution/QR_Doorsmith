@@ -85,7 +85,7 @@ export default async function SalesDashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Points Today</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.pointsToday}</p>
-              <p className="mt-1 text-xs text-gray-500">{d.pointsDistributed} all-time to {d.khatiActive} active khatis</p>
+              <p className="mt-1 text-xs text-gray-500">{d.pointsDistributed} all-time to {d.khatiActive} active karigars</p>
             </div>
             <span className="flex size-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
               <TrendingUp className="size-5" aria-hidden />
@@ -99,7 +99,7 @@ export default async function SalesDashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">My Network</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.khatiTotal}</p>
-              <p className="mt-1 text-xs text-gray-500">{d.khatiActive} active khatis · {d.counterTotal} counters</p>
+              <p className="mt-1 text-xs text-gray-500">{d.khatiActive} active karigars · {d.counterTotal} counters</p>
             </div>
             <span className="flex size-10 items-center justify-center rounded-xl bg-brand-light text-brand-dark">
               <UsersIcon className="size-5" aria-hidden />
@@ -137,7 +137,7 @@ export default async function SalesDashboard() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-yellow-800">{d.pendingApprovals} KYC pending</p>
-                  <p className="text-xs text-yellow-600">Khati registrations awaiting your approval</p>
+                  <p className="text-xs text-yellow-600">Karigar registrations awaiting your approval</p>
                 </div>
               </div>
               <Link
@@ -290,7 +290,7 @@ export default async function SalesDashboard() {
                   <tr className="text-left text-[11px] font-semibold uppercase text-gray-400">
                     <th className="pb-2">#</th>
                     <th className="pb-2">Counter</th>
-                    <th className="pb-2 text-right">Khatis</th>
+                    <th className="pb-2 text-right">Karigars</th>
                     <th className="pb-2 text-right">Scans (7d)</th>
                   </tr>
                 </thead>

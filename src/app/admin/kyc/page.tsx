@@ -24,11 +24,11 @@ export default async function AdminKycPage({
       ? await listPendingForAdmin(opts)
       : await listPendingForSalesRep(session!.user.id, opts);
 
-  const title = role === "admin" ? "Khati Approvals" : "Khati Registrations";
+  const title = role === "admin" ? "Karigar Approvals" : "Karigar Registrations";
   const description =
     role === "admin"
-      ? "Review and approve khati registrations submitted from the field."
-      : "Khatis registered under your counters awaiting admin approval. View only.";
+      ? "Review and approve karigar registrations submitted from the field."
+      : "Karigars registered under your counters awaiting admin approval. View only.";
 
   const fp = new URLSearchParams();
   if (q) fp.set("q", q);
@@ -48,8 +48,8 @@ export default async function AdminKycPage({
             title="No pending approvals"
             description={
               q
-                ? "No khatis match your search."
-                : "Khatis approved by counters will appear here for your review."
+                ? "No karigars match your search."
+                : "Karigars approved by counters will appear here for your review."
             }
           />
         </div>

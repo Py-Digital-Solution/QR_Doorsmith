@@ -138,8 +138,8 @@ export async function resendRegistrationLinkAction(userId: string): Promise<Acti
   try {
     await connectDB();
     const user = await User.findById(userId);
-    if (!user || user.role !== "khati") return { error: "Khati not found." };
-    if (user.kycStatus === "approved") return { error: "This khati is already approved." };
+    if (!user || user.role !== "khati") return { error: "Karigar not found." };
+    if (user.kycStatus === "approved") return { error: "This karigar is already approved." };
     if (!user.phone) return { error: "No phone number on record." };
 
     // Reuse existing token or generate a fresh one

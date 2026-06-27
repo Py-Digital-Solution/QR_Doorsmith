@@ -82,7 +82,7 @@ export function KycActions({ khatiId, khatiName }: { khatiId: string; khatiName:
             </div>
             <textarea
               rows={3}
-              placeholder="Reason for rejection (sent to khati via WhatsApp)"
+              placeholder="Reason for rejection (sent to karigar via WhatsApp)"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"

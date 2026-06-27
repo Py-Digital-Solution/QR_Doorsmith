@@ -13,7 +13,7 @@ export function RedemptionActions({ id }: { id: string }) {
 
   async function act(action: "approve" | "reject") {
     if (action === "approve" && otp.trim().length !== 6) {
-      setError("Enter the 6-digit OTP from the khati.");
+      setError("Enter the 6-digit OTP from the karigar.");
       return;
     }
     setPending(action);
@@ -57,7 +57,7 @@ export function RedemptionActions({ id }: { id: string }) {
           setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
           setError(null);
         }}
-        placeholder="OTP from khati"
+        placeholder="OTP from karigar"
         maxLength={6}
         inputMode="numeric"
         pattern="\d{6}"

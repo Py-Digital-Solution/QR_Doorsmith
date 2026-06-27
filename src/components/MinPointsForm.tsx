@@ -43,7 +43,7 @@ export function MinPointsForm({ initial }: { initial: number }) {
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
       <p className="text-sm font-medium text-gray-900">Minimum redemption points</p>
       <p className="mb-3 text-sm text-gray-500">
-        Khatis must have at least this many points to submit a redemption request. Set to 0 for no minimum.
+        Karigars must have at least this many points to submit a redemption request. Set to 0 for no minimum.
       </p>
       <form onSubmit={save} className="flex items-center gap-3">
         <Input

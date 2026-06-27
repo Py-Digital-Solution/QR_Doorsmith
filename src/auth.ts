@@ -86,8 +86,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           } catch {
             return null;
           }
-        } else if (process.env.NODE_ENV !== "production" && phone && code === "1111") {
-          // Dev shortcut: magic OTP bypasses Firebase (matches client-side NODE_ENV check).
+        } else if (
+          (process.env.OTP_DEV_MODE === "true" || process.env.NODE_ENV !== "production") &&
+          phone &&
+          code === "1111"
+        ) {
+          // Debug/dev shortcut: magic OTP 1111 bypasses Firebase. Active in dev, or
+          // anywhere OTP_DEV_MODE=true (e.g. to open the khati app without real OTP).
           // Normalize same as Firebase production: bare 10-digit → +91xxxxxxxxxx.
           resolvedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
         } else if (phone && code) {

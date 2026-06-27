@@ -48,6 +48,7 @@ import {
   Clock,
   Receipt,
   IndianRupee,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 
@@ -106,6 +107,7 @@ export const ICONS = {
   clock: Clock,
   receipt: Receipt,
   "indian-rupee": IndianRupee,
+  megaphone: Megaphone,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

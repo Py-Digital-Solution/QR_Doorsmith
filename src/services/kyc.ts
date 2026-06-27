@@ -2,6 +2,7 @@ import "server-only";
 import { connectDB } from "@/db/mongoose";
 import { User } from "@/models/User";
 import { waSend } from "@/services/whatsapp";
+import { notifyCounterKycToAdmin } from "@/services/wa-notify";
 import { uploadAvatar, toPhotoUrl } from "@/lib/storage";
 
 export type KycStatus =
@@ -82,10 +83,71 @@ export async function submitKhatiProfile(
   if (admin?.phone) {
     waSend(
       admin.phone,
-      `🆕 *नई खाती पंजीकरण | New Khati Registration*\n\n*${user.name}* (${user.phone}) ने अपना प्रोफाइल जमा कर दिया है और आपकी मंजूरी का इंतज़ार कर रहे हैं।\n*${user.name}* has submitted their profile and is awaiting your approval.\n\nDoorSmith ऐप पर लॉग इन करें और मंजूरी दें।\nLog in to DoorSmith to review and approve.`,
+      `🆕 *नई कारीगर पंजीकरण | New Karigar Registration*\n\n*${user.name}* (${user.phone}) ने अपना प्रोफाइल जमा कर दिया है और आपकी मंजूरी का इंतज़ार कर रहे हैं।\n*${user.name}* has submitted their profile and is awaiting your approval.\n\nDoorSmith ऐप पर लॉग इन करें और मंजूरी दें।\nLog in to DoorSmith to review and approve.`,
       "kyc",
     ).catch((err) => console.error("[kyc] Admin WA notify failed:", err));
   }
+
+  return { ok: true };
+}
+
+// ── Counter first-login KYC (self-service) ──────────────────────────────────
+
+export type CounterKycState = {
+  completed: boolean;
+  name: string;
+  photoUrl?: string;
+  address?: string;
+};
+
+/** Read a counter's KYC completion state (used to gate the counter area). */
+export async function getCounterKycState(userId: string): Promise<CounterKycState> {
+  await connectDB();
+  const user = await User.findById(userId).select("name role photoUrl address counterKycCompletedAt").lean();
+  if (!user || user.role !== "counter") {
+    return { completed: false, name: "" };
+  }
+  // Completed when the explicit flag is set, OR when both photo + address exist.
+  // A counter only ever gets those two via this KYC flow, so their presence is a
+  // reliable signal — and it's resilient to the flag being missing (e.g. a dev
+  // server running a stale Mongoose schema that dropped the new field on save).
+  const completed = Boolean(user.counterKycCompletedAt) || Boolean(user.photoUrl && user.address);
+  return {
+    completed,
+    name: user.name ?? "",
+    photoUrl: toPhotoUrl(user.photoUrl) || undefined,
+    address: user.address ?? undefined,
+  };
+}
+
+/**
+ * Save a counter's first-login KYC (photo + address). Self-service: marks the
+ * KYC complete immediately so the counter can proceed straight to the dashboard.
+ */
+export async function submitCounterKyc(
+  userId: string,
+  data: { address: string; photoData?: { buffer: Buffer; contentType: string; ext: string } },
+): Promise<{ ok: true } | { error: string }> {
+  await connectDB();
+  const user = await User.findById(userId);
+  if (!user || user.role !== "counter") return { error: "Counter account not found." };
+  if (user.counterKycCompletedAt) return { error: "KYC already completed." };
+
+  if (data.photoData) {
+    try {
+      user.photoUrl = await uploadAvatar(String(user._id), data.photoData.buffer, data.photoData.contentType, data.photoData.ext);
+    } catch (err) {
+      console.error("[counter-kyc] Photo upload failed:", err);
+      return { error: "Failed to upload photo. Please try again." };
+    }
+  }
+
+  user.address = data.address.trim();
+  user.counterKycCompletedAt = new Date();
+  await user.save();
+
+  const admin = await User.findOne({ role: "admin" }).select("phone").lean();
+  notifyCounterKycToAdmin(admin?.phone, user.name ?? "A counter");
 
   return { ok: true };
 }
@@ -153,7 +215,7 @@ export async function listPendingForAdmin(
 export async function approveKyc(actorId: string, actorRole: string, khatiId: string): Promise<void> {
   await connectDB();
   const khati = await User.findById(khatiId);
-  if (!khati || khati.role !== "khati") throw new Error("Khati not found.");
+  if (!khati || khati.role !== "khati") throw new Error("Karigar not found.");
 
   if (actorRole !== "admin") throw new Error("Not authorized.");
   const pendingStatuses = ["pending_counter", "pending_sales_rep", "pending_admin"];
@@ -167,7 +229,7 @@ export async function approveKyc(actorId: string, actorRole: string, khatiId: st
   if (khati.phone) {
     waSend(
       khati.phone,
-      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\nhttps://app.doorsmith.in/login/khati\n\nआपका खाती खाता तैयार है! 🚀\nYour khati account is ready!`,
+      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\nhttps://app.doorsmith.in/login/khati\n\nआपका कारीगर खाता तैयार है! 🚀\nYour karigar account is ready!`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
   }
@@ -176,7 +238,7 @@ export async function approveKyc(actorId: string, actorRole: string, khatiId: st
 export async function rejectKyc(actorId: string, actorRole: string, khatiId: string, reason: string): Promise<void> {
   await connectDB();
   const khati = await User.findById(khatiId);
-  if (!khati || khati.role !== "khati") throw new Error("Khati not found.");
+  if (!khati || khati.role !== "khati") throw new Error("Karigar not found.");
 
   if (actorRole !== "admin") throw new Error("Not authorized.");
   const pendingStatuses = ["pending_counter", "pending_sales_rep", "pending_admin"];
@@ -188,7 +250,7 @@ export async function rejectKyc(actorId: string, actorRole: string, khatiId: str
   if (khati.phone) {
     waSend(
       khati.phone,
-      `❌ *खाती पंजीकरण अस्वीकृत | Khati Registration Rejected*\n\nप्रिय *${khati.name}*, दुर्भाग्यवश आपका DoorSmith पंजीकरण अभी स्वीकृत नहीं हो सका।\nDear *${khati.name}*, unfortunately your DoorSmith registration could not be approved at this time.\n\n*कारण | Reason:*\n${reason || "कोई कारण नहीं दिया गया | No reason provided."}\n\n📞 कृपया सहायता के लिए अपने काउंटर से संपर्क करें।\nPlease contact your counter for further assistance.`,
+      `❌ *कारीगर पंजीकरण अस्वीकृत | Karigar Registration Rejected*\n\nप्रिय *${khati.name}*, दुर्भाग्यवश आपका DoorSmith पंजीकरण अभी स्वीकृत नहीं हो सका।\nDear *${khati.name}*, unfortunately your DoorSmith registration could not be approved at this time.\n\n*कारण | Reason:*\n${reason || "कोई कारण नहीं दिया गया | No reason provided."}\n\n📞 कृपया सहायता के लिए अपने काउंटर से संपर्क करें।\nPlease contact your counter for further assistance.`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati rejection WA failed:", err));
   }

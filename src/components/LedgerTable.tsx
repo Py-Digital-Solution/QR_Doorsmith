@@ -32,7 +32,7 @@ export function LedgerTable({ items }: { items: LedgerEntry[] }) {
         <table className="min-w-full text-sm">
           <thead className="border-b border-gray-100 bg-gray-50/50">
             <tr className="text-left text-xs font-semibold uppercase text-gray-500">
-              <th className="px-4 py-2.5">Khati</th>
+              <th className="px-4 py-2.5">Karigar</th>
               <th className="px-4 py-2.5">Type</th>
               <th className="px-4 py-2.5">Detail</th>
               <th className="px-4 py-2.5 text-right">Points</th>

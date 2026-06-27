@@ -145,7 +145,7 @@ export function BannerForm({
           </button>
           <span className="flex items-center gap-1.5 text-sm text-gray-700">
             {enabled ? (
-              <><ToggleRight className="size-4 text-brand" aria-hidden /> Banner is <strong>visible</strong> to khatis</>
+              <><ToggleRight className="size-4 text-brand" aria-hidden /> Banner is <strong>visible</strong> to karigars</>
             ) : (
               <><ToggleLeft className="size-4 text-gray-400" aria-hidden /> Banner is <strong>hidden</strong></>
             )}

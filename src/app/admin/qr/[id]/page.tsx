@@ -114,6 +114,7 @@ export default async function BatchDetailPage({
       <FilterBar
         placeholder="Search by serial or SKU…"
         exportType="qr-codes"
+        exportParams={{ batchId: id }}
       />
 
       {codes.items.length === 0 ? (

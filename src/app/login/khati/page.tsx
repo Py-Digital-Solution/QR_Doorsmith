@@ -18,7 +18,7 @@ export default function KhatiLoginPage() {
       <PwaInstallBanner />
 
       <h1 className="text-lg font-semibold tracking-tight text-gray-900">Welcome back</h1>
-      <p className="mb-6 text-sm text-gray-500">Khati sign in</p>
+      <p className="mb-6 text-sm text-gray-500">Karigar sign in</p>
 
       <KhatiLoginForm />
 

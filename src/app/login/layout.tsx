@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { Check } from "lucide-react";
+import { PoweredBy } from "@/components/PoweredBy";
 
 export default function LoginLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,10 +23,10 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
 
         <div className="relative max-w-md space-y-6">
           <h2 className="text-3xl font-semibold leading-tight">
-            Khati rewards, <span className="text-brand">made simple.</span>
+            Karigar rewards, <span className="text-brand">made simple.</span>
           </h2>
           <p className="text-gray-300">
-            A QR-based rewards platform that incentivises khatis through retail
+            A QR-based rewards platform that incentivises karigars through retail
             counters  scan, earn, and redeem with ease.
           </p>
           <ul className="space-y-3 text-sm text-gray-200">
@@ -51,13 +52,23 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
         </div>
 
         <p className="relative text-xs text-gray-400">
-          © 2026 DoorSmith · Powered by Gati Growth Labs
+          © 2026 DoorSmith · Powered by{" "}
+          <a
+            href="https://gatigrowthlabs.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-gray-300 transition-colors hover:text-white hover:underline"
+          >
+            Gati Growth Labs
+          </a>
         </p>
       </aside>
 
       {/* Right  form */}
-      <main className="flex w-full items-center justify-center bg-gray-50 p-6 lg:w-1/2">
+      <main className="flex w-full flex-col items-center justify-center gap-8 bg-gray-50 p-6 lg:w-1/2">
         <div className="w-full max-w-sm">{children}</div>
+        {/* Mobile credit (the left panel + its footer are hidden on small screens) */}
+        <PoweredBy className="lg:hidden" />
       </main>
     </div>
   );

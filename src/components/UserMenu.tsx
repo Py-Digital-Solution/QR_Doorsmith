@@ -12,7 +12,7 @@ const ROLE_LABEL: Record<string, string> = {
   sales_rep: "Sales Rep",
   distributor: "Distributor",
   counter: "Counter",
-  khati: "Khati",
+  khati: "Karigar",
 };
 
 export function UserMenu({

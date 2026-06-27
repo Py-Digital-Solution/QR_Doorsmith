@@ -84,7 +84,7 @@ export default async function CounterDashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Points Today</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.pointsToday}</p>
-              <p className="mt-1 text-xs text-gray-500">{d.pointsDistributed} all-time to {d.khatiActive} active khatis</p>
+              <p className="mt-1 text-xs text-gray-500">{d.pointsDistributed} all-time to {d.khatiActive} active karigars</p>
             </div>
             <span className="flex size-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
               <TrendingUp className="size-5" aria-hidden />
@@ -96,7 +96,7 @@ export default async function CounterDashboard() {
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">My Khatis</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">My Karigars</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.khatiTotal}</p>
               <p className="mt-1 text-xs text-gray-500">{d.khatiActive} active · {d.khatiPending} pending KYC</p>
             </div>
@@ -136,7 +136,7 @@ export default async function CounterDashboard() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-yellow-800">{d.khatiPending} KYC pending</p>
-                  <p className="text-xs text-yellow-600">Khati registrations awaiting your verification</p>
+                  <p className="text-xs text-yellow-600">Karigar registrations awaiting your verification</p>
                 </div>
               </div>
               <Link
@@ -213,16 +213,16 @@ export default async function CounterDashboard() {
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div className="flex items-center gap-2">
               <UsersIcon className="size-4 text-gray-400" aria-hidden />
-              <h2 className="text-sm font-semibold text-gray-900">Recent Khatis</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Recent Karigars</h2>
             </div>
             <Link href="/counter" className="text-xs font-medium text-brand-dark hover:underline">
-              All khatis →
+              All karigars →
             </Link>
           </div>
           {d.recentKhatis.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
               <UsersIcon className="mb-2 size-8 text-gray-200" aria-hidden />
-              <p className="text-sm text-gray-400">No khatis registered yet</p>
+              <p className="text-sm text-gray-400">No karigars registered yet</p>
             </div>
           ) : (
             <ul className="divide-y divide-gray-50">
@@ -244,7 +244,7 @@ export default async function CounterDashboard() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-medium text-gray-800">{k.name}</p>
-                      <p className="text-[10px] text-gray-400">Khati</p>
+                      <p className="text-[10px] text-gray-400">Karigar</p>
                     </div>
                     <div className="text-right">
                       <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusColor}`}>
@@ -268,7 +268,7 @@ export default async function CounterDashboard() {
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div className="flex items-center gap-2">
               <UsersIcon className="size-4 text-gray-400" aria-hidden />
-              <h2 className="text-sm font-semibold text-gray-900">Top Khatis by Points</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Top Karigars by Points</h2>
             </div>
             <Link href="/counter" className="text-xs font-medium text-brand-dark hover:underline">
               Manage →
@@ -277,7 +277,7 @@ export default async function CounterDashboard() {
           {d.topKhatis.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
               <UsersIcon className="mb-2 size-8 text-gray-200" aria-hidden />
-              <p className="text-sm text-gray-400">No khatis yet</p>
+              <p className="text-sm text-gray-400">No karigars yet</p>
             </div>
           ) : (
             <div className="px-4 py-3">
@@ -285,7 +285,7 @@ export default async function CounterDashboard() {
                 <thead>
                   <tr className="text-left text-[11px] font-semibold uppercase text-gray-400">
                     <th className="pb-2">#</th>
-                    <th className="pb-2">Khati</th>
+                    <th className="pb-2">Karigar</th>
                     <th className="pb-2 text-right">Points</th>
                     <th className="pb-2 text-right">Share</th>
                   </tr>
@@ -387,7 +387,7 @@ export default async function CounterDashboard() {
             <h3 className="mb-3 text-sm font-semibold text-gray-900">Quick Actions</h3>
             <div className="space-y-1">
               {[
-                { href: "/counter", label: "Manage khatis", icon: "users" as const },
+                { href: "/counter", label: "Manage karigars", icon: "users" as const },
                 { href: "/counter/kyc", label: "Review KYC", icon: "user-check" as const },
                 { href: "/counter/redemptions", label: "Redemptions", icon: "gift" as const },
                 { href: "/counter/returns", label: "Process return", icon: "undo" as const },

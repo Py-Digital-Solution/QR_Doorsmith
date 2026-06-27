@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, Package, IndianRupee, Star, PlayCircle, ExternalLink } from "lucide-react";
+import { Search, Package, Star, PlayCircle, ExternalLink } from "lucide-react";
 import { SlideOver } from "@/components/SlideOver";
 import type { ProductDTO } from "@/services/products";
 
@@ -19,12 +19,7 @@ function getYouTubeEmbedUrl(url: string): string | null {
   return null;
 }
 
-function ProductDetail({ product }: { product: ProductDTO }) {
-  const discount =
-    product.mrp > product.salesPrice
-      ? Math.round(((product.mrp - product.salesPrice) / product.mrp) * 100)
-      : 0;
-
+export function ProductDetail({ product }: { product: ProductDTO }) {
   return (
     <div className="space-y-5">
       {/* Identity */}
@@ -116,8 +111,16 @@ export function KhatiProductsClient({
 
   const [q, setQ] = useState(initialQ);
   const [selected, setSelected] = useState<ProductDTO | null>(null);
+  const firstRender = useRef(true);
 
   useEffect(() => {
+    // Skip on mount. Paginating re-renders this client under <Suspense>, which
+    // remounts it — without this guard the mount would force page=1 and bounce
+    // the user back to the first page. Only re-search when the query changes.
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     const t = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
       if (q) params.set("q", q);

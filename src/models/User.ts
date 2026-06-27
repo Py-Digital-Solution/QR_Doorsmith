@@ -33,8 +33,12 @@ const userSchema = new Schema(
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
     // Explicit counter link for khatis. When a counter creates a khati, this
     // equals createdBy. When an admin creates a khati, createdBy = admin but
-    // counterId = the selected counter.
+    // counterId = the selected counter. This stays the khati's PRIMARY counter.
     counterId: { type: Schema.Types.ObjectId, ref: "User" },
+    // All counters a khati is linked to (one person can belong to multiple
+    // counters). Includes the primary counterId. Points remain a single shared
+    // wallet on this same document — scans at any linked counter add to it.
+    counterIds: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: undefined, index: true },
     // Khati rewards (Phase 4). Default 0 so old documents behave correctly.
     points: { type: Number, default: 0 },
     lifetimePoints: { type: Number, default: 0, index: true },
@@ -46,6 +50,9 @@ const userSchema = new Schema(
       enum: ["not_submitted", "pending_counter", "pending_sales_rep", "pending_admin", "approved", "rejected"],
       default: "not_submitted",
     },
+    // Counter first-login KYC (self-service: counter photo + address). Set once
+    // the counter completes the setup screen; used to gate the counter area.
+    counterKycCompletedAt: { type: Date },
     // One-time token included in the WhatsApp registration link; cleared on approval
     registrationToken: { type: String, sparse: true, unique: true },
     // Human-readable role-scoped ID (e.g. KH-0001, SR-0001, CN-0001)

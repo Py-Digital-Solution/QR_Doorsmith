@@ -47,6 +47,7 @@ export function UsersTable({
             {u.displayId && (
               <p className="font-mono text-xs text-gray-400">{u.displayId}</p>
             )}
+            {u.rank ? <p className="text-xs text-gray-500">Rank #{u.rank}</p> : null}
             {u.email && <p className="break-all text-sm text-gray-600">{u.email}</p>}
             {u.phone && <p className="text-sm text-gray-600">{u.phone}</p>}
             {!u.email && !u.phone && <p className="text-sm text-gray-400"></p>}
@@ -61,6 +62,7 @@ export function UsersTable({
           <THead>
             <TH>Name</TH>
             <TH>Role</TH>
+            <TH>Rank</TH>
             <TH>Email</TH>
             <TH>Phone</TH>
             <TH>Status</TH>
@@ -80,6 +82,9 @@ export function UsersTable({
                   {u.displayId && (
                     <p className="mt-0.5 font-mono text-xs text-gray-400">{u.displayId}</p>
                   )}
+                </TD>
+                <TD className="text-gray-600">
+                  {u.rank ? <span className="font-medium text-gray-900">#{u.rank}</span> : "—"}
                 </TD>
                 <TD className="text-gray-600">{u.email || ""}</TD>
                 <TD className="text-gray-600">{u.phone || ""}</TD>

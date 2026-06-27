@@ -59,6 +59,17 @@ export async function getObjectStream(
 }
 
 /**
+ * Direct, publicly-readable MinIO URL for an object key. The bucket policy
+ * allows public GET on `avatars/*`, so this URL works for un-authenticated
+ * recipients (e.g. a WhatsApp image link) — unlike the auth-gated /api/files
+ * proxy. Only use for objects stored under a public prefix.
+ */
+export function publicObjectUrl(key: string): string {
+  const base = (env.S3_ENDPOINT ?? "").replace(/\/$/, "");
+  return `${base}/${BUCKET}/${key}`;
+}
+
+/**
  * Convert whatever is stored in the DB (object key or legacy full URL) to a
  * browser-accessible proxy URL served through /api/files/[key].
  */

@@ -75,7 +75,7 @@ export function KycCard({ khati, showStatus, readOnly }: { khati: PendingKhatiDT
         )}
       </div>
 
-      <SlideOver open={viewOpen} onClose={() => setViewOpen(false)} title="Khati Details">
+      <SlideOver open={viewOpen} onClose={() => setViewOpen(false)} title="Karigar Details">
         <div className="flex flex-col gap-5">
           {khati.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element

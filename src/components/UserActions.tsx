@@ -146,6 +146,12 @@ export function UserActions({
                 </div>
               );
             })()}
+            {user.address && (
+              <div className="border-b border-gray-100 py-2.5 text-sm">
+                <p className="text-gray-500">Address</p>
+                <p className="mt-1 whitespace-pre-wrap font-medium text-gray-900">{user.address}</p>
+              </div>
+            )}
           </div>
         </div>
       </SlideOver>

@@ -56,8 +56,8 @@ export function CounterKhatisTable({
       <div className="rounded-lg border border-gray-200 bg-white shadow-card">
         <EmptyState
           icon="users"
-          title="No khatis yet"
-          description="Khatis registered at your counter will appear here."
+          title="No karigars yet"
+          description="Karigars registered at your counter will appear here."
         />
       </div>
     );

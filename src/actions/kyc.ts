@@ -1,11 +1,52 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { submitKhatiProfile, approveKyc, rejectKyc } from "@/services/kyc";
+import { submitKhatiProfile, approveKyc, rejectKyc, submitCounterKyc } from "@/services/kyc";
 import { logAudit } from "@/services/audit";
 
 export type KycActionState = { error?: string; ok?: boolean };
+
+/**
+ * Counter first-login KYC: counter photo + address. Self-service, so on success
+ * we send the counter straight to their dashboard.
+ */
+export async function submitCounterKycAction(
+  _prev: KycActionState,
+  formData: FormData,
+): Promise<KycActionState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "counter") {
+    return { error: "Not authorized." };
+  }
+
+  const address = String(formData.get("address") ?? "").trim();
+  if (!address) return { error: "Address is required." };
+
+  let photoData: { buffer: Buffer; contentType: string; ext: string } | undefined;
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    if (photo.size > 5 * 1024 * 1024) return { error: "Photo must be under 5 MB." };
+    try {
+      const arrayBuf = await photo.arrayBuffer();
+      const buffer = Buffer.from(arrayBuf);
+      const contentType = photo.type || "image/jpeg";
+      const ext = photo.name.split(".").pop()?.toLowerCase() || "jpg";
+      photoData = { buffer, contentType, ext };
+    } catch (err) {
+      console.error("[counter-kyc] Photo processing error:", err);
+      return { error: "Failed to process photo. Please try again." };
+    }
+  }
+  if (!photoData) return { error: "Counter photo is required." };
+
+  const result = await submitCounterKyc(session.user.id, { address, photoData });
+  if ("error" in result) return { error: result.error };
+
+  revalidatePath("/counter", "layout");
+  redirect("/counter/dashboard");
+}
 
 export async function submitRegistrationAction(
   _prev: KycActionState,

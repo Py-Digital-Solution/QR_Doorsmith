@@ -27,8 +27,8 @@ export default async function CounterKycPage({
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Khati Approvals"
-        description="Review and approve khati registration details submitted via their registration form."
+        title="Karigar Approvals"
+        description="Review and approve karigar registration details submitted via their registration form."
       />
 
       <FilterBar placeholder="Search by name…" exportType="kyc" />
@@ -40,8 +40,8 @@ export default async function CounterKycPage({
             title="No pending approvals"
             description={
               q
-                ? "No khatis match your search."
-                : "When a khati submits their registration form, they will appear here."
+                ? "No karigars match your search."
+                : "When a karigar submits their registration form, they will appear here."
             }
           />
         </div>

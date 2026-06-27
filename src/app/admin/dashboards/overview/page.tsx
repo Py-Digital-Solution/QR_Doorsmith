@@ -209,7 +209,7 @@ export default async function OverviewDashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Points Reversed (7 days)</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.pointsWeek}</p>
-              <p className="mt-1 text-xs text-gray-500">Redeemed / returned across {d.activeKhatis} active khatis</p>
+              <p className="mt-1 text-xs text-gray-500">Redeemed / returned across {d.activeKhatis} active karigars</p>
             </div>
             <span className="flex size-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
               <TrendingUp className="size-5" aria-hidden />
@@ -223,7 +223,7 @@ export default async function OverviewDashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Network Size</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.totalKhatis + d.totalCounters + d.totalSalesReps}</p>
-              <p className="mt-1 text-xs text-gray-500">{d.totalKhatis} khatis · {d.totalCounters} counters · {d.totalSalesReps} reps</p>
+              <p className="mt-1 text-xs text-gray-500">{d.totalKhatis} karigars · {d.totalCounters} counters · {d.totalSalesReps} reps</p>
             </div>
             <span className="flex size-10 items-center justify-center rounded-xl bg-brand-light text-brand-dark">
               <UsersIcon className="size-5" aria-hidden />
@@ -261,7 +261,7 @@ export default async function OverviewDashboard() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-yellow-800">{d.pendingKyc} KYC pending</p>
-                  <p className="text-xs text-yellow-600">Khati registrations awaiting verification</p>
+                  <p className="text-xs text-yellow-600">Karigar registrations awaiting verification</p>
                 </div>
               </div>
               <Link

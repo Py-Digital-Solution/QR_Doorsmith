@@ -21,7 +21,7 @@ const ROLE_LABEL: Record<UserRole, string> = {
   sales_rep: "Sales Rep",
   distributor: "Distributor",
   counter: "Counter",
-  khati: "Khati",
+  khati: "Karigar",
 };
 
 type PhoneStep = "idle" | "sending" | "awaiting_code" | "verifying" | "verified";
@@ -41,13 +41,19 @@ export function CreateUserForm({
   );
 
   const [role, setRole] = useState<UserRole>(allowedRoles[0]);
+  // Controlled so a failed submit (e.g. missing phone) doesn't wipe what was
+  // typed — React 19 auto-resets uncontrolled form fields after an action runs.
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [khatiPhone, setKhatiPhone] = useState("");
   const [phone, setPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("idle");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [firebaseIdToken, setFirebaseIdToken] = useState<string | null>(null);
-  const [whatsappSent, setWhatsappSent] = useState(false);
+  // Which channel delivered the OTP: WhatsApp (primary) or Firebase SMS (fallback).
+  const [channel, setChannel] = useState<"whatsapp" | "sms" | null>(null);
   const [waVerifiedPhone, setWaVerifiedPhone] = useState<string | null>(null);
 
   const confirmationRef = useRef<ConfirmationResult | null>(null);
@@ -75,7 +81,7 @@ export function CreateUserForm({
     setOtpCode("");
     setPhoneError(null);
     setFirebaseIdToken(null);
-    setWhatsappSent(false);
+    setChannel(null);
     setWaVerifiedPhone(null);
     confirmationRef.current = null;
     clearRecaptcha();
@@ -88,43 +94,47 @@ export function CreateUserForm({
   async function handleSendOtp() {
     setPhoneStep("sending");
     setPhoneError(null);
-    setWhatsappSent(false);
-
+    setChannel(null);
+    confirmationRef.current = null;
     clearRecaptcha();
 
     const e164 = `+91${phone}`;
 
-    // Fire Firebase SMS and WhatsApp OTP in parallel  proceed if at least one succeeds.
-    const auth = getFirebaseAuth();
-    recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
-    await recaptchaRef.current.render();
-
-    const [firebaseResult, waResult] = await Promise.allSettled([
-      signInWithPhoneNumber(auth, e164, recaptchaRef.current),
-      fetch("/api/otp/request", {
+    // 1. Primary: WhatsApp OTP via our own service. ok:true only when WhatsApp
+    //    actually delivered (or a code is already in flight).
+    let waOk = false;
+    try {
+      const res = await fetch("/api/otp/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: e164 }),
-      }),
-    ]);
-
-    if (firebaseResult.status === "fulfilled") {
-      confirmationRef.current = firebaseResult.value;
-    } else {
-      confirmationRef.current = null;
-      clearRecaptcha();
+      });
+      const data = await res.json().catch(() => ({}));
+      waOk = res.ok && data?.ok === true;
+    } catch {
+      waOk = false;
     }
 
-    const waOk = waResult.status === "fulfilled" && waResult.value.ok;
-    setWhatsappSent(waOk);
-
-    if (firebaseResult.status === "rejected" && !waOk) {
-      setPhoneError("Could not send OTP via SMS or WhatsApp. Please try again.");
-      setPhoneStep("idle");
+    if (waOk) {
+      setChannel("whatsapp");
+      setPhoneStep("awaiting_code");
       return;
     }
 
-    setPhoneStep("awaiting_code");
+    // 2. Fallback: Firebase SMS (only when WhatsApp couldn't deliver).
+    try {
+      const auth = getFirebaseAuth();
+      recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+      await recaptchaRef.current.render();
+      confirmationRef.current = await signInWithPhoneNumber(auth, e164, recaptchaRef.current);
+      setChannel("sms");
+      setPhoneStep("awaiting_code");
+    } catch {
+      confirmationRef.current = null;
+      clearRecaptcha();
+      setPhoneError("Could not send OTP via WhatsApp or SMS. Please try again.");
+      setPhoneStep("idle");
+    }
   }
 
   async function handleVerifyOtp() {
@@ -132,8 +142,21 @@ export function CreateUserForm({
     setPhoneStep("verifying");
     setPhoneError(null);
 
-    // 1. Try Firebase SMS code first.
-    if (confirmationRef.current) {
+    // Primary: WhatsApp code (server-verified).
+    if (channel === "whatsapp") {
+      const res = await verifyPhoneOtpAction(`+91${phone}`, otpCode);
+      if (res.ok) {
+        setWaVerifiedPhone(`+91${phone}`);
+        setPhoneStep("verified");
+        return;
+      }
+      setPhoneError("Incorrect or expired OTP. Please try again.");
+      setPhoneStep("awaiting_code");
+      return;
+    }
+
+    // Fallback: Firebase SMS code.
+    if (channel === "sms" && confirmationRef.current) {
       try {
         const result = await confirmationRef.current.confirm(otpCode);
         const token = await result.user.getIdToken();
@@ -141,17 +164,7 @@ export function CreateUserForm({
         setPhoneStep("verified");
         return;
       } catch {
-        // Firebase code wrong or expired  fall through to WhatsApp code.
-      }
-    }
-
-    // 2. Try WhatsApp OTP code (server-verified).
-    if (whatsappSent) {
-      const res = await verifyPhoneOtpAction(`+91${phone}`, otpCode);
-      if (res.ok) {
-        setWaVerifiedPhone(`+91${phone}`);
-        setPhoneStep("verified");
-        return;
+        // wrong / expired SMS code  fall through to the generic error
       }
     }
 
@@ -192,7 +205,7 @@ export function CreateUserForm({
 
         <div>
           <Label>Name</Label>
-          <Input name="name" required />
+          <Input name="name" required value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
         {isKhati ? (
@@ -234,12 +247,12 @@ export function CreateUserForm({
           <>
             <div>
               <Label>Email</Label>
-              <Input name="email" type="email" required />
+              <Input name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
 
             <div>
               <Label>Password</Label>
-              <Input name="password" type="text" required minLength={8} />
+              <Input name="password" type="text" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
             {/* Phone + Firebase OTP */}
@@ -255,6 +268,7 @@ export function CreateUserForm({
                     type="tel"
                     inputMode="numeric"
                     maxLength={10}
+                    required
                     className="flex-1 rounded-l-none"
                     placeholder="98765 43210"
                     value={phone}
@@ -314,7 +328,7 @@ export function CreateUserForm({
                   <button
                     type="button"
                     className="text-xs text-brand underline"
-                    onClick={() => { setPhoneStep("idle"); setOtpCode(""); setWhatsappSent(false); setWaVerifiedPhone(null); }}
+                    onClick={() => { setPhoneStep("idle"); setOtpCode(""); setChannel(null); setWaVerifiedPhone(null); }}
                   >
                     Resend OTP
                   </button>

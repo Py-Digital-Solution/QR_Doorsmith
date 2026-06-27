@@ -17,7 +17,8 @@ export type AuditAction =
   | "redemption_request"
   | "redemption_settle"
   | "redemption_reject"
-  | "scan_qr";
+  | "scan_qr"
+  | "broadcast_create";
 
 const auditLogSchema = new Schema(
   {

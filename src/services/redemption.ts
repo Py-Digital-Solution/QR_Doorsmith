@@ -4,6 +4,12 @@ import { Redemption } from "@/models/Redemption";
 import { User } from "@/models/User";
 import { PointTransaction } from "@/models/PointTransaction";
 import { getSetting } from "@/services/settings";
+import {
+  notifyRedemptionRequested,
+  notifyRedemptionOtp,
+  notifyRedemptionApproved,
+  notifyRedemptionRejected,
+} from "@/services/wa-notify";
 import { paginated, type Pagination, type Paginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 export type RedemptionDTO = {
@@ -32,7 +38,7 @@ export async function requestRedemption(
     throw new Error(`Minimum redemption is ${minPts} points.`);
   }
 
-  const khati = await User.findById(khatiId).select("points createdBy").lean();
+  const khati = await User.findById(khatiId).select("points createdBy name phone").lean();
   if (!khati) throw new Error("User not found.");
   if ((khati.points ?? 0) < points) throw new Error("You don't have enough points.");
 
@@ -51,6 +57,12 @@ export async function requestRedemption(
     otp,
     otpExpiresAt,
   });
+
+  // Notify the counter of the new request, and send the OTP to the karigar.
+  const counter = await User.findById(khati.createdBy).select("phone name").lean();
+  notifyRedemptionRequested(counter?.phone, counter?.name ?? "", khati.name ?? "", points);
+  notifyRedemptionOtp(khati.phone, khati.name, points, otp);
+
   return { id: String(r._id), otp };
 }
 
@@ -127,9 +139,9 @@ export async function approveRedemption(id: string, counterId: string, otp: stri
   await connectDB();
   const r = await Redemption.findOne({ _id: id, counterId, status: "pending" }).lean();
   if (!r) throw new Error("Redemption not found or already processed.");
-  if (!r.otp || r.otp !== otp.trim()) throw new Error("Invalid OTP. Please check the code shown on the khati's screen.");
+  if (!r.otp || r.otp !== otp.trim()) throw new Error("Invalid OTP. Please check the code shown on the karigar's screen.");
   if (!r.otpExpiresAt || new Date(r.otpExpiresAt as unknown as string) < new Date()) {
-    throw new Error("OTP has expired. Ask the khati to submit a new redemption request.");
+    throw new Error("OTP has expired. Ask the karigar to submit a new redemption request.");
   }
 
   const result = await User.findOneAndUpdate(
@@ -137,7 +149,7 @@ export async function approveRedemption(id: string, counterId: string, otp: stri
     { $inc: { points: -r.points } },
     { returnDocument: "after" },
   ).lean();
-  if (!result) throw new Error("Khati has insufficient points.");
+  if (!result) throw new Error("Karigar has insufficient points.");
 
   await Redemption.findByIdAndUpdate(id, {
     $set: { status: "approved", processedBy: counterId },
@@ -152,6 +164,8 @@ export async function approveRedemption(id: string, counterId: string, otp: stri
     balanceAfter: result.points ?? 0,
     description: "Points redeemed",
   }).catch((e) => console.error("[pt] Failed to write redemption PointTransaction:", e));
+
+  notifyRedemptionApproved(result.phone, result.name, r.points, result.points ?? 0);
 }
 
 export async function rejectRedemption(id: string, counterId: string): Promise<void> {
@@ -161,4 +175,7 @@ export async function rejectRedemption(id: string, counterId: string): Promise<v
   await Redemption.findByIdAndUpdate(id, {
     $set: { status: "rejected", processedBy: counterId },
   });
+
+  const khati = await User.findById(r.khatiId).select("phone name").lean();
+  notifyRedemptionRejected(khati?.phone, khati?.name, r.points);
 }

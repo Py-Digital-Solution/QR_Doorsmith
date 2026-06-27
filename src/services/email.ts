@@ -75,3 +75,51 @@ export async function sendWaFailureAlert({
 
   await transport.sendMail({ from, to, subject: `[DoorSmith] WhatsApp message failed  ${type}`, html });
 }
+
+/**
+ * Alert admins that the WhatsApp bridge is not connected, so an OTP could not be
+ * delivered over WhatsApp and the user was sent the code via Firebase SMS
+ * instead. Deliberately does NOT include the OTP code.
+ */
+export async function sendWaDisconnectedAlert({
+  to,
+  phone,
+  reason,
+}: {
+  to: string;
+  phone: string;
+  reason: string;
+}): Promise<void> {
+  const transport = getTransport();
+  const from = env.SMTP_FROM ?? "DoorSmith <no-reply@doorsmith.app>";
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <h2 style="color:#b91c1c">WhatsApp is not connected</h2>
+      <p style="font-size:14px;color:#374151">
+        A login/registration OTP could not be sent over WhatsApp because the WhatsApp
+        service is not connected. The user was sent the code via SMS (Firebase) instead.
+      </p>
+      <table style="border-collapse:collapse;width:100%;margin:16px 0;font-size:14px">
+        <tr><td style="padding:8px;color:#666;width:120px">User phone</td><td style="padding:8px;font-family:monospace">${phone}</td></tr>
+        <tr style="background:#f9f9f9"><td style="padding:8px;color:#666">Reason</td><td style="padding:8px;color:#b91c1c">${reason}</td></tr>
+      </table>
+      <p style="font-size:14px;color:#374151">
+        Please reconnect the WhatsApp bridge so OTPs are delivered over WhatsApp again.
+      </p>
+      <p style="font-size:12px;color:#aaa;margin-top:32px">DoorSmith  WhatsApp connectivity alert</p>
+    </div>
+  `;
+
+  if (!transport) {
+    console.error(`[EMAIL][dev] WA disconnected alert to ${to} (phone ${phone}, reason ${reason})`);
+    return;
+  }
+
+  await transport.sendMail({
+    from,
+    to,
+    subject: `[DoorSmith] WhatsApp not connected — OTP fell back to SMS`,
+    html,
+  });
+}

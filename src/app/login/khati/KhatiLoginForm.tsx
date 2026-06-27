@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+// Debug mode: force the magic-code (1111) login even when Firebase is configured.
+const OTP_DEV_MODE = process.env.NEXT_PUBLIC_OTP_DEV_MODE === "true";
 
 // ─── Dev-mode form (no Firebase) ────────────────────────────────────────────
 
@@ -34,7 +36,7 @@ function DevLoginForm() {
       redirect: false,
     });
     if (!res || res.error) {
-      setError("Login failed. Check the phone number is registered as a khati.");
+      setError("Login failed. Check the phone number is registered as a karigar.");
       setPending(false);
       return;
     }
@@ -102,9 +104,11 @@ function DevLoginForm() {
   );
 }
 
-// ─── Firebase form (production) ──────────────────────────────────────────────
+// ─── OTP form (production) ───────────────────────────────────────────────────
+// Primary channel: WhatsApp (our self-hosted Baileys service). Firebase phone
+// auth (SMS) is only used as a fallback when WhatsApp delivery fails.
 
-function FirebaseLoginForm() {
+function OtpLoginForm() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -112,19 +116,19 @@ function FirebaseLoginForm() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
+  // Which channel actually delivered the code, so verification uses the right path.
+  const [channel, setChannel] = useState<"whatsapp" | "sms" | null>(null);
+
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
   const recaptchaContainerId = "recaptcha-container";
 
+  // Don't initialise Firebase reCAPTCHA up front. It's only created when the SMS
+  // fallback is actually needed (see sendOtp), so a working WhatsApp login never
+  // touches Firebase/App Check. This effect just cleans it up on unmount.
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, { size: "invisible" });
-    recaptchaRef.current = verifier;
-    return () => { verifier.clear(); recaptchaRef.current = null; };
+    return () => { recaptchaRef.current?.clear(); recaptchaRef.current = null; };
   }, []);
-
-  // tracks whether WhatsApp OTP was successfully dispatched (enables fallback verification)
-  const [whatsappSent, setWhatsappSent] = useState(false);
 
   async function sendOtp(e: React.FormEvent) {
     e.preventDefault();
@@ -132,39 +136,56 @@ function FirebaseLoginForm() {
     const trimmed = phone.trim();
     if (!trimmed) { setError("Enter your phone number."); return; }
     setSending(true);
-    setWhatsappSent(false);
+    setChannel(null);
+    confirmationRef.current = null;
 
     const normalized = `+91${trimmed}`;
 
-    // Fire Firebase SMS and WhatsApp OTP in parallel  proceed if at least one succeeds.
-    const [firebaseResult, waResult] = await Promise.allSettled([
-      signInWithPhoneNumber(getFirebaseAuth(), normalized, recaptchaRef.current!),
-      fetch("/api/otp/request", {
+    // 1. Primary: WhatsApp OTP via our own service. The server only reports
+    //    ok:true when WhatsApp actually delivered (or a code is already in
+    //    flight); otherwise it asks us to fall back to SMS.
+    let waOk = false;
+    try {
+      const res = await fetch("/api/otp/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: normalized }),
-      }),
-    ]);
-
-    if (firebaseResult.status === "fulfilled") {
-      confirmationRef.current = firebaseResult.value;
-    } else {
-      confirmationRef.current = null;
-      recaptchaRef.current?.clear();
-      recaptchaRef.current = new RecaptchaVerifier(getFirebaseAuth(), recaptchaContainerId, { size: "invisible" });
+      });
+      const data = await res.json().catch(() => ({}));
+      waOk = res.ok && data?.ok === true;
+    } catch {
+      waOk = false;
     }
 
-    const waOk = waResult.status === "fulfilled" && waResult.value.ok;
-    setWhatsappSent(waOk);
-
-    if (firebaseResult.status === "rejected" && !waOk) {
-      setError("Could not send OTP via SMS or WhatsApp. Please try again.");
+    if (waOk) {
+      setChannel("whatsapp");
+      setStep("otp");
       setSending(false);
       return;
     }
 
-    setStep("otp");
-    setSending(false);
+    // 2. Fallback: Firebase SMS — initialised lazily here, only because WhatsApp
+    //    couldn't deliver. A working WhatsApp login never reaches this code.
+    try {
+      if (!recaptchaRef.current) {
+        recaptchaRef.current = new RecaptchaVerifier(getFirebaseAuth(), recaptchaContainerId, { size: "invisible" });
+      }
+      const confirmation = await signInWithPhoneNumber(
+        getFirebaseAuth(),
+        normalized,
+        recaptchaRef.current,
+      );
+      confirmationRef.current = confirmation;
+      setChannel("sms");
+      setStep("otp");
+    } catch {
+      confirmationRef.current = null;
+      recaptchaRef.current?.clear();
+      recaptchaRef.current = null;
+      setError("WhatsApp is unavailable and SMS could not be sent. Please try again in a moment.");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function verifyOtp(e: React.FormEvent) {
@@ -174,29 +195,33 @@ function FirebaseLoginForm() {
     setVerifying(true);
 
     try {
-      // 1. Try Firebase SMS code first (if Firebase session exists).
-      if (confirmationRef.current) {
-        try {
-          const result = await confirmationRef.current.confirm(code.trim());
-          const idToken = await result.user.getIdToken();
-          const res = await signIn("khati-otp", { idToken, redirect: false });
-          if (res && !res.error) { window.location.href = "/"; return; }
-        } catch {
-          // Firebase code wrong or expired  fall through to WhatsApp code.
-        }
-      }
-
-      // 2. Try WhatsApp OTP code (server-generated, verified against DB).
-      if (whatsappSent) {
+      // Primary: WhatsApp code (server-generated, verified against the DB).
+      if (channel === "whatsapp") {
         const res = await signIn("khati-otp", {
           phone: `+91${phone}`,
           code: code.trim(),
           redirect: false,
         });
         if (res && !res.error) { window.location.href = "/"; return; }
+        setError("Wrong or expired code. Check your WhatsApp and try again.");
+        return;
       }
 
-      setError("Wrong or expired code. Check your SMS or WhatsApp and try again.");
+      // Fallback: Firebase SMS code.
+      if (channel === "sms" && confirmationRef.current) {
+        try {
+          const result = await confirmationRef.current.confirm(code.trim());
+          const idToken = await result.user.getIdToken();
+          const res = await signIn("khati-otp", { idToken, redirect: false });
+          if (res && !res.error) { window.location.href = "/"; return; }
+        } catch {
+          // wrong / expired SMS code  fall through to the generic error
+        }
+        setError("Wrong or expired code. Check your SMS and try again.");
+        return;
+      }
+
+      setError("Wrong or expired code. Please try again.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Verification failed.";
       setError(msg);
@@ -236,7 +261,7 @@ function FirebaseLoginForm() {
       {step === "otp" && (
         <form onSubmit={verifyOtp} className="space-y-4">
           <Alert variant="success">
-            OTP sent to +91{phone} via SMS{whatsappSent ? " and WhatsApp" : ""}. Enter the 6-digit code.
+            OTP sent to +91{phone} via {channel === "whatsapp" ? "WhatsApp" : "SMS"}. Enter the 6-digit code.
           </Alert>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">6-digit code</label>
@@ -271,5 +296,7 @@ function FirebaseLoginForm() {
 // ─── Auto-select based on env ────────────────────────────────────────────────
 
 export function KhatiLoginForm() {
-  return FIREBASE_CONFIGURED ? <FirebaseLoginForm /> : <DevLoginForm />;
+  // Debug mode forces the 1111 dev form so the khati app can be opened without
+  // real OTP; otherwise use Firebase when configured.
+  return OTP_DEV_MODE || !FIREBASE_CONFIGURED ? <DevLoginForm /> : <OtpLoginForm />;
 }

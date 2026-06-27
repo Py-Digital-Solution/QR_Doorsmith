@@ -106,3 +106,43 @@ export async function waSend(phone: string, message: string, type = "message"): 
     .then(() => WaLog.create({ phone: normalizedPhone, message, type, status: "sent" }))
     .catch((e) => console.error("[wa] Failed to log WA success:", e));
 }
+
+function logWa(phone: string, message: string, status: "sent" | "failed", error?: string) {
+  connectDB()
+    .then(() => WaLog.create({ phone, message, type: "otp", status, error }))
+    .catch((e) => console.error("[wa] Failed to log OTP WA result:", e));
+}
+
+export type WaOtpFailReason = "not_connected" | "not_registered" | "error";
+export type WaOtpResult = { ok: true } | { ok: false; reason: WaOtpFailReason };
+
+/**
+ * OTP-specific WhatsApp send. Unlike waSend() it does NOT throw  it returns a
+ * structured result so the caller can fall back to SMS when WhatsApp can't
+ * deliver (service not connected, or the number isn't on WhatsApp). Asks the
+ * bridge to verify the number exists first (checkExists).
+ */
+export async function waSendOtp(phone: string, message: string): Promise<WaOtpResult> {
+  const normalizedPhone = normalizePhone(phone);
+  try {
+    const res = await fetch(base("/send"), {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ phone: normalizedPhone, message, checkExists: true }),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      logWa(normalizedPhone, message, "sent");
+      return { ok: true };
+    }
+    const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+    let reason: WaOtpFailReason = "error";
+    if (res.status === 503) reason = "not_connected";
+    else if (res.status === 422 || body.code === "not_registered") reason = "not_registered";
+    logWa(normalizedPhone, message, "failed", body.error ?? reason);
+    return { ok: false, reason };
+  } catch (err) {
+    logWa(normalizedPhone, message, "failed", err instanceof Error ? err.message : String(err));
+    return { ok: false, reason: "error" };
+  }
+}

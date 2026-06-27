@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Label } from "@/components/ui/Field";
+import { SocialFollowConsent } from "@/components/SocialFollowConsent";
 import { Camera, CheckCircle2, X } from "lucide-react";
 
 const TARGET_SIZE = 500 * 1024; // 500 KB
@@ -78,6 +79,7 @@ export function RegisterForm({ token }: { token: string }) {
     {},
   );
   const [preview, setPreview] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   // The named input that gets submitted with the form
   const mainInputRef = useRef<HTMLInputElement>(null);
@@ -212,9 +214,11 @@ export function RegisterForm({ token }: { token: string }) {
         />
       </div>
 
+      <SocialFollowConsent checked={agreed} onChange={setAgreed} />
+
       {state.error && <Alert variant="error">{state.error}</Alert>}
 
-      <Button type="submit" fullWidth loading={pending}>
+      <Button type="submit" fullWidth loading={pending} disabled={!agreed}>
         {pending ? "Submitting…" : "Submit registration"}
       </Button>
 

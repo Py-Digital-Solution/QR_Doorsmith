@@ -104,8 +104,13 @@ export async function GET(
       // drawSvgPath positions the path's (0,0) at (x, y) and renders downward.
       page.drawSvgPath(d, { x: qrX, y, scale, color: black });
 
-      const caption = `${code.type.toUpperCase()} · ${code.serialNo}`;
-      const fontSize = 6;
+      // Caption is just the code (no type category). Shrink to fit the column
+      // width so long serials don't overlap the neighbouring caption.
+      const caption = code.serialNo;
+      const maxTextW = cellW - 6; // keep a little padding inside the column
+      const baseSize = 6;
+      const baseW = font.widthOfTextAtSize(caption, baseSize);
+      const fontSize = baseW > maxTextW ? Math.max(3.5, (baseSize * maxTextW) / baseW) : baseSize;
       const textW = font.widthOfTextAtSize(caption, fontSize);
       page.drawText(caption, {
         x: cellX + (cellW - textW) / 2,

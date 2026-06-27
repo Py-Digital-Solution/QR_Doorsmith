@@ -26,7 +26,7 @@ export function welcomeEmailHtml({
           <td style="background:#ffffff;padding:32px 40px 28px;text-align:center;border-bottom:3px solid #f6821f">
             <img src="https://app.doorsmith.in/logo.png" alt="DoorSmith" style="height:44px;margin-bottom:18px;display:inline-block" />
             <h1 style="margin:0;color:#f6821f;font-size:26px;font-weight:700">Welcome to DoorSmith!</h1>
-            <p style="margin:8px 0 0;color:#9ca3af;font-size:14px">Your Carpenter Rewards Platform</p>
+            <p style="margin:8px 0 0;color:#9ca3af;font-size:14px">Your Karigar Rewards Platform</p>
           </td>
         </tr>
         <tr>
@@ -69,7 +69,7 @@ export function welcomeEmailHtml({
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 40px;text-align:center">
-            <p style="margin:0 0 4px;font-size:12px;color:#9ca3af">DoorSmith Khati Rewards Platform</p>
+            <p style="margin:0 0 4px;font-size:12px;color:#9ca3af">DoorSmith Karigar Rewards Platform</p>
             <p style="margin:0;font-size:12px;color:#d1d5db">LR Enterprises · Hisar, Haryana</p>
           </td>
         </tr>

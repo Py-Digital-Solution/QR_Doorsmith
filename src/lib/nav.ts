@@ -14,6 +14,7 @@ export const NAV: Record<UserRole, NavItem[]> = {
     { href: "/admin/dispatch", label: "Dispatch", icon: "truck" },
     { href: "/admin/returns", label: "Returns", icon: "undo" },
     { href: "/approvals", label: "Approvals", icon: "user-check" },
+    { href: "/admin/promotions", label: "Promotions", icon: "megaphone" },
     { href: "/admin/audit", label: "Audit Log", icon: "history" },
     { href: "/admin/settings", label: "Settings", icon: "settings" },
   ],
@@ -30,7 +31,7 @@ export const NAV: Record<UserRole, NavItem[]> = {
   ],
   counter: [
     { href: "/counter/dashboard", label: "Dashboard", icon: "bar-chart" },
-    { href: "/counter", label: "Khatis", icon: "users" },
+    { href: "/counter", label: "Karigars", icon: "users" },
     { href: "/counter/inventory", label: "Inventory", icon: "boxes" },
     { href: "/counter/dispatches", label: "Dispatches", icon: "truck" },
     { href: "/counter/redemptions", label: "Redemptions", icon: "gift" },

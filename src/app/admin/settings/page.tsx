@@ -53,9 +53,9 @@ async function GeneralTab() {
       <MinPointsForm initial={minPoints} />
 
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
-        <p className="text-sm font-medium text-gray-900">Khati app banner</p>
+        <p className="text-sm font-medium text-gray-900">Karigar app banner</p>
         <p className="mb-4 text-sm text-gray-500">
-          Upload a promotional banner that floats at the top of the khati app. Toggle it off to hide it without deleting it.
+          Upload a promotional banner that floats at the top of the karigar app. Toggle it off to hide it without deleting it.
         </p>
         <BannerForm initial={banner} />
       </div>

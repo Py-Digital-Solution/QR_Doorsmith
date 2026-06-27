@@ -37,15 +37,15 @@ export default async function AdminReturnsPage({
     <div className="space-y-4">
       <PageHeader
         title="Process Return"
-        description="Scan any product QR code to reverse the khati's points and reactivate it for resale, regardless of counter."
+        description="Scan any product QR code to reverse the karigar's points and reactivate it for resale, regardless of counter."
       />
 
-      <CounterReturnPanel endpoint="/api/admin/return" />
+      <CounterReturnPanel endpoint="/api/admin/return" allowManual />
 
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">Return history</h2>
 
-        <FilterBar placeholder="Search by serial, SKU or khati name…" exportType="counter-returns" />
+        <FilterBar placeholder="Search by serial, SKU or karigar name…" exportType="counter-returns" />
 
         {history.items.length === 0 ? (
           <div className="rounded-lg border border-gray-200 bg-white shadow-card">
@@ -81,7 +81,7 @@ export default async function AdminReturnsPage({
               <Table>
                 <THead>
                   <TH>Serial / SKU</TH>
-                  <TH>Khati</TH>
+                  <TH>Karigar</TH>
                   <TH>Counter</TH>
                   <TH>Date</TH>
                   <TH align="right">Points reversed</TH>

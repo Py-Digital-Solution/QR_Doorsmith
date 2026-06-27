@@ -8,9 +8,15 @@ interface FilterBarProps {
   placeholder?: string;
   /** Identifies which dataset to export (passed to /api/export?type=…) */
   exportType: string;
+  /**
+   * Extra params merged into the export URL only (not the page query string).
+   * Use for values that live in the route path rather than the query string,
+   * e.g. the batch id on /admin/qr/[id].
+   */
+  exportParams?: Record<string, string | undefined>;
 }
 
-function FilterBarInner({ placeholder, exportType }: FilterBarProps) {
+function FilterBarInner({ placeholder, exportType, exportParams }: FilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -52,6 +58,9 @@ function FilterBarInner({ placeholder, exportType }: FilterBarProps) {
     params.set("format", format);
     params.delete("page");
     params.delete("pageSize");
+    for (const [k, v] of Object.entries(exportParams ?? {})) {
+      if (v) params.set(k, v);
+    }
     return `/api/export?${params.toString()}`;
   }
 

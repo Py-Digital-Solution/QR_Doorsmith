@@ -57,15 +57,15 @@ export default async function CounterRedemptionsPage({
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Redemption requests" description="Review and approve khati redemption requests." />
+      <PageHeader title="Redemption requests" description="Review and approve karigar redemption requests." />
 
       <TabNav tabs={tabs} />
 
-      <FilterBar placeholder="Search by khati name…" exportType="counter-redemptions" />
+      <FilterBar placeholder="Search by karigar name…" exportType="counter-redemptions" />
 
       {result.items.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white shadow-card">
-          <EmptyState icon="gift" title="No redemption requests found" description="Khati redemption requests will appear here." />
+          <EmptyState icon="gift" title="No redemption requests found" description="Karigar redemption requests will appear here." />
         </div>
       ) : (
         <>
@@ -90,7 +90,7 @@ export default async function CounterRedemptionsPage({
           <TableWrapper>
             <Table>
               <THead>
-                <TH>Khati</TH>
+                <TH>Karigar</TH>
                 <TH>Date</TH>
                 <TH align="right">Points</TH>
                 <TH>Status</TH>

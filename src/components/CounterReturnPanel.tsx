@@ -16,8 +16,11 @@ type ReturnState =
 
 export function CounterReturnPanel({
   endpoint = "/api/counter/return",
+  allowManual = false,
 }: {
   endpoint?: string;
+  /** Show the manual serial-entry box. Counters scan only; admins may also type. */
+  allowManual?: boolean;
 }) {
   const [state, setState] = useState<ReturnState>({ phase: "idle" });
   const [manual, setManual] = useState("");
@@ -90,29 +93,31 @@ export function CounterReturnPanel({
 
   return (
     <div className="space-y-4">
-      {/* Manual serial entry */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
-        <p className="mb-3 text-sm font-medium text-gray-700">Enter serial number manually</p>
-        <form
-          onSubmit={(e) => { e.preventDefault(); submit(manual); }}
-          className="flex gap-2"
-        >
-          <Input
-            value={manual}
-            onChange={(e) => setManual(e.target.value)}
-            placeholder="PD-DS-0000001"
-            className="font-mono"
-            disabled={state.phase === "loading"}
-          />
-          <Button
-            type="submit"
-            disabled={!manual.trim() || state.phase === "loading"}
-            loading={state.phase === "loading" && !!manual}
+      {/* Manual serial entry — admins only; counters must scan */}
+      {allowManual && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
+          <p className="mb-3 text-sm font-medium text-gray-700">Enter serial number manually</p>
+          <form
+            onSubmit={(e) => { e.preventDefault(); submit(manual); }}
+            className="flex gap-2"
           >
-            Process
-          </Button>
-        </form>
-      </div>
+            <Input
+              value={manual}
+              onChange={(e) => setManual(e.target.value)}
+              placeholder="PD-DS-0000001"
+              className="font-mono"
+              disabled={state.phase === "loading"}
+            />
+            <Button
+              type="submit"
+              disabled={!manual.trim() || state.phase === "loading"}
+              loading={state.phase === "loading" && !!manual}
+            >
+              Process
+            </Button>
+          </form>
+        </div>
+      )}
 
       {/* Camera scanner */}
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">

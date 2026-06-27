@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOutKhati } from "@/actions/auth";
+import { PoweredBy } from "./PoweredBy";
 import {
   Home,
   ScanLine,
@@ -156,6 +157,7 @@ export function KhatiShell({
 
           <div className="mx-auto w-full max-w-6xl p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}
+            <PoweredBy className="mt-8" />
           </div>
         </main>
       </div>
@@ -217,8 +219,8 @@ export function KhatiShell({
                     {user.name?.[0]?.toUpperCase() ?? "K"}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{user.name ?? "Khati"}</p>
-                    <p className="text-xs text-gray-400">Carpenter</p>
+                    <p className="font-semibold text-gray-900">{user.name ?? "Karigar"}</p>
+                    <p className="text-xs text-gray-400">Karigar</p>
                   </div>
                 </div>
 
@@ -331,7 +333,7 @@ export function KhatiShell({
                 <div className="space-y-4 px-5 py-5">
                   <div className="flex flex-col items-center gap-2 py-2">
                     <Image src="/logo.png" alt="DoorSmith" width={140} height={23} className="h-7 w-auto" />
-                    <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand">Khati Rewards</span>
+                    <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand">Karigar Rewards</span>
                   </div>
                   <div className="space-y-2 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
                     <div className="flex justify-between">

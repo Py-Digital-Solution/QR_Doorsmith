@@ -183,6 +183,7 @@ app.post("/send", async (req, res) => {
   const body = req.body || {};
   const phone = body.phone;
   const message = body.message;
+  const checkExists = body.checkExists === true; // opt-in: used by the OTP path only
   if (!phone || !message) {
     return res.status(400).json({ error: "phone and message are required" });
   }
@@ -190,6 +191,21 @@ app.post("/send", async (req, res) => {
   // Normalise to JID: strip non-digits, append @s.whatsapp.net
   const digits = String(phone).replace(/\D/g, "");
   const jid = digits + "@s.whatsapp.net";
+
+  // Only the OTP flow asks us to verify the number is actually on WhatsApp, so
+  // the caller can fall back to SMS. Other message types send unconditionally.
+  if (checkExists) {
+    try {
+      const results = await sock.onWhatsApp(digits);
+      const exists = Array.isArray(results) && results.length > 0 && results[0] && results[0].exists;
+      if (!exists) {
+        return res.status(422).json({ error: "Number not on WhatsApp", code: "not_registered" });
+      }
+    } catch (e) {
+      // If the existence check itself fails, don't block  fall through and try to send.
+      console.error("[wa] onWhatsApp check failed", e);
+    }
+  }
 
   try {
     await sock.sendMessage(jid, { text: String(message) });

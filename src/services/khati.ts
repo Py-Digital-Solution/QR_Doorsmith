@@ -4,6 +4,7 @@ import { QrCode } from "@/models/QrCode";
 import { User } from "@/models/User";
 import { Return } from "@/models/Return";
 import { PointTransaction } from "@/models/PointTransaction";
+import { notifyScanEarned, notifyReturnReversed } from "@/services/wa-notify";
 import { paginated, type Pagination, type Paginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 export type KhatiStats = {
@@ -52,11 +53,16 @@ export async function processQrScan(
   if (code.status !== "active") throw new Error("QR code is not active  it must be dispatched to a counter first.");
   if (!code.counterId) throw new Error("QR code has not been dispatched to a counter.");
 
-  const khati = await User.findById(khatiId).select("counterId createdBy points").lean();
-  if (!khati) throw new Error("Khati account not found.");
-  // counterId is the authoritative counter link; fall back to createdBy for legacy rows.
-  const khatiCounterId = String(khati.counterId ?? khati.createdBy ?? "");
-  if (String(code.counterId) !== khatiCounterId) {
+  const khati = await User.findById(khatiId).select("counterId createdBy counterIds points phone name").lean();
+  if (!khati) throw new Error("Karigar account not found.");
+  // A khati may be linked to multiple counters and can earn at any of them
+  // (single shared wallet). Build the set of counters they belong to: the
+  // primary counterId, all linked counterIds, and createdBy as a legacy fallback.
+  const allowedCounters = new Set<string>();
+  if (khati.counterId) allowedCounters.add(String(khati.counterId));
+  if (khati.createdBy) allowedCounters.add(String(khati.createdBy));
+  for (const c of khati.counterIds ?? []) allowedCounters.add(String(c));
+  if (!allowedCounters.has(String(code.counterId))) {
     throw new Error("This QR code does not belong to your counter.");
   }
 
@@ -106,6 +112,8 @@ export async function processQrScan(
       sku: code.sku, serialNo: code.serialNo,
     }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
 
+    notifyScanEarned(khati.phone, khati.name, totalPts, newBal);
+
     return {
       serialNo: code.serialNo,
       sku: code.sku ?? "",
@@ -135,6 +143,8 @@ export async function processQrScan(
     description: `Product scan`,
     sku: code.sku, serialNo: code.serialNo,
   }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
+
+  notifyScanEarned(khati.phone, khati.name, pts, newBalance);
 
   return {
     serialNo: code.serialNo,
@@ -174,15 +184,15 @@ export async function processQrReturn(
   if (!opts.adminOverride && String(code.counterId) !== actorId) {
     throw new Error("This QR code does not belong to your counter.");
   }
-  if (!code.scannedByKhatiId) throw new Error("No khati record found for this code.");
+  if (!code.scannedByKhatiId) throw new Error("No karigar record found for this code.");
 
   const counterId = opts.adminOverride ? String(code.counterId) : actorId;
   const pts = code.rewardPoints ?? 0;
   const [khati, counter] = await Promise.all([
-    User.findById(code.scannedByKhatiId).select("name points").lean(),
+    User.findById(code.scannedByKhatiId).select("name points phone").lean(),
     User.findById(counterId).select("name").lean(),
   ]);
-  if (!khati) throw new Error("Khati account not found.");
+  if (!khati) throw new Error("Karigar account not found.");
 
   const khatiName = khati.name ?? "Unknown";
   const counterName = counter?.name ?? "Unknown Counter";
@@ -218,6 +228,8 @@ export async function processQrReturn(
     description: `Return reversal by ${counterName}`,
     sku: code.sku, serialNo: code.serialNo,
   }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
+
+  notifyReturnReversed(khati.phone, khatiName, pts, updatedKhati?.points ?? 0, counterName);
 
   return {
     serialNo: code.serialNo,

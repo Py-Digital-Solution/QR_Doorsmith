@@ -5,6 +5,7 @@ import { QrCode } from "@/models/QrCode";
 import { Dispatch } from "@/models/Dispatch";
 import { Sequence } from "@/models/Sequence";
 import { User } from "@/models/User";
+import { notifyDispatchCreated } from "@/services/wa-notify";
 import { formatBillNo, type QrType } from "@/lib/qr";
 import {
   DEFAULT_PAGE_SIZE,
@@ -119,6 +120,8 @@ export async function createDispatch(input: {
     { _id: { $in: allIds } },
     { $set: { counterId: counter._id, dispatchId: dispatch._id, status: "active" } },
   );
+
+  notifyDispatchCreated(counter.phone, counter.name, billNo, allIds.length);
 
   return { billNo, dispatchId: String(dispatch._id), totalCodes: allIds.length };
 }

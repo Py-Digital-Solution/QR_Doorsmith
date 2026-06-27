@@ -218,6 +218,7 @@ export async function GET(req: NextRequest) {
 
       case "qr-codes": {
         const batchId = sp.get("batchId") ?? "";
+        if (!batchId) return NextResponse.json({ error: "Missing batchId" }, { status: 400 });
         const filter = (sp.get("status") as Parameters<typeof listBatchCodes>[2]) ?? "all";
         const result = await listBatchCodes(batchId, ALL, filter, q);
         return respond(format, "QR Codes", ["Serial No", "Type", "SKU", "Status", "Counter"],

@@ -63,11 +63,11 @@ export default async function SalesLedgerPage({
   if (khatiIds.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Points Ledger" description="Point movements across your network's khatis." />
+        <PageHeader title="Points Ledger" description="Point movements across your network's karigars." />
         <EmptyState
           icon="receipt"
-          title="No khatis in your network"
-          description="Create counters and khatis to see point transactions here."
+          title="No karigars in your network"
+          description="Create counters and karigars to see point transactions here."
           action={<Link href="/sales" className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">Manage Counters</Link>}
         />
       </div>

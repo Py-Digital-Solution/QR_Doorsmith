@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { getKhatiByToken } from "@/services/kyc";
 import { RegisterForm } from "./RegisterForm";
+import { PoweredBy } from "@/components/PoweredBy";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
 
 export default async function RegisterPage({ params }: { params: Promise<{ token: string }> }) {
@@ -73,12 +75,10 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg sm:p-8">
         <div className="mb-6 flex justify-center">
           {/* Logo / brand mark */}
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-brand text-white font-bold text-lg">D</div>
-            <span className="text-lg font-bold text-navy">DoorSmith</span>
-          </div>
+          <Image src="/logo.png" alt="DoorSmith" width={156} height={26} priority className="h-7 w-auto" />
         </div>
         {children}
+        <PoweredBy className="mt-6" />
       </div>
     </div>
   );

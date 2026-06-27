@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 import { HeaderTitle } from "./HeaderTitle";
+import { PoweredBy } from "./PoweredBy";
 import type { NavItem } from "@/lib/nav";
 import type { UserRole } from "@/lib/roles";
 
@@ -41,6 +42,7 @@ export function DashboardShell({
           {/* pb-24 on mobile clears the fixed bottom nav */}
           <div className="w-full p-4 pb-24 sm:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}
+            <PoweredBy className="mt-8" />
           </div>
         </main>
       </div>
