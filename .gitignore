@@ -47,3 +47,6 @@ next-env.d.ts
 # whatsapp microservice  ignore its own deps and lock file
 whatsapp-service/node_modules/
 whatsapp-service/package-lock.json
+
+.vercel
+.env*
