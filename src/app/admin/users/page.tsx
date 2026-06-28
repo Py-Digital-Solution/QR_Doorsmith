@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/auth";
 import { listUsers, listCounters } from "@/services/users";
 import { isDistributorEnabled } from "@/services/settings";
@@ -61,9 +62,10 @@ export default async function UsersPage({
             ? `/admin/users?role=${f.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`
             : `/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`;
           return (
-            <a
+            <Link
               key={f.value}
               href={href}
+              scroll={false}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 active
                   ? "border-brand bg-brand text-white"
@@ -71,7 +73,7 @@ export default async function UsersPage({
               }`}
             >
               {f.label}
-            </a>
+            </Link>
           );
         })}
       </div>
