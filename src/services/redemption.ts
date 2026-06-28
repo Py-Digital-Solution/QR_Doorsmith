@@ -140,9 +140,36 @@ export async function listCounterRedemptions(
   );
 }
 
+/**
+ * Look up a pending redemption by the OTP the karigar shows. Lets ANY counter
+ * settle a redemption (not only the karigar's registered counter) — the counter
+ * never sees other karigars' requests, only the one matching the OTP in hand.
+ */
+export async function findRedemptionByOtp(
+  otp: string,
+): Promise<{ id: string; khatiName: string; khatiPhone: string; points: number }> {
+  await connectDB();
+  const code = otp.trim();
+  if (code.length !== 6) throw new Error("Enter the 6-digit OTP from the karigar.");
+  const r = await Redemption.findOne({ otp: code, status: "pending" }).lean();
+  if (!r) throw new Error("No pending redemption found for this OTP.");
+  if (!r.otpExpiresAt || new Date(r.otpExpiresAt as unknown as string) < new Date()) {
+    throw new Error("This OTP has expired. Ask the karigar to request redemption again.");
+  }
+  const khati = await User.findById(r.khatiId).select("name phone").lean();
+  return {
+    id: String(r._id),
+    khatiName: khati?.name ?? "",
+    khatiPhone: khati?.phone ?? "",
+    points: r.points,
+  };
+}
+
 export async function approveRedemption(id: string, counterId: string, otp: string): Promise<void> {
   await connectDB();
-  const r = await Redemption.findOne({ _id: id, counterId, status: "pending" }).lean();
+  // No counterId filter: a karigar may redeem at ANY counter. The approving
+  // counter is recorded in processedBy below.
+  const r = await Redemption.findOne({ _id: id, status: "pending" }).lean();
   if (!r) throw new Error("Redemption not found or already processed.");
   if (!r.otp || r.otp !== otp.trim()) throw new Error("Invalid OTP. Please check the code shown on the karigar's screen.");
   if (!r.otpExpiresAt || new Date(r.otpExpiresAt as unknown as string) < new Date()) {

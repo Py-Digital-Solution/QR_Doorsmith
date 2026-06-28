@@ -4,6 +4,7 @@ import { parsePageParams } from "@/lib/pagination";
 import { formatISTDate } from "@/lib/datetime";
 import { Pagination } from "@/components/Pagination";
 import { RedemptionActions } from "@/components/RedemptionActions";
+import { RedeemByOtp } from "@/components/RedeemByOtp";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TabNav } from "@/components/ui/Tabs";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -58,6 +59,8 @@ export default async function CounterRedemptionsPage({
   return (
     <div className="space-y-4">
       <PageHeader title="Redemption requests" description="Review and approve karigar redemption requests." />
+
+      <RedeemByOtp />
 
       <TabNav tabs={tabs} />
 
