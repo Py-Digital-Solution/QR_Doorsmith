@@ -3,12 +3,11 @@ import QRCode from "qrcode";
 import { auth } from "@/auth";
 import { getBatchPrintData } from "@/services/qr";
 import { getCompanyBranding } from "@/services/branding";
+import { resolvePageSize } from "@/lib/page-sizes";
 
 export const runtime = "nodejs";
 
 const MM = 2.834645669; // mm → pt
-const PAGE_W = 210 * MM; // A4
-const PAGE_H = 297 * MM;
 const MARGIN = 10 * MM;
 
 /**
@@ -29,7 +28,7 @@ function qrSvgPath(text: string): { d: string; n: number } {
 }
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -38,6 +37,10 @@ export async function GET(
   }
 
   const { id } = await params;
+  const { searchParams } = new URL(req.url);
+  const { widthMm, heightMm } = resolvePageSize(searchParams.get("size"));
+  const PAGE_W = widthMm * MM;
+  const PAGE_H = heightMm * MM;
   const [data, branding] = await Promise.all([
     getBatchPrintData(id),
     getCompanyBranding(),

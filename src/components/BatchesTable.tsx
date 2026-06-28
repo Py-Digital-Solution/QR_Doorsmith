@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { BatchDTO } from "@/services/qr";
 import { BatchActions } from "./BatchActions";
+import { PdfDownload } from "./PdfDownload";
 import type { ProductOption } from "./GenerateBatchForm";
 import { Badge, statusTone } from "./ui/Badge";
 import { formatISTDate } from "@/lib/datetime";
@@ -17,19 +18,6 @@ import { EmptyState } from "./ui/EmptyState";
 
 const actionLink =
   "focus-ring inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-brand-light";
-
-function PdfLink({ id }: { id: string }) {
-  return (
-    <a
-      href={`/admin/qr/${id}/pdf`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={actionLink}
-    >
-      PDF
-    </a>
-  );
-}
 
 function ManageLink({ id }: { id: string }) {
   return (
@@ -101,7 +89,7 @@ export function BatchesTable({
               <span className="text-xs text-gray-400">{formatISTDate(b.createdAt)}</span>
               <div className="flex items-center gap-1">
                 <ManageLink id={b.id} />
-                <PdfLink id={b.id} />
+                <PdfDownload id={b.id} />
               </div>
             </div>
             <div className="mt-2 border-t border-gray-100 pt-2">
@@ -156,7 +144,7 @@ export function BatchesTable({
                 <TD>
                   <div className="flex items-center justify-end gap-1">
                     <ManageLink id={b.id} />
-                    <PdfLink id={b.id} />
+                    <PdfDownload id={b.id} />
                     <BatchActions batch={b} products={products} />
                   </div>
                 </TD>
