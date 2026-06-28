@@ -18,6 +18,10 @@ const redemptionSchema = new Schema(
     note: { type: String, default: "" },
     otp: { type: String, default: null },
     otpExpiresAt: { type: Date, default: null },
+    /** Settlement with the counter (admin reimburses the counter for points it paid out). */
+    settledAt: { type: Date, default: null, index: true },
+    settledBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    settlementId: { type: Schema.Types.ObjectId, ref: "Settlement", default: null },
   },
   { timestamps: true },
 );

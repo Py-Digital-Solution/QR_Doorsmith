@@ -11,3 +11,4 @@ export * from "./QrBatch";
 export * from "./QrCode";
 export * from "./Dispatch";
 export * from "./Redemption";
+export * from "./Settlement";

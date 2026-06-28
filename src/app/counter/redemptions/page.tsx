@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { listCounterRedemptions } from "@/services/redemption";
+import { getCounterRedemptionSummary } from "@/services/settlement";
 import { parsePageParams } from "@/lib/pagination";
 import { formatISTDate } from "@/lib/datetime";
 import { Pagination } from "@/components/Pagination";
@@ -39,6 +40,8 @@ export default async function CounterRedemptionsPage({
     { status: statusFilter, search: q || undefined },
   );
 
+  const summary = await getCounterRedemptionSummary(session!.user.id);
+
   const tabs = [
     { label: "All", value: "" },
     { label: "Pending", value: "pending" },
@@ -59,6 +62,25 @@ export default async function CounterRedemptionsPage({
   return (
     <div className="space-y-4">
       <PageHeader title="Redemption requests" description="Review and approve karigar redemption requests." />
+
+      {/* Total redemption points this counter has paid out */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-brand/20 bg-brand-light p-4 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand-dark/70">Total redeemed</p>
+          <p className="mt-1.5 text-2xl font-bold text-brand-dark">{summary.totalPoints.toLocaleString()}</p>
+          <p className="mt-0.5 text-xs text-brand-dark/60">{summary.totalCount} redemption{summary.totalCount === 1 ? "" : "s"} done</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Settled</p>
+          <p className="mt-1.5 text-2xl font-bold text-gray-900">{summary.settledPoints.toLocaleString()}</p>
+          <p className="mt-0.5 text-xs text-gray-500">reimbursed by admin</p>
+        </div>
+        <div className="col-span-2 rounded-xl border border-orange-200 bg-orange-50 p-4 shadow-card sm:col-span-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Pending settlement</p>
+          <p className="mt-1.5 text-2xl font-bold text-orange-700">{summary.outstandingPoints.toLocaleString()}</p>
+          <p className="mt-0.5 text-xs text-orange-600">{summary.outstandingCount} awaiting admin</p>
+        </div>
+      </div>
 
       <RedeemByOtp />
 

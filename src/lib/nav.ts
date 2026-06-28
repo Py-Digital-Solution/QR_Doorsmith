@@ -13,6 +13,7 @@ export const NAV: Record<UserRole, NavItem[]> = {
     { href: "/admin/qr", label: "QR Codes", icon: "qr-code" },
     { href: "/admin/dispatch", label: "Dispatch", icon: "truck" },
     { href: "/admin/returns", label: "Returns", icon: "undo" },
+    { href: "/admin/settlements", label: "Settle up", icon: "wallet" },
     { href: "/approvals", label: "Approvals", icon: "user-check" },
     { href: "/admin/promotions", label: "Promotions", icon: "megaphone" },
     { href: "/admin/audit", label: "Audit Log", icon: "history" },

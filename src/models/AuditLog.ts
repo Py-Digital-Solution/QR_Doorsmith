@@ -17,6 +17,7 @@ export type AuditAction =
   | "redemption_request"
   | "redemption_settle"
   | "redemption_reject"
+  | "counter_settle"
   | "scan_qr"
   | "broadcast_create";
 
