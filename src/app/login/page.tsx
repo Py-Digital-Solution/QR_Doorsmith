@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { StaffLoginForm } from "./StaffLoginForm";
+import { PwaInstallBanner } from "@/components/PwaInstallBanner";
 
 export default function LoginPage() {
   return (
@@ -13,6 +14,9 @@ export default function LoginPage() {
         priority
         className="mb-4 h-6 w-auto lg:hidden"
       />
+
+      <PwaInstallBanner />
+
       <h1 className="text-lg font-semibold tracking-tight text-gray-900">Welcome back</h1>
       <p className="mb-6 text-sm text-gray-500">Staff sign in</p>
 

@@ -53,18 +53,12 @@ export async function processQrScan(
   if (code.status !== "active") throw new Error("QR code is not active  it must be dispatched to a counter first.");
   if (!code.counterId) throw new Error("QR code has not been dispatched to a counter.");
 
-  const khati = await User.findById(khatiId).select("counterId createdBy counterIds points phone name").lean();
+  const khati = await User.findById(khatiId).select("phone name").lean();
   if (!khati) throw new Error("Karigar account not found.");
-  // A khati may be linked to multiple counters and can earn at any of them
-  // (single shared wallet). Build the set of counters they belong to: the
-  // primary counterId, all linked counterIds, and createdBy as a legacy fallback.
-  const allowedCounters = new Set<string>();
-  if (khati.counterId) allowedCounters.add(String(khati.counterId));
-  if (khati.createdBy) allowedCounters.add(String(khati.createdBy));
-  for (const c of khati.counterIds ?? []) allowedCounters.add(String(c));
-  if (!allowedCounters.has(String(code.counterId))) {
-    throw new Error("This QR code does not belong to your counter.");
-  }
+  // A karigar may scan a product dispatched to ANY counter — points go into
+  // their single shared wallet regardless of which counter owns the QR. The
+  // product's own counter (code.counterId) still governs where it can be
+  // returned; redemption stays restricted to the karigar's registered counter.
 
   const now = new Date();
 

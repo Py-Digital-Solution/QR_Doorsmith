@@ -42,7 +42,7 @@ export function UsersTable({
             key={u.id}
             title={u.name || "—"}
             badge={<Badge tone="brand">{u.role}</Badge>}
-            actions={<UserActions user={u} isSelf={u.id === currentUserId} />}
+            actions={<UserActions user={u} isSelf={u.id === currentUserId} size="md" />}
           >
             {u.displayId && (
               <p className="font-mono text-xs text-gray-400">{u.displayId}</p>

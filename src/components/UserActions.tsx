@@ -35,11 +35,14 @@ export function UserActions({
   isSelf,
   hideDelete = false,
   hideEdit = false,
+  size = "sm",
 }: {
   user: UserDTO;
   isSelf: boolean;
   hideDelete?: boolean;
   hideEdit?: boolean;
+  /** "md" = larger, easier tap targets (used on mobile cards). */
+  size?: "sm" | "md";
 }) {
   const [view, setView] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -69,10 +72,13 @@ export function UserActions({
   const isKhatiPending = user.role === "khati" && user.kycStatus !== "approved";
 
   const btn =
-    "focus-ring inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors";
+    size === "md"
+      ? "focus-ring inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium transition-colors"
+      : "focus-ring inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors";
+  const icon = size === "md" ? "size-4" : "size-3.5";
 
   return (
-    <div className="flex flex-wrap justify-end gap-1">
+    <div className={`flex flex-wrap gap-1.5 ${size === "md" ? "justify-start" : "justify-end"}`}>
       {isKhatiPending && (
         <button
           onClick={onResend}
@@ -84,7 +90,7 @@ export function UserActions({
               : "text-blue-600 hover:bg-blue-50"
           }`}
         >
-          <Send className="size-3.5" aria-hidden />
+          <Send className={icon} aria-hidden />
           {resendState === "sending" ? "Sending…" : resendState === "sent" ? "Sent!" : "Resend Link"}
         </button>
       )}
@@ -92,7 +98,7 @@ export function UserActions({
         onClick={() => setView(true)}
         className={`${btn} text-gray-600 hover:bg-gray-100`}
       >
-        <Eye className="size-3.5" aria-hidden />
+        <Eye className={icon} aria-hidden />
         View
       </button>
       {!hideEdit && (
@@ -100,7 +106,7 @@ export function UserActions({
           onClick={() => setEdit(true)}
           className={`${btn} text-brand-dark hover:bg-brand-light`}
         >
-          <Pencil className="size-3.5" aria-hidden />
+          <Pencil className={icon} aria-hidden />
           Edit
         </button>
       )}
@@ -112,7 +118,7 @@ export function UserActions({
           }}
           className={`${btn} text-red-600 hover:bg-red-50`}
         >
-          <Trash2 className="size-3.5" aria-hidden />
+          <Trash2 className={icon} aria-hidden />
           Delete
         </button>
       )}

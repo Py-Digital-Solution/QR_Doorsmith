@@ -38,9 +38,14 @@ export async function requestRedemption(
     throw new Error(`Minimum redemption is ${minPts} points.`);
   }
 
-  const khati = await User.findById(khatiId).select("points createdBy name phone").lean();
+  const khati = await User.findById(khatiId).select("points counterId createdBy name phone").lean();
   if (!khati) throw new Error("User not found.");
   if ((khati.points ?? 0) < points) throw new Error("You don't have enough points.");
+
+  // Redemption is processed ONLY at the karigar's registered (primary) counter,
+  // even though they can earn points by scanning at any counter. Fall back to
+  // createdBy for legacy khatis that predate the counterId field.
+  const registeredCounterId = khati.counterId ?? khati.createdBy ?? undefined;
 
   // One pending request at a time.
   const existing = await Redemption.findOne({ khatiId, status: "pending" });
@@ -51,7 +56,7 @@ export async function requestRedemption(
 
   const r = await Redemption.create({
     khatiId: khatiId,
-    counterId: khati.createdBy ?? undefined,
+    counterId: registeredCounterId,
     points,
     status: "pending",
     otp,
@@ -59,7 +64,7 @@ export async function requestRedemption(
   });
 
   // Notify the counter of the new request, and send the OTP to the karigar.
-  const counter = await User.findById(khati.createdBy).select("phone name").lean();
+  const counter = await User.findById(registeredCounterId).select("phone name").lean();
   notifyRedemptionRequested(counter?.phone, counter?.name ?? "", khati.name ?? "", points);
   notifyRedemptionOtp(khati.phone, khati.name, points, otp);
 
