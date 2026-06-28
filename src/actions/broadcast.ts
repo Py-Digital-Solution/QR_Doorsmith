@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/db/mongoose";
 import { User } from "@/models/User";
 import { createBroadcast, countAudience, sendTestMessage } from "@/services/broadcast";
+import { uploadPublicImage, publicObjectUrl } from "@/lib/storage";
 import { logAudit } from "@/services/audit";
 
 export type BroadcastActionState = { error?: string; ok?: boolean; id?: string; total?: number };
@@ -13,6 +14,30 @@ async function requireAdmin() {
   const session = await auth();
   if (!session?.user || session.user.role !== "admin") return null;
   return session.user;
+}
+
+const IMAGE_EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+/**
+ * Pull an optional `image` file off the form, upload it to public storage, and
+ * return its public URL (the bridge attaches it as a WhatsApp image). Returns
+ * undefined when no image was attached; throws on an invalid/oversized file.
+ */
+async function extractImageUrl(formData: FormData): Promise<string | undefined> {
+  const file = formData.get("image");
+  if (!(file instanceof File) || file.size === 0) return undefined;
+  const ext = IMAGE_EXT[file.type];
+  if (!ext) throw new Error("Image must be PNG, JPEG, WebP, or GIF.");
+  if (file.size > MAX_IMAGE_BYTES) throw new Error("Image must be under 5 MB.");
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const key = await uploadPublicImage("promo", buffer, file.type, ext);
+  return publicObjectUrl(key);
 }
 
 export async function createBroadcastAction(
@@ -28,9 +53,11 @@ export async function createBroadcastAction(
   if (!message) return { error: "Message is required." };
 
   try {
+    const imageUrl = await extractImageUrl(formData);
     const { id, total } = await createBroadcast({
       roles,
       message,
+      imageUrl,
       actorId: admin.id,
       actorName: admin.name ?? "",
     });
@@ -66,7 +93,8 @@ export async function sendTestAction(
   if (!me?.phone) return { error: "Your account has no phone number to test with." };
 
   try {
-    await sendTestMessage(me.phone, message);
+    const imageUrl = await extractImageUrl(formData);
+    await sendTestMessage(me.phone, message, imageUrl);
     return { ok: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to send test." };

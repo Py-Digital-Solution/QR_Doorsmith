@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Megaphone, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ImageIcon, Megaphone, Send, Upload, X } from "lucide-react";
 import {
   createBroadcastAction,
   sendTestAction,
@@ -22,14 +22,48 @@ const AUDIENCES = [
 
 type Progress = { total: number; sent: number; failed: number; done: boolean };
 
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+
 export function PromotionForm() {
   const [roles, setRoles] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [count, setCount] = useState<number | null>(null);
   const [busy, setBusy] = useState<null | "test" | "send">(null);
   const [feedback, setFeedback] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!IMAGE_TYPES.includes(file.type)) {
+      setFeedback({ type: "error", text: "Image must be PNG, JPEG, WebP, or GIF." });
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setFeedback({ type: "error", text: "Image must be under 5 MB." });
+      return;
+    }
+    setFeedback(null);
+    setImage(file);
+    setImagePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function removeImage() {
+    setImage(null);
+    setImagePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return "";
+    });
+    if (fileRef.current) fileRef.current.value = "";
+  }
 
   const allValues = AUDIENCES.map((a) => a.value);
   const allSelected = roles.length === allValues.length;
@@ -59,6 +93,7 @@ export function PromotionForm() {
     const fd = new FormData();
     roles.forEach((r) => fd.append("roles", r));
     fd.set("message", message);
+    if (image) fd.set("image", image);
     return fd;
   }
 
@@ -104,6 +139,7 @@ export function PromotionForm() {
     // Clear the compose fields; sending is now tracked server-side.
     setMessage("");
     setRoles([]);
+    removeImage();
     await pollDrain();
     setBusy(null);
   }
@@ -162,6 +198,50 @@ export function PromotionForm() {
           placeholder="Write your promotional message…"
           className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
         />
+      </div>
+
+      {/* Image attachment (optional) */}
+      <div>
+        <Label>Image (optional)</Label>
+        {imagePreview ? (
+          <div className="relative mt-1 inline-block overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imagePreview} alt="Attachment preview" className="max-h-48 object-contain" />
+            <button
+              type="button"
+              onClick={removeImage}
+              className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+              title="Remove image"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+        ) : (
+          <div className="mt-1 flex items-center gap-3">
+            <input
+              ref={fileRef}
+              type="file"
+              accept={IMAGE_TYPES.join(",")}
+              className="sr-only"
+              id="promo-image"
+              onChange={handleImageChange}
+            />
+            <label
+              htmlFor="promo-image"
+              className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-card transition-colors hover:bg-gray-50"
+            >
+              <Upload className="size-4" aria-hidden />
+              Attach image
+            </label>
+            <span className="flex items-center gap-1 text-xs text-gray-400">
+              <ImageIcon className="size-3.5" aria-hidden />
+              PNG · JPEG · WebP · GIF · max 5 MB
+            </span>
+          </div>
+        )}
+        <p className="mt-1.5 text-xs text-gray-500">
+          When attached, the message is sent as the image caption.
+        </p>
       </div>
 
       {feedback && <Alert variant={feedback.type === "error" ? "error" : "success"}>{feedback.text}</Alert>}

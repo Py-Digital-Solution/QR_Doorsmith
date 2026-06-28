@@ -9,8 +9,8 @@ const broadcastSchema = new Schema(
   {
     audienceRoles: { type: [String], required: true },
     message: { type: String, required: true },
-    // Optional public image URL appended to the message text (no embedded media
-    // without a bridge update — see services/broadcast.ts).
+    // Optional public image URL. Sent as a real WhatsApp image attachment with
+    // the message as its caption (see services/broadcast.ts + the bridge /send).
     imageUrl: { type: String },
     status: {
       type: String,

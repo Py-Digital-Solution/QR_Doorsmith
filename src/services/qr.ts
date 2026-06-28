@@ -38,8 +38,6 @@ async function reserveSerials(type: QrType, sku: string, count: number): Promise
 export type SheetConfig = {
   sheetWidthMm?: number;
   sheetHeightMm?: number;
-  labelWidthMm?: number;
-  labelHeightMm?: number;
   columns?: number;
   rows?: number;
   pageSize?: string;
@@ -340,8 +338,6 @@ async function assertBatchUnlocked(batchId: string): Promise<void> {
 
 export type UpdateBatchInput = {
   productId?: string;
-  labelWidthMm?: number;
-  labelHeightMm?: number;
   columns?: number;
   pageSize?: string;
 };
@@ -372,8 +368,6 @@ export async function updateBatch(batchId: string, input: UpdateBatchInput) {
   }
 
   const sheet = { ...(batch.sheetConfig ?? {}) } as Record<string, number | string>;
-  if (input.labelWidthMm) sheet.labelWidthMm = input.labelWidthMm;
-  if (input.labelHeightMm) sheet.labelHeightMm = input.labelHeightMm;
   if (input.columns) sheet.columns = input.columns;
   if (input.pageSize) sheet.pageSize = input.pageSize;
   batch.sheetConfig = sheet;
@@ -564,8 +558,6 @@ export async function deleteQrCode(codeId: string) {
 
 export type BatchPrintData = {
   productSku: string;
-  labelWidthMm: number;
-  labelHeightMm: number;
   columns: number;
   pageSize: string;
   qrSizes: { master: number; small: number; product: number };
@@ -596,8 +588,6 @@ export async function getBatchPrintData(
 
   return {
     productSku: codes[0]?.sku ?? "",
-    labelWidthMm: batch.sheetConfig?.labelWidthMm ?? 40,
-    labelHeightMm: batch.sheetConfig?.labelHeightMm ?? 40,
     columns: batch.sheetConfig?.columns ?? 4,
     pageSize: batch.sheetConfig?.pageSize ?? DEFAULT_PAGE_SIZE_KEY,
     qrSizes: {

@@ -132,19 +132,9 @@ export function GenerateBatchForm({
               ))}
             </Select>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <Label>Label W (mm)</Label>
-              <Input name="labelWidthMm" type="number" min={0} defaultValue={40} />
-            </div>
-            <div>
-              <Label>Label H (mm)</Label>
-              <Input name="labelHeightMm" type="number" min={0} defaultValue={40} />
-            </div>
-            <div>
-              <Label>Columns</Label>
-              <Input name="columns" type="number" min={1} defaultValue={4} />
-            </div>
+          <div>
+            <Label>Columns</Label>
+            <Input name="columns" type="number" min={1} defaultValue={4} />
           </div>
         </div>
       </details>

@@ -22,8 +22,6 @@ export function BatchEditForm({
   onSuccess: () => void;
 }) {
   const [productId, setProductId] = useState(currentProductId ?? "");
-  const [labelWidthMm, setLabelWidthMm] = useState("");
-  const [labelHeightMm, setLabelHeightMm] = useState("");
   const [columns, setColumns] = useState("");
   const [pageSize, setPageSize] = useState(batch.pageSize || DEFAULT_PAGE_SIZE_KEY);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +32,6 @@ export function BatchEditForm({
     startTransition(async () => {
       const res = await updateBatchAction(batch.id, {
         productId: productId || undefined,
-        labelWidthMm: Number(labelWidthMm) || undefined,
-        labelHeightMm: Number(labelHeightMm) || undefined,
         columns: Number(columns) || undefined,
         pageSize: pageSize || undefined,
       });
@@ -74,34 +70,14 @@ export function BatchEditForm({
         </Select>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <Label>Label W (mm)</Label>
-          <Input
-            value={labelWidthMm}
-            onChange={(e) => setLabelWidthMm(e.target.value)}
-            placeholder="40"
-            inputMode="numeric"
-          />
-        </div>
-        <div>
-          <Label>Label H (mm)</Label>
-          <Input
-            value={labelHeightMm}
-            onChange={(e) => setLabelHeightMm(e.target.value)}
-            placeholder="40"
-            inputMode="numeric"
-          />
-        </div>
-        <div>
-          <Label>Columns</Label>
-          <Input
-            value={columns}
-            onChange={(e) => setColumns(e.target.value)}
-            placeholder="4"
-            inputMode="numeric"
-          />
-        </div>
+      <div>
+        <Label>Columns</Label>
+        <Input
+          value={columns}
+          onChange={(e) => setColumns(e.target.value)}
+          placeholder="4"
+          inputMode="numeric"
+        />
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}

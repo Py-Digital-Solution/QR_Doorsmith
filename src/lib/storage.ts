@@ -43,6 +43,27 @@ export async function uploadAvatar(
   return key;
 }
 
+/**
+ * Upload an image under the public `avatars/` prefix and return its object key.
+ * Objects there are reachable by an un-authenticated fetch (bucket policy allows
+ * public GET), so they can be attached to a WhatsApp message. Use `prefix` to
+ * label the kind of image (e.g. "promo").
+ */
+export async function uploadPublicImage(
+  prefix: string,
+  buffer: Buffer,
+  contentType: string,
+  ext: string,
+): Promise<string> {
+  const client = getClient();
+  await ensureBucket(client);
+  const key = `avatars/${prefix}-${Date.now()}.${ext}`;
+  await client.putObject(BUCKET, key, buffer, buffer.length, {
+    "Content-Type": contentType,
+  });
+  return key;
+}
+
 /** Stream an object from MinIO  used by the /api/files proxy route. */
 export async function getObjectStream(
   key: string,

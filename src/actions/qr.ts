@@ -24,8 +24,6 @@ export async function updateBatchAction(
   batchId: string,
   input: {
     productId?: string;
-    labelWidthMm?: number;
-    labelHeightMm?: number;
     columns?: number;
     pageSize?: string;
   },
@@ -116,8 +114,6 @@ export async function generateBatchAction(
         productSize: Number(formData.get("productQrSize") ?? 0) || undefined,
       },
       sheetConfig: {
-        labelWidthMm: Number(formData.get("labelWidthMm") ?? 0) || undefined,
-        labelHeightMm: Number(formData.get("labelHeightMm") ?? 0) || undefined,
         columns: Number(formData.get("columns") ?? 0) || undefined,
         pageSize: String(formData.get("pageSize") ?? "").trim() || undefined,
       },

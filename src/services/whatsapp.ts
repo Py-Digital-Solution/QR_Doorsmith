@@ -67,14 +67,23 @@ function normalizePhone(phone: string): string {
   return phone;
 }
 
-export async function waSend(phone: string, message: string, type = "message"): Promise<void> {
+export async function waSend(
+  phone: string,
+  message: string,
+  type = "message",
+  imageUrl?: string,
+): Promise<void> {
   const normalizedPhone = normalizePhone(phone);
   let errorMsg: string | undefined;
   try {
     const res = await fetch(base("/send"), {
       method: "POST",
       headers: headers(),
-      body: JSON.stringify({ phone: normalizedPhone, message }),
+      body: JSON.stringify({
+        phone: normalizedPhone,
+        message,
+        ...(imageUrl ? { imageUrl } : {}),
+      }),
       cache: "no-store",
     });
     if (!res.ok) {

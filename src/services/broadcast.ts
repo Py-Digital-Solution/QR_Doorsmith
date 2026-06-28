@@ -40,10 +40,6 @@ export async function countAudience(roles: string[]): Promise<number> {
   return User.countDocuments(audienceQuery(valid));
 }
 
-function fullMessage(message: string, imageUrl?: string | null): string {
-  return imageUrl ? `${message}\n\n📷 ${imageUrl}` : message;
-}
-
 export async function createBroadcast(input: {
   roles: string[];
   message: string;
@@ -115,12 +111,11 @@ export async function drainNextBatch(): Promise<DrainResult> {
     return { active: true, broadcastId: String(b._id), total: b.total, sent: b.sent, failed: b.failed, done: false };
   }
 
-  const msg = fullMessage(b.message, b.imageUrl);
   let sent = 0;
   let failed = 0;
   for (const u of batch) {
     try {
-      await waSend(String(u.phone), msg, "promotion");
+      await waSend(String(u.phone), b.message, "promotion", b.imageUrl ?? undefined);
       sent++;
     } catch {
       failed++;
@@ -143,7 +138,7 @@ export async function drainNextBatch(): Promise<DrainResult> {
 
 /** Send a one-off test message to a single number (no Broadcast record). */
 export async function sendTestMessage(phone: string, message: string, imageUrl?: string): Promise<void> {
-  await waSend(phone, fullMessage(message, imageUrl), "promotion_test");
+  await waSend(phone, message, "promotion_test", imageUrl);
 }
 
 export type BroadcastDTO = {

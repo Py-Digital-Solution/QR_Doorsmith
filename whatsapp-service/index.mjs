@@ -7,7 +7,8 @@
  *   - GET  /qr           → QR code PNG (base64) while connecting
  *   - POST /connect      → start / restart connection
  *   - POST /disconnect   → clear session and stop
- *   - POST /send         → { phone, message } → sends WhatsApp message
+ *   - POST /send         → { phone, message, imageUrl? } → sends a WhatsApp
+ *                          message (text, or an image with message as caption)
  *
  * Auth: every request must carry  Authorization: Bearer <WA_SERVICE_SECRET>
  * Set WA_SERVICE_SECRET and WA_SERVICE_PORT in environment (or .env file).
@@ -183,6 +184,7 @@ app.post("/send", async (req, res) => {
   const body = req.body || {};
   const phone = body.phone;
   const message = body.message;
+  const imageUrl = body.imageUrl; // optional: send as an image with message as caption
   const checkExists = body.checkExists === true; // opt-in: used by the OTP path only
   if (!phone || !message) {
     return res.status(400).json({ error: "phone and message are required" });
@@ -208,7 +210,16 @@ app.post("/send", async (req, res) => {
   }
 
   try {
-    await sock.sendMessage(jid, { text: String(message) });
+    if (imageUrl) {
+      // Baileys streams the media straight from the public URL and attaches the
+      // text as the image caption.
+      await sock.sendMessage(jid, {
+        image: { url: String(imageUrl) },
+        caption: String(message),
+      });
+    } else {
+      await sock.sendMessage(jid, { text: String(message) });
+    }
     res.json({ ok: true });
   } catch (err) {
     console.error("[wa] Send error", err);
