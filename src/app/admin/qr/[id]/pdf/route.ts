@@ -28,7 +28,7 @@ function qrSvgPath(text: string): { d: string; n: number } {
 }
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -37,15 +37,16 @@ export async function GET(
   }
 
   const { id } = await params;
-  const { searchParams } = new URL(req.url);
-  const { widthMm, heightMm } = resolvePageSize(searchParams.get("size"));
-  const PAGE_W = widthMm * MM;
-  const PAGE_H = heightMm * MM;
   const [data, branding] = await Promise.all([
     getBatchPrintData(id),
     getCompanyBranding(),
   ]);
   if (!data) return new Response("Batch not found", { status: 404 });
+
+  // Page dimensions come from the batch's saved print-sheet setting.
+  const { widthMm, heightMm } = resolvePageSize(data.pageSize);
+  const PAGE_W = widthMm * MM;
+  const PAGE_H = heightMm * MM;
 
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);

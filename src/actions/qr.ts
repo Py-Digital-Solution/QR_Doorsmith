@@ -27,6 +27,7 @@ export async function updateBatchAction(
     labelWidthMm?: number;
     labelHeightMm?: number;
     columns?: number;
+    pageSize?: string;
   },
 ): Promise<{ error?: string; ok?: boolean }> {
   if (!(await requireAdmin())) return { error: "Not authorized." };
@@ -118,6 +119,7 @@ export async function generateBatchAction(
         labelWidthMm: Number(formData.get("labelWidthMm") ?? 0) || undefined,
         labelHeightMm: Number(formData.get("labelHeightMm") ?? 0) || undefined,
         columns: Number(formData.get("columns") ?? 0) || undefined,
+        pageSize: String(formData.get("pageSize") ?? "").trim() || undefined,
       },
     });
     logAudit({

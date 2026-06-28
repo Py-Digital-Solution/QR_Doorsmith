@@ -18,6 +18,7 @@ import {
   type Pagination,
   type Paginated,
 } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE_KEY } from "@/lib/page-sizes";
 
 const MAX_BATCH = 5000; // safety ceiling (SOW targets ~2,000/day)
 
@@ -41,6 +42,7 @@ export type SheetConfig = {
   labelHeightMm?: number;
   columns?: number;
   rows?: number;
+  pageSize?: string;
 };
 
 export type QrSizes = {
@@ -197,6 +199,8 @@ export type BatchDTO = {
   serialEndLabel: string;
   status: string;
   createdAt: string;
+  /** Print page size key (e.g. "12x18", "A4"). */
+  pageSize: string;
   /** How many codes are still in the warehouse (not yet dispatched). */
   warehouseCount: number;
   /** How many codes have been dispatched to a counter (active or scanned). */
@@ -278,6 +282,7 @@ export async function listBatches(
       serialEndLabel: batchSerialLabel(prodSku, d.serialEnd, mCount, sCount),
       status: String(d.status),
       createdAt: (d.createdAt as Date)?.toISOString() ?? "",
+      pageSize: d.sheetConfig?.pageSize ?? DEFAULT_PAGE_SIZE_KEY,
       dispatchedCount,
       warehouseCount: Math.max(0, d.totalCodes - dispatchedCount),
     };
@@ -338,6 +343,7 @@ export type UpdateBatchInput = {
   labelWidthMm?: number;
   labelHeightMm?: number;
   columns?: number;
+  pageSize?: string;
 };
 
 /** Edit a batch (before dispatch only). Relinking the product re-snapshots all codes. */
@@ -365,10 +371,11 @@ export async function updateBatch(batchId: string, input: UpdateBatchInput) {
     );
   }
 
-  const sheet = { ...(batch.sheetConfig ?? {}) } as Record<string, number>;
+  const sheet = { ...(batch.sheetConfig ?? {}) } as Record<string, number | string>;
   if (input.labelWidthMm) sheet.labelWidthMm = input.labelWidthMm;
   if (input.labelHeightMm) sheet.labelHeightMm = input.labelHeightMm;
   if (input.columns) sheet.columns = input.columns;
+  if (input.pageSize) sheet.pageSize = input.pageSize;
   batch.sheetConfig = sheet;
 
   await batch.save();
@@ -445,6 +452,7 @@ export async function getBatch(batchId: string): Promise<BatchDTO | null> {
     serialEndLabel: batchSerialLabel(prodSku, d.serialEnd, mCount, sCount),
     status: String(d.status),
     createdAt: (d.createdAt as Date)?.toISOString() ?? "",
+    pageSize: d.sheetConfig?.pageSize ?? DEFAULT_PAGE_SIZE_KEY,
     dispatchedCount,
     warehouseCount: Math.max(0, d.totalCodes - dispatchedCount),
   };
@@ -559,6 +567,7 @@ export type BatchPrintData = {
   labelWidthMm: number;
   labelHeightMm: number;
   columns: number;
+  pageSize: string;
   qrSizes: { master: number; small: number; product: number };
   codes: { serialNo: string; type: string }[];
 };
@@ -590,6 +599,7 @@ export async function getBatchPrintData(
     labelWidthMm: batch.sheetConfig?.labelWidthMm ?? 40,
     labelHeightMm: batch.sheetConfig?.labelHeightMm ?? 40,
     columns: batch.sheetConfig?.columns ?? 4,
+    pageSize: batch.sheetConfig?.pageSize ?? DEFAULT_PAGE_SIZE_KEY,
     qrSizes: {
       master: batch.qrSizes?.masterSize ?? 25,
       small: batch.qrSizes?.smallSize ?? 15,

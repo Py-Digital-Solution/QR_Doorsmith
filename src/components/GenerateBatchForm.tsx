@@ -6,6 +6,7 @@ import { Input, Select } from "./ui/Input";
 import { Label } from "./ui/Field";
 import { Button } from "./ui/Button";
 import { Alert } from "./ui/Alert";
+import { PAGE_SIZES, DEFAULT_PAGE_SIZE_KEY } from "@/lib/page-sizes";
 
 export type ProductOption = { id: string; sku: string; name: string };
 
@@ -120,18 +121,30 @@ export function GenerateBatchForm({
         <summary className="cursor-pointer text-xs font-medium text-gray-600">
           Print sheet settings (optional)
         </summary>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mt-3 space-y-3">
           <div>
-            <Label>Label W (mm)</Label>
-            <Input name="labelWidthMm" type="number" min={0} defaultValue={40} />
+            <Label>Page size</Label>
+            <Select name="pageSize" defaultValue={DEFAULT_PAGE_SIZE_KEY}>
+              {Object.entries(PAGE_SIZES).map(([key, { label }]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </Select>
           </div>
-          <div>
-            <Label>Label H (mm)</Label>
-            <Input name="labelHeightMm" type="number" min={0} defaultValue={40} />
-          </div>
-          <div>
-            <Label>Columns</Label>
-            <Input name="columns" type="number" min={1} defaultValue={4} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <Label>Label W (mm)</Label>
+              <Input name="labelWidthMm" type="number" min={0} defaultValue={40} />
+            </div>
+            <div>
+              <Label>Label H (mm)</Label>
+              <Input name="labelHeightMm" type="number" min={0} defaultValue={40} />
+            </div>
+            <div>
+              <Label>Columns</Label>
+              <Input name="columns" type="number" min={1} defaultValue={4} />
+            </div>
           </div>
         </div>
       </details>

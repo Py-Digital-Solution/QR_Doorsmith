@@ -23,6 +23,8 @@ const sheetConfigSchema = new Schema(
     labelHeightMm: Number,
     columns: Number,
     rows: Number,
+    /** Print page size key (e.g. "12x18", "A4"). See src/lib/page-sizes.ts. */
+    pageSize: String,
   },
   { _id: false },
 );

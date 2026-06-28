@@ -8,6 +8,7 @@ import { Input, Select } from "./ui/Input";
 import { Label } from "./ui/Field";
 import { Button } from "./ui/Button";
 import { Alert } from "./ui/Alert";
+import { PAGE_SIZES, DEFAULT_PAGE_SIZE_KEY } from "@/lib/page-sizes";
 
 export function BatchEditForm({
   batch,
@@ -24,6 +25,7 @@ export function BatchEditForm({
   const [labelWidthMm, setLabelWidthMm] = useState("");
   const [labelHeightMm, setLabelHeightMm] = useState("");
   const [columns, setColumns] = useState("");
+  const [pageSize, setPageSize] = useState(batch.pageSize || DEFAULT_PAGE_SIZE_KEY);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -35,6 +37,7 @@ export function BatchEditForm({
         labelWidthMm: Number(labelWidthMm) || undefined,
         labelHeightMm: Number(labelHeightMm) || undefined,
         columns: Number(columns) || undefined,
+        pageSize: pageSize || undefined,
       });
       if (res?.error) setError(res.error);
       else onSuccess();
@@ -55,6 +58,17 @@ export function BatchEditForm({
           {products.map((p) => (
             <option key={p.id} value={p.id}>
               {p.sku} · {p.name}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div>
+        <Label>Page size</Label>
+        <Select value={pageSize} onChange={(e) => setPageSize(e.target.value)}>
+          {Object.entries(PAGE_SIZES).map(([key, { label }]) => (
+            <option key={key} value={key}>
+              {label}
             </option>
           ))}
         </Select>
