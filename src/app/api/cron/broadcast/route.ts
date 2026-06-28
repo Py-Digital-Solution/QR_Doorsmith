@@ -3,14 +3,18 @@ import { drainNextBatch } from "@/services/broadcast";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Allow the daily backstop to run long enough to clear a real backlog.
+export const maxDuration = 60;
 
-// How many batches to send per cron tick. Kept small to stay within serverless
-// time limits; the schedule frequency controls overall throughput.
-const MAX_BATCHES = 5;
+// Stop draining a few seconds before the function time limit so the request
+// returns cleanly instead of being killed mid-batch. Runs daily (Hobby plan
+// only permits once-per-day crons), so it must drain as much as it safely can.
+const TIME_BUDGET_MS = 50_000;
 
 /**
  * Backstop drainer for queued broadcasts — keeps sending even when no admin has
- * the Promotions page open. Protected by CRON_SECRET like the nightly summary.
+ * the Promotions page open. The Promotions page drains in real time while open;
+ * this daily job clears anything left over. Protected by CRON_SECRET.
  */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -19,8 +23,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const start = Date.now();
   let batches = 0;
-  for (let i = 0; i < MAX_BATCHES; i++) {
+  while (Date.now() - start < TIME_BUDGET_MS) {
     const r = await drainNextBatch();
     if (!r.active) break;
     batches++;
