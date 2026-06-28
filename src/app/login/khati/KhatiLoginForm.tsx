@@ -13,8 +13,10 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
-// Debug mode: force the magic-code (1111) login even when Firebase is configured.
-const OTP_DEV_MODE = process.env.NEXT_PUBLIC_OTP_DEV_MODE === "true";
+// DEV/DEMO MODE: force the magic-code (1111) login in every environment,
+// including production deploys, so the app opens without real Firebase OTP.
+// Set NEXT_PUBLIC_OTP_DEV_MODE="false" in the environment to turn this OFF.
+const OTP_DEV_MODE = process.env.NEXT_PUBLIC_OTP_DEV_MODE !== "false";
 
 // ─── Dev-mode form (no Firebase) ────────────────────────────────────────────
 

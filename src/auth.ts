@@ -87,7 +87,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null;
           }
         } else if (
-          (process.env.OTP_DEV_MODE === "true" || process.env.NODE_ENV !== "production") &&
+          // DEV/DEMO MODE: magic OTP 1111 bypasses Firebase in EVERY environment
+          // (including production deploys) so the app can be opened without real
+          // OTP. Set OTP_DEV_MODE="false" in the environment to turn this OFF.
+          process.env.OTP_DEV_MODE !== "false" &&
           phone &&
           code === "1111"
         ) {
