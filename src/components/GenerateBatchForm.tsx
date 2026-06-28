@@ -20,18 +20,24 @@ export function GenerateBatchForm({
     generateBatchAction,
     {},
   );
-  const [m, setM] = useState(1);
-  const [s, setS] = useState(0);
-  const [p, setP] = useState(0);
+  // Stored as strings so the fields can be cleared (empty) instead of snapping
+  // back to 0. Numeric values are derived below for the totals.
+  const [m, setM] = useState("1");
+  const [s, setS] = useState("");
+  const [p, setP] = useState("");
 
   useEffect(() => {
     if (state.ok) onSuccess?.();
   }, [state.ok, onSuccess]);
 
-  // When m=0: s = total smalls, p = products per small (or total products if s=0 too)
-  const totalMasters = m;
-  const totalSmalls = m > 0 ? m * s : s;
-  const totalProducts = m > 0 ? m * s * p : s > 0 ? s * p : p;
+  const mn = parseInt(m, 10) || 0;
+  const sn = parseInt(s, 10) || 0;
+  const pn = parseInt(p, 10) || 0;
+
+  // When mn=0: s = total smalls, p = products per small (or total products if s=0 too)
+  const totalMasters = mn;
+  const totalSmalls = mn > 0 ? mn * sn : sn;
+  const totalProducts = mn > 0 ? mn * sn * pn : sn > 0 ? sn * pn : pn;
   const total = totalMasters + totalSmalls + totalProducts;
 
   if (products.length === 0) {
@@ -45,8 +51,8 @@ export function GenerateBatchForm({
   const numField = (
     label: string,
     name: string,
-    value: number,
-    set: (n: number) => void,
+    value: string,
+    set: (v: string) => void,
   ) => (
     <div>
       <Label>{label}</Label>
@@ -54,8 +60,10 @@ export function GenerateBatchForm({
         name={name}
         type="number"
         min={0}
+        inputMode="numeric"
         value={value}
-        onChange={(e) => set(Math.max(0, parseInt(e.target.value, 10) || 0))}
+        placeholder="0"
+        onChange={(e) => set(e.target.value.replace(/[^0-9]/g, ""))}
       />
     </div>
   );
@@ -76,8 +84,8 @@ export function GenerateBatchForm({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {numField("Master boxes", "masterCount", m, setM)}
-        {numField(m > 0 ? "Small / master" : "Total smalls", "smallPerMaster", s, setS)}
-        {numField(m === 0 && s === 0 ? "Total products" : "Products / small", "productPerSmall", p, setP)}
+        {numField(mn > 0 ? "Small / master" : "Total smalls", "smallPerMaster", s, setS)}
+        {numField(mn === 0 && sn === 0 ? "Total products" : "Products / small", "productPerSmall", p, setP)}
       </div>
 
       <div className="rounded-md border border-brand/20 bg-brand-light px-3 py-2 text-sm text-brand-dark">
