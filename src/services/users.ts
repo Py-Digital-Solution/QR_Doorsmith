@@ -4,7 +4,7 @@ import { connectDB } from "@/db/mongoose";
 import { User, type UserRole, type UserStatus } from "@/models/User";
 import { hashPassword } from "@/lib/password";
 import { canCreate } from "@/lib/rbac";
-import { isDuplicateKeyError } from "@/lib/db-errors";
+import { isDuplicateKeyError, duplicateKeyField } from "@/lib/db-errors";
 import { isDistributorEnabled } from "@/services/settings";
 import { Sequence } from "@/models/Sequence";
 import { QrCode } from "@/models/QrCode";
@@ -154,17 +154,28 @@ export async function createUser(input: CreateUserInput) {
     throw new Error("Phone number is required for all users.");
   }
   const email = input.email.trim().toLowerCase();
-  const existing = await User.findOne({ email });
-  if (existing) throw new Error("A user with this email already exists.");
+  const phone = normalizePhone(input.phone);
+
+  // Pre-check both unique fields so the message names the actual clash, instead
+  // of relying on the DB error (which can't tell email from phone after insert).
+  if (await User.findOne({ email })) {
+    throw new Error("A user with this email already exists.");
+  }
+  if (await User.findOne({ phone })) {
+    throw new Error("A user with this phone number already exists.");
+  }
+
   const passwordHash = await hashPassword(input.password);
-  const extra: Record<string, unknown> = {};
-  extra.phone = normalizePhone(input.phone);
   try {
-    const created = await User.create({ ...base, email, passwordHash, ...extra });
-    notifyStaffWelcome(extra.phone as string, base.name, input.role, email);
+    const created = await User.create({ ...base, email, passwordHash, phone });
+    notifyStaffWelcome(phone, base.name, input.role, email);
     return created;
   } catch (e) {
-    if (isDuplicateKeyError(e)) throw new Error("A user with this email already exists.");
+    // Safety net for a race between the pre-check and insert: name the field.
+    const field = duplicateKeyField(e);
+    if (field === "phone") throw new Error("A user with this phone number already exists.");
+    if (field === "email") throw new Error("A user with this email already exists.");
+    if (isDuplicateKeyError(e)) throw new Error("A user with these details already exists.");
     throw e;
   }
 }
