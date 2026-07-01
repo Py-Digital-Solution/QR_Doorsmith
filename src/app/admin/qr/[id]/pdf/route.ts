@@ -54,18 +54,35 @@ export async function GET(
   const gray = rgb(0.5, 0.5, 0.5);
   const footerText = [branding.name, branding.website].filter(Boolean).join("  ·  ") || "DoorSmith";
 
-  const cols = Math.max(1, data.columns);
-  const cellW = (PAGE_W - 2 * MARGIN) / cols;
-  const maxQrSize = cellW - 8; // cap so a QR never overflows its column
+  const CAPTION_GAP = 9; // space under each QR for its serial caption
+  const PARENT_LINE_H = 6; // extra space for the "S:"/"M:" parent-serial line, when present
+  const ROW_GAP = 4; // vertical breathing room between rows
+  const SECTION_GAP = 10; // extra breathing room between product/small/master blocks
 
-  const CAPTION_GAP = 12; // space under each QR for its serial caption
-  const ROW_GAP = 10; // vertical breathing room between rows
+  // Each type gets its own column count (and therefore its own cell width and
+  // capped QR size), so a sheet of small product codes packs tightly instead
+  // of inheriting a column width sized for the master boxes.
+  type CodeType = "master" | "small" | "product";
 
-  // Per-type QR sizes (mm → pt), capped to fit the column width
-  const qrSizePt: Record<string, number> = {
-    master: Math.min(data.qrSizes.master * MM, maxQrSize),
-    small: Math.min(data.qrSizes.small * MM, maxQrSize),
-    product: Math.min(data.qrSizes.product * MM, maxQrSize),
+  // Products are labelled with their parent small box, and smalls with their
+  // parent master box, so packers can tell which box a code belongs to just
+  // by reading the printed sticker (not just by looking it up in the admin panel).
+  const PARENT_PREFIX: Partial<Record<CodeType, string>> = { product: "S:", small: "M:" };
+
+  const colsByType: Record<CodeType, number> = {
+    master: Math.max(1, data.columns.master),
+    small: Math.max(1, data.columns.small),
+    product: Math.max(1, data.columns.product),
+  };
+  const cellWByType: Record<CodeType, number> = {
+    master: (PAGE_W - 2 * MARGIN) / colsByType.master,
+    small: (PAGE_W - 2 * MARGIN) / colsByType.small,
+    product: (PAGE_W - 2 * MARGIN) / colsByType.product,
+  };
+  const qrSizePt: Record<CodeType, number> = {
+    master: Math.min(data.qrSizes.master * MM, cellWByType.master - 8),
+    small: Math.min(data.qrSizes.small * MM, cellWByType.small - 8),
+    product: Math.min(data.qrSizes.product * MM, cellWByType.product - 8),
   };
 
   function addPageWithFooter(): ReturnType<typeof pdf.addPage> {
@@ -84,48 +101,89 @@ export async function GET(
   let page = addPageWithFooter();
   let y = PAGE_H - MARGIN; // top edge of the current row
 
-  // Flow layout: walk row-by-row, sizing each row to its tallest QR so rows of
-  // small product codes pack tightly instead of inheriting one fixed row height.
-  for (let rowStart = 0; rowStart < data.codes.length; rowStart += cols) {
-    const rowCodes = data.codes.slice(rowStart, rowStart + cols);
-    const rowQrMax = Math.max(...rowCodes.map((c) => qrSizePt[c.type] ?? maxQrSize));
-    const rowHeight = rowQrMax + CAPTION_GAP;
+  // Codes arrive pre-sorted product → small → master (see getBatchPrintData),
+  // so group them into contiguous same-type runs and lay out each run with
+  // its own column count.
+  type Section = { type: CodeType; start: number; end: number };
+  const sections: Section[] = [];
+  for (let i = 0; i < data.codes.length; i++) {
+    const t = data.codes[i].type as CodeType;
+    const last = sections[sections.length - 1];
+    if (last && last.type === t) last.end = i;
+    else sections.push({ type: t, start: i, end: i });
+  }
 
-    // New page if this row won't fit above the bottom margin.
-    if (y - rowHeight < MARGIN) {
-      page = addPageWithFooter();
-      y = PAGE_H - MARGIN;
+  sections.forEach((section, sectionIdx) => {
+    const cols = colsByType[section.type];
+    const cellW = cellWByType[section.type];
+    const qrSize = qrSizePt[section.type];
+    const hasParentLine =
+      PARENT_PREFIX[section.type] != null &&
+      data.codes.slice(section.start, section.end + 1).some((c) => c.parentSerial);
+    const rowHeight = qrSize + CAPTION_GAP + (hasParentLine ? PARENT_LINE_H : 0);
+
+    for (let i = section.start; i <= section.end; i += cols) {
+      const rowCodes = data.codes.slice(i, Math.min(i + cols, section.end + 1));
+
+      // New page if this row won't fit above the bottom margin.
+      if (y - rowHeight < MARGIN) {
+        page = addPageWithFooter();
+        y = PAGE_H - MARGIN;
+      }
+
+      rowCodes.forEach((code, col) => {
+        const cellX = MARGIN + col * cellW;
+
+        const { d, n } = qrSvgPath(code.serialNo);
+        const scale = qrSize / n;
+        const qrX = cellX + (cellW - qrSize) / 2;
+
+        // drawSvgPath positions the path's (0,0) at (x, y) and renders downward.
+        page.drawSvgPath(d, { x: qrX, y, scale, color: black });
+
+        // Caption is just the code (no type category). Cap its width to the QR's
+        // own footprint (not the wider cell) so long serials shrink down instead
+        // of visually overrunning past the QR square into the next column.
+        const caption = code.serialNo;
+        const maxTextW = Math.min(qrSize, cellW - 6);
+        const baseSize = 6;
+        const baseW = font.widthOfTextAtSize(caption, baseSize);
+        const fontSize = baseW > maxTextW ? Math.max(3, (baseSize * maxTextW) / baseW) : baseSize;
+        const textW = font.widthOfTextAtSize(caption, fontSize);
+        page.drawText(caption, {
+          x: qrX + (qrSize - textW) / 2,
+          y: y - qrSize - 5,
+          size: fontSize,
+          font,
+        });
+
+        // Parent-serial line (e.g. "S: DS-SM-...-0031" under a product, or
+        // "M: DS-MS-...-0002" under a small)  lets packers trace which box a
+        // code belongs to straight off the printed sticker.
+        if (hasParentLine && code.parentSerial) {
+          const prefix = PARENT_PREFIX[code.type as CodeType] ?? "";
+          const parentCaption = `${prefix} ${code.parentSerial}`;
+          const parentSize = 4.5;
+          const parentBaseW = font.widthOfTextAtSize(parentCaption, parentSize);
+          const parentFontSize =
+            parentBaseW > maxTextW ? Math.max(3, (parentSize * maxTextW) / parentBaseW) : parentSize;
+          const parentTextW = font.widthOfTextAtSize(parentCaption, parentFontSize);
+          page.drawText(parentCaption, {
+            x: qrX + (qrSize - parentTextW) / 2,
+            y: y - qrSize - 5 - PARENT_LINE_H,
+            size: parentFontSize,
+            font,
+            color: gray,
+          });
+        }
+      });
+
+      y -= rowHeight + ROW_GAP;
     }
 
-    rowCodes.forEach((code, col) => {
-      const cellX = MARGIN + col * cellW;
-      const qrSize = qrSizePt[code.type] ?? maxQrSize;
-
-      const { d, n } = qrSvgPath(code.serialNo);
-      const scale = qrSize / n;
-      const qrX = cellX + (cellW - qrSize) / 2;
-
-      // drawSvgPath positions the path's (0,0) at (x, y) and renders downward.
-      page.drawSvgPath(d, { x: qrX, y, scale, color: black });
-
-      // Caption is just the code (no type category). Shrink to fit the column
-      // width so long serials don't overlap the neighbouring caption.
-      const caption = code.serialNo;
-      const maxTextW = cellW - 6; // keep a little padding inside the column
-      const baseSize = 6;
-      const baseW = font.widthOfTextAtSize(caption, baseSize);
-      const fontSize = baseW > maxTextW ? Math.max(3.5, (baseSize * maxTextW) / baseW) : baseSize;
-      const textW = font.widthOfTextAtSize(caption, fontSize);
-      page.drawText(caption, {
-        x: cellX + (cellW - textW) / 2,
-        y: y - qrSize - 8,
-        size: fontSize,
-        font,
-      });
-    });
-
-    y -= rowHeight + ROW_GAP;
-  }
+    // Extra breathing room before the next type's block (skip after the last).
+    if (sectionIdx < sections.length - 1) y -= SECTION_GAP - ROW_GAP;
+  });
 
   const bytes = await pdf.save();
   return new Response(new Uint8Array(bytes), {

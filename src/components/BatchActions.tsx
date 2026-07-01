@@ -66,7 +66,7 @@ export function BatchActions({
         Delete
       </button>
 
-      <SlideOver open={edit} onClose={() => setEdit(false)} title="Edit batch">
+      <SlideOver open={edit} onClose={() => setEdit(false)} title="Edit batch" wide>
         <BatchEditForm
           batch={batch}
           products={products}

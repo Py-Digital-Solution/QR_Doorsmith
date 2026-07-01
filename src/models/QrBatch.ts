@@ -19,10 +19,15 @@ const sheetConfigSchema = new Schema(
   {
     sheetWidthMm: Number,
     sheetHeightMm: Number,
+    /** @deprecated single shared column count  superseded by the per-type fields below. Kept as a fallback for older batches. */
     columns: Number,
     rows: Number,
     /** Print page size key (e.g. "12x18", "A4"). See src/lib/page-sizes.ts. */
     pageSize: String,
+    /** Independent column counts per QR type so small codes don't waste sheet space sized for master boxes. */
+    masterColumns: Number,
+    smallColumns: Number,
+    productColumns: Number,
   },
   { _id: false },
 );

@@ -24,8 +24,13 @@ export async function updateBatchAction(
   batchId: string,
   input: {
     productId?: string;
-    columns?: number;
     pageSize?: string;
+    masterColumns?: number;
+    smallColumns?: number;
+    productColumns?: number;
+    masterQrSize?: number;
+    smallQrSize?: number;
+    productQrSize?: number;
   },
 ): Promise<{ error?: string; ok?: boolean }> {
   if (!(await requireAdmin())) return { error: "Not authorized." };
@@ -114,8 +119,10 @@ export async function generateBatchAction(
         productSize: Number(formData.get("productQrSize") ?? 0) || undefined,
       },
       sheetConfig: {
-        columns: Number(formData.get("columns") ?? 0) || undefined,
         pageSize: String(formData.get("pageSize") ?? "").trim() || undefined,
+        masterColumns: Number(formData.get("masterColumns") ?? 0) || undefined,
+        smallColumns: Number(formData.get("smallColumns") ?? 0) || undefined,
+        productColumns: Number(formData.get("productColumns") ?? 0) || undefined,
       },
     });
     logAudit({

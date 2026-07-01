@@ -89,15 +89,15 @@ export function PwaInstallBanner() {
           <p className="text-sm font-semibold text-gray-900">Install DoorSmith App</p>
           <p className="text-xs text-gray-500">Add to home screen for quick access</p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <button onClick={dismiss} className="rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-orange-100">Not now</button>
-          {/* Hide the redundant button on iOS where steps are already shown. */}
-          {!(platform === "ios" && !prompt) && (
-            <button onClick={install} className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark">
-              {prompt ? "Install" : showSteps ? "Hide" : "How to install"}
-            </button>
-          )}
-        </div>
+      </div>
+      <div className="mt-3 flex justify-end gap-2">
+        <button onClick={dismiss} className="rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-orange-100">Not now</button>
+        {/* Hide the redundant button on iOS where steps are already shown. */}
+        {!(platform === "ios" && !prompt) && (
+          <button onClick={install} className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark">
+            {prompt ? "Install" : showSteps ? "Hide" : "How to install"}
+          </button>
+        )}
       </div>
 
       {stepsOpen && (

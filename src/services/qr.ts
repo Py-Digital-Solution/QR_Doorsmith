@@ -20,7 +20,7 @@ import {
 } from "@/lib/pagination";
 import { DEFAULT_PAGE_SIZE_KEY } from "@/lib/page-sizes";
 
-const MAX_BATCH = 5000; // safety ceiling (SOW targets ~2,000/day)
+const MAX_BATCH = 20000; // safety ceiling (SOW targets ~2,000/day)
 
 /** Reserve a contiguous block of `count` serials for the given type+SKU; returns the start. */
 async function reserveSerials(type: QrType, sku: string, count: number): Promise<number> {
@@ -38,9 +38,13 @@ async function reserveSerials(type: QrType, sku: string, count: number): Promise
 export type SheetConfig = {
   sheetWidthMm?: number;
   sheetHeightMm?: number;
+  /** @deprecated shared column count  use the per-type fields below. */
   columns?: number;
   rows?: number;
   pageSize?: string;
+  masterColumns?: number;
+  smallColumns?: number;
+  productColumns?: number;
 };
 
 export type QrSizes = {
@@ -203,7 +207,25 @@ export type BatchDTO = {
   warehouseCount: number;
   /** How many codes have been dispatched to a counter (active or scanned). */
   dispatchedCount: number;
+  qrSizes: { master: number; small: number; product: number };
+  /** Resolved per-type column counts (falls back to the legacy shared `columns` for older batches). */
+  columns: { master: number; small: number; product: number };
 };
+
+/** Resolve per-type columns, falling back to the legacy shared `columns` field for older batches. */
+function resolveColumns(sheetConfig?: {
+  columns?: number | null;
+  masterColumns?: number | null;
+  smallColumns?: number | null;
+  productColumns?: number | null;
+} | null): { master: number; small: number; product: number } {
+  const legacy = sheetConfig?.columns ?? 4;
+  return {
+    master: sheetConfig?.masterColumns ?? legacy,
+    small: sheetConfig?.smallColumns ?? legacy,
+    product: sheetConfig?.productColumns ?? legacy,
+  };
+}
 
 /** Compute the formatted serial label for the batch's top-level range boundary. */
 function batchSerialLabel(
@@ -283,6 +305,12 @@ export async function listBatches(
       pageSize: d.sheetConfig?.pageSize ?? DEFAULT_PAGE_SIZE_KEY,
       dispatchedCount,
       warehouseCount: Math.max(0, d.totalCodes - dispatchedCount),
+      qrSizes: {
+        master: d.qrSizes?.masterSize ?? 25,
+        small: d.qrSizes?.smallSize ?? 15,
+        product: d.qrSizes?.productSize ?? 10,
+      },
+      columns: resolveColumns(d.sheetConfig),
     };
   });
 
@@ -338,8 +366,13 @@ async function assertBatchUnlocked(batchId: string): Promise<void> {
 
 export type UpdateBatchInput = {
   productId?: string;
-  columns?: number;
   pageSize?: string;
+  masterColumns?: number;
+  smallColumns?: number;
+  productColumns?: number;
+  masterQrSize?: number;
+  smallQrSize?: number;
+  productQrSize?: number;
 };
 
 /** Edit a batch (before dispatch only). Relinking the product re-snapshots all codes. */
@@ -368,9 +401,17 @@ export async function updateBatch(batchId: string, input: UpdateBatchInput) {
   }
 
   const sheet = { ...(batch.sheetConfig ?? {}) } as Record<string, number | string>;
-  if (input.columns) sheet.columns = input.columns;
   if (input.pageSize) sheet.pageSize = input.pageSize;
+  if (input.masterColumns) sheet.masterColumns = input.masterColumns;
+  if (input.smallColumns) sheet.smallColumns = input.smallColumns;
+  if (input.productColumns) sheet.productColumns = input.productColumns;
   batch.sheetConfig = sheet;
+
+  const sizes = { ...(batch.qrSizes ?? {}) } as Record<string, number>;
+  if (input.masterQrSize) sizes.masterSize = input.masterQrSize;
+  if (input.smallQrSize) sizes.smallSize = input.smallQrSize;
+  if (input.productQrSize) sizes.productSize = input.productQrSize;
+  batch.qrSizes = sizes;
 
   await batch.save();
   return { ok: true };
@@ -449,6 +490,12 @@ export async function getBatch(batchId: string): Promise<BatchDTO | null> {
     pageSize: d.sheetConfig?.pageSize ?? DEFAULT_PAGE_SIZE_KEY,
     dispatchedCount,
     warehouseCount: Math.max(0, d.totalCodes - dispatchedCount),
+    qrSizes: {
+      master: d.qrSizes?.masterSize ?? 25,
+      small: d.qrSizes?.smallSize ?? 15,
+      product: d.qrSizes?.productSize ?? 10,
+    },
+    columns: resolveColumns(d.sheetConfig),
   };
 }
 
@@ -558,10 +605,11 @@ export async function deleteQrCode(codeId: string) {
 
 export type BatchPrintData = {
   productSku: string;
-  columns: number;
+  columns: { master: number; small: number; product: number };
   pageSize: string;
   qrSizes: { master: number; small: number; product: number };
-  codes: { serialNo: string; type: string }[];
+  /** `parentSerial` is the small box's serial for a product, or the master box's serial for a small  null for masters (top-level) and standalone codes. */
+  codes: { serialNo: string; type: string; parentSerial: string | null }[];
 };
 
 /** Batch + its codes + sheet config, for the print/PDF route. */
@@ -574,7 +622,8 @@ export async function getBatchPrintData(
 
   const codes = await QrCode.find({ batchId })
     .sort({ serialNo: 1 })
-    .select("serialNo type sku")
+    .select("serialNo type sku parentQrId")
+    .populate<{ parentQrId: { serialNo?: string } | null }>("parentQrId", "serialNo")
     .lean();
 
   // Print products first, then the box codes (small, then master) at the end.
@@ -588,13 +637,17 @@ export async function getBatchPrintData(
 
   return {
     productSku: codes[0]?.sku ?? "",
-    columns: batch.sheetConfig?.columns ?? 4,
+    columns: resolveColumns(batch.sheetConfig),
     pageSize: batch.sheetConfig?.pageSize ?? DEFAULT_PAGE_SIZE_KEY,
     qrSizes: {
       master: batch.qrSizes?.masterSize ?? 25,
       small: batch.qrSizes?.smallSize ?? 15,
       product: batch.qrSizes?.productSize ?? 10,
     },
-    codes: ordered.map((c) => ({ serialNo: c.serialNo, type: String(c.type) })),
+    codes: ordered.map((c) => ({
+      serialNo: c.serialNo,
+      type: String(c.type),
+      parentSerial: (c.parentQrId as { serialNo?: string } | null)?.serialNo ?? null,
+    })),
   };
 }

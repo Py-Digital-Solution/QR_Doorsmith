@@ -14,7 +14,7 @@ export function GenerateBatchPanel({ products }: { products: ProductOption[] }) 
         <Plus className="size-4" aria-hidden />
         Generate batch
       </Button>
-      <SlideOver open={open} onClose={() => setOpen(false)} title="Generate QR batch">
+      <SlideOver open={open} onClose={() => setOpen(false)} title="Generate QR batch" wide>
         <GenerateBatchForm products={products} onSuccess={() => setOpen(false)} />
       </SlideOver>
     </>
