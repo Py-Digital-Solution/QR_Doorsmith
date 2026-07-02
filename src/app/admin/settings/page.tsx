@@ -6,6 +6,7 @@ import { DistributorToggle } from "@/components/DistributorToggle";
 import { MinPointsForm } from "@/components/MinPointsForm";
 import { BannerForm } from "@/components/BannerForm";
 import { WhatsAppPanel } from "@/components/WhatsAppPanel";
+import { TestWhatsAppForm } from "@/components/TestWhatsAppForm";
 import { BrandingForm } from "@/components/BrandingForm";
 import { NotificationEmailForm } from "@/components/NotificationEmailForm";
 import { WaLogTable } from "@/components/WaLogTable";
@@ -92,6 +93,8 @@ async function WhatsAppTab({ waPage }: { waPage: number }) {
         </p>
         <WhatsAppPanel />
       </div>
+
+      <TestWhatsAppForm />
 
       <NotificationEmailForm initial={notificationEmail} />
 
