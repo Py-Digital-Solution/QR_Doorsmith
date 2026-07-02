@@ -21,30 +21,30 @@ function pad(n: number): string {
   return String(n).padStart(4, "0");
 }
 
-/** DS-MS-{SKU}-{N}  e.g. DS-MS-LR001-0001 */
+/** MS-{SKU}-{N}  e.g. MS-LR001-0001 */
 export function formatMasterSerial(sku: string, n: number): string {
-  return `DS-MS-${sku}-${pad(n)}`;
+  return `MS-${sku}-${pad(n)}`;
 }
 
-/** DS-SM-{SKU}-{N}  e.g. DS-SM-LR001-0001 */
+/** SM-{SKU}-{N}  e.g. SM-LR001-0001 */
 export function formatSmallSerial(sku: string, n: number): string {
-  return `DS-SM-${sku}-${pad(n)}`;
+  return `SM-${sku}-${pad(n)}`;
 }
 
-/** DS-PD-{SKU}-{N}  e.g. DS-PD-LR001-0001 */
+/** PD-{SKU}-{N}  e.g. PD-LR001-0001 */
 export function formatProductSerial(sku: string, n: number): string {
-  return `DS-PD-${sku}-${pad(n)}`;
+  return `PD-${sku}-${pad(n)}`;
 }
 
 /**
  * Infer QrType from a serial prefix.
- * "DS-MS..." → "master", "DS-SM..." → "small", "DS-PD..." → "product".
+ * "MS-..." → "master", "SM-..." → "small", "PD-..." → "product".
  */
 export function inferTypeFromPrefix(q: string): QrType | undefined {
   const up = q.toUpperCase();
-  if (up.startsWith("DS-MS")) return "master";
-  if (up.startsWith("DS-SM")) return "small";
-  if (up.startsWith("DS-PD")) return "product";
+  if (up.startsWith("MS-")) return "master";
+  if (up.startsWith("SM-")) return "small";
+  if (up.startsWith("PD-")) return "product";
   return undefined;
 }
 

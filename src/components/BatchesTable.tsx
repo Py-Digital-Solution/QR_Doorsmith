@@ -94,7 +94,7 @@ export function BatchesTable({
               {" · "}
               <span className="text-green-700">{b.dispatchedCount} dispatched</span>
             </p>
-            <p className="mt-0.5 font-mono text-xs text-gray-500">
+            <p className="mt-0.5 font-mono text-xs font-medium text-gray-700">
               {serialRange(b.serialStartLabel, b.serialEndLabel)}
             </p>
             <div className="mt-2 flex items-center justify-between">
@@ -115,19 +115,19 @@ export function BatchesTable({
       <TableWrapper>
         <Table>
           <THead>
-            <TH>Date</TH>
+            <TH className="whitespace-nowrap">Date</TH>
             <TH>Product</TH>
-            <TH>Structure (M×S×P)</TH>
+            <TH className="whitespace-nowrap">Structure (M×S×P)</TH>
             <TH align="right">Total</TH>
-            <TH align="right">Warehouse / Sent</TH>
-            <TH>Master serial range</TH>
+            <TH align="right" className="whitespace-nowrap">Warehouse / Sent</TH>
+            <TH className="whitespace-nowrap">Master serial range</TH>
             <TH align="center">Status</TH>
             <TH align="right">Actions</TH>
           </THead>
           <tbody>
             {batches.map((b) => (
               <TR key={b.id} interactive>
-                <TD className="text-gray-600">{formatISTDate(b.createdAt)}</TD>
+                <TD className="whitespace-nowrap text-gray-600">{formatISTDate(b.createdAt)}</TD>
                 <TD>
                   <div>
                     <span className="font-mono text-xs text-gray-500">{b.productSku}</span>
@@ -136,25 +136,25 @@ export function BatchesTable({
                     )}
                   </div>
                 </TD>
-                <TD className="text-gray-700">
+                <TD className="whitespace-nowrap text-gray-700">
                   {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall}
                 </TD>
                 <TD align="right" className="font-semibold text-gray-900">
                   {b.total}
                 </TD>
-                <TD align="right" className="text-xs">
+                <TD align="right" className="whitespace-nowrap text-xs">
                   <span className="text-amber-700">{b.warehouseCount}</span>
                   {" / "}
                   <span className="text-green-700">{b.dispatchedCount}</span>
                 </TD>
-                <TD className="font-mono text-xs text-gray-600">
+                <TD className="whitespace-nowrap font-mono text-sm font-medium text-gray-900">
                   {serialRange(b.serialStartLabel, b.serialEndLabel)}
                 </TD>
                 <TD align="center">
                   <Badge tone={statusTone(b.status)}>{fmtStatus(b.status)}</Badge>
                 </TD>
                 <TD>
-                  <div className="flex items-center justify-end gap-1">
+                  <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                     <ManageLink id={b.id} />
                     <PdfLink id={b.id} />
                     <BatchActions batch={b} products={products} />
