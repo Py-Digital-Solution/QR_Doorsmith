@@ -36,7 +36,7 @@ function DevLoginForm() {
       redirect: false,
     });
     if (!res || res.error) {
-      setError("Login failed. Check the phone number is registered as a karigar.");
+      setError("Login failed. Check the phone number is registered as a karigar or counter.");
       setPending(false);
       return;
     }

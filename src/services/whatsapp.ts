@@ -72,6 +72,7 @@ export async function waSend(
   message: string,
   type = "message",
   imageUrl?: string,
+  checkExists = false,
 ): Promise<void> {
   const normalizedPhone = normalizePhone(phone);
   let errorMsg: string | undefined;
@@ -83,12 +84,20 @@ export async function waSend(
         phone: normalizedPhone,
         message,
         ...(imageUrl ? { imageUrl } : {}),
+        ...(checkExists ? { checkExists: true } : {}),
       }),
       cache: "no-store",
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error((body as { error?: string }).error ?? "Failed to send WhatsApp message");
+      const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+      // Baileys' sendMessage() resolves once the message is handed off  it does
+      // NOT confirm delivery. Without this check, a malformed or non-WhatsApp
+      // number silently "succeeds" while nothing ever arrives.
+      const msg =
+        res.status === 422 || body.code === "not_registered"
+          ? "This number is not on WhatsApp."
+          : (body.error ?? "Failed to send WhatsApp message");
+      throw new Error(msg);
     }
   } catch (err) {
     errorMsg = err instanceof Error ? err.message : String(err);

@@ -8,13 +8,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { phone, message } = await req.json();
+  const { phone, message, checkExists } = await req.json();
   if (!phone || !message) {
     return NextResponse.json({ error: "phone and message required" }, { status: 400 });
   }
 
   try {
-    await waSend(String(phone), String(message));
+    await waSend(String(phone), String(message), "message", undefined, Boolean(checkExists));
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(

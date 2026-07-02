@@ -18,12 +18,12 @@ export default function KhatiLoginPage() {
       <PwaInstallBanner />
 
       <h1 className="text-lg font-semibold tracking-tight text-gray-900">Welcome back</h1>
-      <p className="mb-6 text-sm text-gray-500">Karigar sign in</p>
+      <p className="mb-6 text-sm text-gray-500">Sign in with your phone</p>
 
       <KhatiLoginForm />
 
       <p className="mt-6 text-center text-sm text-gray-500">
-        Staff member?{" "}
+        Admin / Sales rep?{" "}
         <Link href="/login" className="font-medium text-brand underline">
           Sign in with email
         </Link>

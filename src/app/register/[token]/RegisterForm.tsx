@@ -73,7 +73,7 @@ async function compressImage(file: File): Promise<File> {
   });
 }
 
-export function RegisterForm({ token }: { token: string }) {
+export function RegisterForm({ token, role }: { token: string; role: "khati" | "counter" }) {
   const [state, action, pending] = useActionState<KycActionState, FormData>(
     submitRegistrationAction,
     {},
@@ -108,9 +108,13 @@ export function RegisterForm({ token }: { token: string }) {
     return (
       <div className="flex flex-col items-center gap-4 py-4 text-center">
         <CheckCircle2 className="size-14 text-green-500" />
-        <h2 className="text-lg font-semibold text-gray-900">Submitted!</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {role === "counter" ? "Registration complete!" : "Submitted!"}
+        </h2>
         <p className="text-sm text-gray-500">
-          Your registration is under review. Your counter will verify your details and you will be notified on WhatsApp once approved.
+          {role === "counter"
+            ? "Your account is ready. You can log in now."
+            : "Your registration is under review. Your counter will verify your details and you will be notified on WhatsApp once approved."}
         </p>
       </div>
     );
@@ -185,45 +189,51 @@ export function RegisterForm({ token }: { token: string }) {
 
       {/* Address */}
       <div>
-        <Label>Full address <span className="text-red-500">*</span></Label>
+        <Label>{role === "counter" ? "Counter address" : "Full address"} <span className="text-red-500">*</span></Label>
         <textarea
           name="address"
           required
           rows={3}
-          placeholder="House no, street, city, state, PIN"
+          placeholder={role === "counter" ? "Shop no, street, city, state, PIN" : "House no, street, city, state, PIN"}
           className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
         />
       </div>
 
-      {/* DOB */}
-      <div>
-        <Label>Date of birth <span className="text-red-500">*</span></Label>
-        <Input name="dob" type="date" required max={new Date().toISOString().slice(0, 10)} />
-      </div>
+      {/* DOB  khati only */}
+      {role === "khati" && (
+        <div>
+          <Label>Date of birth <span className="text-red-500">*</span></Label>
+          <Input name="dob" type="date" required max={new Date().toISOString().slice(0, 10)} />
+        </div>
+      )}
 
-      {/* Email */}
-      <div>
-        <Label>
-          Email address{" "}
-          <span className="text-xs font-normal text-gray-400">(optional)</span>
-        </Label>
-        <Input
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-        />
-      </div>
+      {/* Email  khati only (counters already have one on file) */}
+      {role === "khati" && (
+        <div>
+          <Label>
+            Email address{" "}
+            <span className="text-xs font-normal text-gray-400">(optional)</span>
+          </Label>
+          <Input
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+          />
+        </div>
+      )}
 
       <SocialFollowConsent checked={agreed} onChange={setAgreed} />
 
       {state.error && <Alert variant="error">{state.error}</Alert>}
 
       <Button type="submit" fullWidth loading={pending} disabled={!agreed}>
-        {pending ? "Submitting…" : "Submit registration"}
+        {pending ? "Submitting…" : role === "counter" ? "Complete KYC" : "Submit registration"}
       </Button>
 
       <p className="text-center text-xs text-gray-400">
-        Your details will be reviewed by your counter before your account is activated.
+        {role === "counter"
+          ? "Your account is active as soon as you submit  no review needed."
+          : "Your details will be reviewed by your counter before your account is activated."}
       </p>
     </form>
   );

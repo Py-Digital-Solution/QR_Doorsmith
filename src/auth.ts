@@ -111,13 +111,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         await connectDB();
 
         // Match on last 10 digits so spacing/prefix differences don't break lookup.
+        // Counters can also sign in via this OTP flow (in addition to email +
+        // password) so their login matches the khati experience.
         const last10 = resolvedPhone.replace(/\D/g, "").slice(-10);
         const user = await User.findOne({
           phone: { $regex: last10 + "$" },
-          role: "khati",
+          role: { $in: ["khati", "counter"] },
         });
         if (!user) {
-          console.warn(`[khati-otp] No khati found matching last-10: ${last10}`);
+          console.warn(`[khati-otp] No khati/counter found matching last-10: ${last10}`);
           return null;
         }
         if (user.status !== "active") {

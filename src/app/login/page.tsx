@@ -23,7 +23,7 @@ export default function LoginPage() {
       <StaffLoginForm />
 
       <p className="mt-6 text-center text-sm text-gray-500">
-        Are you a Karigar?{" "}
+        Karigar or Counter?{" "}
         <Link href="/login/khati" className="font-medium text-brand underline">
           Sign in with your phone
         </Link>

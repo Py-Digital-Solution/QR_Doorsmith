@@ -31,7 +31,10 @@ export function TestWhatsAppForm() {
       const res = await fetch("/api/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), message: message.trim() }),
+        // checkExists: this is a diagnostic tool, so verify the number is
+        // actually reachable on WhatsApp instead of reporting a false "sent"
+        // for a malformed/non-WhatsApp number (see waSend()).
+        body: JSON.stringify({ phone: phone.trim(), message: message.trim(), checkExists: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to send.");

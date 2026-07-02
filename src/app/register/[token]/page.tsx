@@ -20,6 +20,31 @@ export default async function RegisterPage({ params }: { params: Promise<{ token
     );
   }
 
+  // Counters: self-service, no approval chain  just gate on whether they've
+  // already completed it via this same link.
+  if (khati.role === "counter") {
+    if (khati.completed) {
+      return (
+        <Shell>
+          <div className="flex flex-col items-center gap-3 text-center">
+            <CheckCircle2 className="size-12 text-green-500" />
+            <h1 className="text-lg font-semibold text-gray-900">Registration complete!</h1>
+            <p className="text-sm text-gray-500">Your account is active. You can now log in to DoorSmith.</p>
+          </div>
+        </Shell>
+      );
+    }
+    return (
+      <Shell>
+        <div className="mb-6 text-center">
+          <h1 className="text-xl font-bold text-navy">Complete your registration</h1>
+          <p className="mt-1 text-sm text-gray-500">Welcome, <strong>{khati.name}</strong>! Fill in the details below to activate your counter account.</p>
+        </div>
+        <RegisterForm token={token} role="counter" />
+      </Shell>
+    );
+  }
+
   if (khati.kycStatus === "approved") {
     return (
       <Shell>
@@ -64,7 +89,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ token
         <h1 className="text-xl font-bold text-navy">Complete your registration</h1>
         <p className="mt-1 text-sm text-gray-500">Welcome, <strong>{khati.name}</strong>! Fill in the details below to activate your account.</p>
       </div>
-      <RegisterForm token={token} />
+      <RegisterForm token={token} role="khati" />
     </Shell>
   );
 }

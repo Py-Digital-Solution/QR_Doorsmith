@@ -15,6 +15,7 @@ export type KycStatus =
 
 export type KhatiProfileDTO = {
   id: string;
+  role: "khati" | "counter";
   name: string;
   phone: string;
   photoUrl?: string;
@@ -23,6 +24,8 @@ export type KhatiProfileDTO = {
   kycStatus: KycStatus;
   registrationToken?: string;
   counterId?: string;
+  /** Counters only: registration is self-service, so this tells the page whether it's already done. */
+  completed?: boolean;
 };
 
 export type PendingKhatiDTO = {
@@ -36,12 +39,17 @@ export type PendingKhatiDTO = {
   submittedAt?: string;
 };
 
+/** Looks up either a khati or a counter by their registration token  both now onboard via the same public link. */
 export async function getKhatiByToken(token: string): Promise<KhatiProfileDTO | null> {
   await connectDB();
-  const user = await User.findOne({ registrationToken: token, role: "khati" }).lean();
+  const user = await User.findOne({
+    registrationToken: token,
+    role: { $in: ["khati", "counter"] },
+  }).lean();
   if (!user) return null;
   return {
     id: String(user._id),
+    role: user.role as "khati" | "counter",
     name: user.name ?? "",
     phone: user.phone ?? "",
     photoUrl: toPhotoUrl(user.photoUrl) || undefined,
@@ -50,17 +58,45 @@ export async function getKhatiByToken(token: string): Promise<KhatiProfileDTO | 
     kycStatus: (user.kycStatus as KycStatus) ?? "not_submitted",
     registrationToken: user.registrationToken ?? undefined,
     counterId: user.counterId ? String(user.counterId) : undefined,
+    completed: user.role === "counter" ? Boolean(user.counterKycCompletedAt) : undefined,
   };
 }
 
 export async function submitKhatiProfile(
   token: string,
-  data: { address: string; dob: string; email?: string; photoData?: { buffer: Buffer; contentType: string; ext: string } },
+  data: { address: string; dob?: string; email?: string; photoData?: { buffer: Buffer; contentType: string; ext: string } },
 ): Promise<{ ok: true } | { error: string }> {
   await connectDB();
-  const user = await User.findOne({ registrationToken: token, role: "khati" });
+  const user = await User.findOne({ registrationToken: token, role: { $in: ["khati", "counter"] } });
   if (!user) return { error: "Invalid or expired registration link." };
+
+  // Counters: self-service, same as the old first-login KYC  no admin review,
+  // just photo + address, then their account is ready to use.
+  if (user.role === "counter") {
+    if (user.counterKycCompletedAt) return { error: "Registration already submitted." };
+
+    user.address = data.address.trim();
+    if (data.photoData) {
+      try {
+        user.photoUrl = await uploadAvatar(String(user._id), data.photoData.buffer, data.photoData.contentType, data.photoData.ext);
+      } catch (err) {
+        console.error("[kyc] Counter photo upload failed:", err);
+        return { error: "Failed to upload photo. Please try again." };
+      }
+    }
+    user.counterKycCompletedAt = new Date();
+    user.registrationToken = undefined;
+    await user.save();
+
+    const admin = await User.findOne({ role: "admin" }).select("phone").lean();
+    notifyCounterKycToAdmin(admin?.phone, user.name ?? "A counter");
+
+    return { ok: true };
+  }
+
+  // Khati: submitted profile goes to admin for approval before the account is active.
   if (user.kycStatus !== "not_submitted") return { error: "Registration already submitted." };
+  if (!data.dob) return { error: "Date of birth is required." };
 
   user.address = data.address.trim();
   user.dob = new Date(data.dob);
@@ -118,38 +154,6 @@ export async function getCounterKycState(userId: string): Promise<CounterKycStat
     photoUrl: toPhotoUrl(user.photoUrl) || undefined,
     address: user.address ?? undefined,
   };
-}
-
-/**
- * Save a counter's first-login KYC (photo + address). Self-service: marks the
- * KYC complete immediately so the counter can proceed straight to the dashboard.
- */
-export async function submitCounterKyc(
-  userId: string,
-  data: { address: string; photoData?: { buffer: Buffer; contentType: string; ext: string } },
-): Promise<{ ok: true } | { error: string }> {
-  await connectDB();
-  const user = await User.findById(userId);
-  if (!user || user.role !== "counter") return { error: "Counter account not found." };
-  if (user.counterKycCompletedAt) return { error: "KYC already completed." };
-
-  if (data.photoData) {
-    try {
-      user.photoUrl = await uploadAvatar(String(user._id), data.photoData.buffer, data.photoData.contentType, data.photoData.ext);
-    } catch (err) {
-      console.error("[counter-kyc] Photo upload failed:", err);
-      return { error: "Failed to upload photo. Please try again." };
-    }
-  }
-
-  user.address = data.address.trim();
-  user.counterKycCompletedAt = new Date();
-  await user.save();
-
-  const admin = await User.findOne({ role: "admin" }).select("phone").lean();
-  notifyCounterKycToAdmin(admin?.phone, user.name ?? "A counter");
-
-  return { ok: true };
 }
 
 export type KycPage = {
