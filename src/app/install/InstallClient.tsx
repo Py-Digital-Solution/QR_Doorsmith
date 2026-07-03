@@ -59,13 +59,36 @@ export default function InstallClient() {
     return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
   }, []);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setDeferredPrompt(null);
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setDeferredPrompt(null);
+      }
+    } else {
+      setIsModalOpen(true);
     }
+  };
+
+  const steps = {
+    ios: [
+      { icon: <Share className="size-4 text-brand inline" />, text: "Tap the Share button in Safari's bottom toolbar." },
+      { icon: <Plus className="size-4 text-brand inline" />, text: "Scroll down the menu and tap 'Add to Home Screen'." },
+      { icon: <Check className="size-4 text-emerald-500 inline" />, text: "Tap 'Add' in the top-right corner to install." }
+    ],
+    android: [
+      { icon: <span className="font-bold text-brand">⋮</span>, text: "Tap the browser menu (3 dots) in the top-right corner." },
+      { icon: <ArrowDownToLine className="size-4 text-brand inline" />, text: "Select 'Install App' or 'Add to Home screen'." },
+      { icon: <Check className="size-4 text-emerald-500 inline" />, text: "Tap 'Install' or 'Add' to confirm." }
+    ],
+    desktop: [
+      { icon: <span className="font-bold text-brand">⊕</span>, text: "Look at your browser's address bar (top right)." },
+      { icon: <ArrowDownToLine className="size-4 text-brand inline" />, text: "Click the install icon or button." },
+      { icon: <Check className="size-4 text-emerald-500 inline" />, text: "Click 'Install' in the confirmation prompt." }
+    ]
   };
 
   return (
@@ -102,18 +125,18 @@ export default function InstallClient() {
           <div className="lg:col-span-7 space-y-8">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-semibold uppercase tracking-wider animate-pulse">
               <Sparkles className="size-3.5" />
-              Progressive Web App
+              Official App Download
             </div>
 
             <div className="space-y-4">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
-                Scan & Earn. <br />
+                Download & Install <br />
                 <span className="bg-gradient-to-r from-brand to-orange-400 bg-clip-text text-transparent">
-                  Right from your home screen.
+                  DoorSmith App
                 </span>
               </h1>
               <p className="text-gray-300 text-lg max-w-xl">
-                Get the official DoorSmith Karigar Rewards app. Install it in seconds on your mobile device for lightning-fast scanning, instant point tracking, and seamless redeeming.
+                Install the DoorSmith Karigar Rewards app directly to your mobile device or desktop. Enjoy fast page loading, offline utility, and quick notifications.
               </p>
             </div>
 
@@ -151,30 +174,31 @@ export default function InstallClient() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Web Install CTA */}
-                  {deferredPrompt ? (
-                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-brand/10 border border-brand/20 p-4 rounded-xl">
-                      <div className="text-center sm:text-left">
-                        <p className="font-semibold text-gray-200">DoorSmith App is ready to install</p>
-                        <p className="text-xs text-gray-400">Click below to add directly to your home screen.</p>
+                  {/* Direct Download button (always visible) */}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-brand/10 border border-brand/20 p-5 rounded-xl">
+                      <div className="text-center sm:text-left flex-1">
+                        <p className="font-semibold text-gray-200 text-base">Direct Web Download & Install</p>
+                        <p className="text-xs text-gray-400">Click below to install this app on your device instantly.</p>
                       </div>
                       <button
                         onClick={handleInstallClick}
                         id="btn-pwa-install-native"
-                        className="w-full sm:w-auto bg-brand hover:bg-brand-dark px-6 py-3 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer shrink-0 focus-ring"
+                        className="w-full sm:w-auto bg-brand hover:bg-brand-dark px-8 py-4 rounded-xl font-bold text-base shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0 focus-ring"
                       >
-                        <ArrowDownToLine className="size-4" />
-                        Install Now
+                        <ArrowDownToLine className="size-5" />
+                        Download App
                       </button>
                     </div>
-                  ) : (
-                    <div className="flex items-start gap-3 text-xs bg-white/5 border border-white/10 p-3 rounded-lg text-gray-300">
-                      <Info className="size-4 text-brand shrink-0 mt-0.5" />
-                      <p>
-                        Our application can be installed on any smartphone directly via the web browser. No App Store or Play Store account required!
-                      </p>
-                    </div>
-                  )}
+                  </div>
+
+                  {/* Desktop / Mobile installation explanation */}
+                  <div className="flex items-start gap-3 text-xs bg-white/5 border border-white/10 p-3 rounded-lg text-gray-300">
+                    <Info className="size-4 text-brand shrink-0 mt-0.5" />
+                    <p>
+                      This app uses progressive technology (PWA). Instead of downloading a heavy file from an app store, you install it directly through the browser, saving space and data.
+                    </p>
+                  </div>
 
                   {/* Manual Steps Selector */}
                   <div className="space-y-4">
@@ -189,7 +213,7 @@ export default function InstallClient() {
                               : "text-gray-400 border-transparent hover:text-white"
                           }`}
                         >
-                          {p === "ios" ? "iOS (iPhone/iPad)" : p}
+                          {p === "ios" ? "iOS (iPhone)" : p}
                           {platform === p && (
                             <span className="absolute -top-1 right-2 w-1.5 h-1.5 bg-brand rounded-full" title="Detected platform" />
                           )}
@@ -200,62 +224,40 @@ export default function InstallClient() {
                     <div className="space-y-4 pt-2">
                       {activeTab === "ios" && (
                         <ol className="space-y-3">
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">1</span>
-                            <span>Open Safari and navigate to <strong className="text-white">doorsmith.in/khati</strong></span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">2</span>
-                            <span className="flex items-center gap-1.5 flex-wrap">
-                              Tap the <strong className="text-white inline-flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded text-xs"><Share className="size-3 text-brand" /> Share</strong> button in Safari's bottom toolbar.
-                            </span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">3</span>
-                            <span>Scroll down the share menu and tap <strong className="text-white">Add to Home Screen</strong>.</span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">4</span>
-                            <span>Tap <strong className="text-white">Add</strong> in the top-right corner to complete installation.</span>
-                          </li>
+                          {steps.ios.map((step, idx) => (
+                            <li key={idx} className="flex gap-3 text-sm text-gray-300">
+                              <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
+                              <span className="flex items-center gap-1.5 flex-wrap">
+                                {step.text} (Icon: {step.icon})
+                              </span>
+                            </li>
+                          ))}
                         </ol>
                       )}
 
                       {activeTab === "android" && (
                         <ol className="space-y-3">
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">1</span>
-                            <span>Open Google Chrome (or your default browser) on your phone.</span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">2</span>
-                            <span>Tap the browser menu button (three vertical dots <strong className="text-white">⋮</strong> in the top-right).</span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">3</span>
-                            <span>Select <strong className="text-white">Install App</strong> or <strong className="text-white">Add to Home screen</strong>.</span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">4</span>
-                            <span>Confirm by tapping <strong className="text-white">Install</strong> or <strong className="text-white">Add</strong>.</span>
-                          </li>
+                          {steps.android.map((step, idx) => (
+                            <li key={idx} className="flex gap-3 text-sm text-gray-300">
+                              <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
+                              <span className="flex items-center gap-1.5 flex-wrap">
+                                {step.text} (Icon: {step.icon})
+                              </span>
+                            </li>
+                          ))}
                         </ol>
                       )}
 
                       {activeTab === "desktop" && (
                         <ol className="space-y-3">
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">1</span>
-                            <span>Open Chrome, Edge, or Brave on your PC/Mac.</span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">2</span>
-                            <span>Look at the address bar for the install icon (a desktop screen with an arrow down <strong className="text-white">⊕</strong>).</span>
-                          </li>
-                          <li className="flex gap-3 text-sm text-gray-300">
-                            <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">3</span>
-                            <span>Click the icon and select <strong className="text-white">Install</strong> to add DoorSmith to your desktop app launcher.</span>
-                          </li>
+                          {steps.desktop.map((step, idx) => (
+                            <li key={idx} className="flex gap-3 text-sm text-gray-300">
+                              <span className="size-6 bg-white/10 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
+                              <span className="flex items-center gap-1.5 flex-wrap">
+                                {step.text} (Icon: {step.icon})
+                              </span>
+                            </li>
+                          ))}
                         </ol>
                       )}
                     </div>
@@ -266,6 +268,7 @@ export default function InstallClient() {
           </div>
 
           {/* Right Column: Interactive Phone Mockup */}
+
           <div className="lg:col-span-5 flex justify-center relative">
             {/* Glow effect under the phone */}
             <div className="absolute inset-0 bg-brand/10 rounded-full blur-3xl opacity-60 scale-75 pointer-events-none" />
@@ -428,6 +431,61 @@ export default function InstallClient() {
           </div>
         </div>
       </footer>
+
+      {/* Installation Guide Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all">
+          <div className="bg-slate-900 border border-white/15 rounded-3xl max-w-md w-full p-6 space-y-6 text-white shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <ArrowDownToLine className="size-5 text-brand" />
+                  Install DoorSmith App
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Add to home screen for direct app access.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors focus-ring"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Platform indicator badge */}
+            <div className="bg-brand/10 border border-brand/20 px-3 py-2 rounded-xl flex items-center gap-2.5 text-xs text-brand">
+              <Smartphone className="size-4 shrink-0" />
+              <span>We detected you are using a <strong>{platform === "ios" ? "iPhone / iPad" : platform}</strong>. Follow these quick steps to download:</span>
+            </div>
+
+            {/* Instruction Steps */}
+            <ol className="space-y-4">
+              {steps[platform].map((step, idx) => (
+                <li key={idx} className="flex gap-3 text-sm text-gray-300">
+                  <span className="size-6 bg-white/5 text-brand text-xs font-semibold rounded-full flex items-center justify-center shrink-0 border border-white/10">
+                    {idx + 1}
+                  </span>
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    {step.text} {step.icon && <span className="inline-flex bg-white/5 px-1.5 py-0.5 rounded text-xs items-center gap-1">{step.icon}</span>}
+                  </span>
+                </li>
+              ))}
+            </ol>
+
+            {/* Close / Action button */}
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="w-full bg-brand hover:bg-brand-dark py-3 rounded-xl font-bold text-sm text-white shadow-md transition-colors cursor-pointer focus-ring"
+            >
+              Got it, install now!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
