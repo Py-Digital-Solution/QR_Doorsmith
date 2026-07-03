@@ -46,7 +46,7 @@ export function CreateUserForm({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [khatiPhone, setKhatiPhone] = useState("");
+  const [simplePhone, setSimplePhone] = useState("");
   const [phone, setPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("idle");
@@ -60,6 +60,11 @@ export function CreateUserForm({
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
 
   const isKhati = role === "khati";
+  const isCounter = role === "counter";
+  // Khati and counter both onboard with just a name + phone here; everything
+  // else (photo, address, DOB, email, password) is filled in by them via the
+  // WhatsApp registration link.
+  const simplePhoneOnly = isKhati || isCounter;
   const phoneEntered = phone.replace(/\D/g, "").length >= 10;
 
   // Wipe the reCAPTCHA verifier AND its DOM container
@@ -208,11 +213,11 @@ export function CreateUserForm({
           <Input name="name" required value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
-        {isKhati ? (
+        {simplePhoneOnly ? (
           <>
             <div>
               <Label>Phone</Label>
-              <input type="hidden" name="phone" value={khatiPhone.length > 0 ? `+91${khatiPhone}` : ""} />
+              <input type="hidden" name="phone" value={simplePhone.length > 0 ? `+91${simplePhone}` : ""} />
               <div className="flex">
                 <span className="flex items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500 select-none">+91</span>
                 <Input
@@ -220,16 +225,21 @@ export function CreateUserForm({
                   inputMode="numeric"
                   maxLength={10}
                   required
-                  value={khatiPhone}
-                  onChange={(e) => setKhatiPhone(e.target.value.replace(/\D/g, ""))}
+                  value={simplePhone}
+                  onChange={(e) => setSimplePhone(e.target.value.replace(/\D/g, ""))}
                   placeholder="98765 43210"
                   autoComplete="tel"
                   className="rounded-l-none"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-400">
+                {isCounter
+                  ? "We'll send a WhatsApp link so they can complete their own registration (photo, address, DOB, email, password)."
+                  : "We'll send a WhatsApp link so they can complete their own registration."}
+              </p>
             </div>
 
-            {counters && counters.length > 0 && (
+            {isKhati && counters && counters.length > 0 && (
               <div>
                 <Label>Counter</Label>
                 <Select name="counterId" required>
@@ -345,12 +355,12 @@ export function CreateUserForm({
           loading={createPending}
           fullWidth
           // Block submit if Firebase is configured, phone entered, but not yet verified
-          disabled={FIREBASE_CONFIGURED && !isKhati && phoneEntered && phoneStep !== "verified"}
+          disabled={FIREBASE_CONFIGURED && !simplePhoneOnly && phoneEntered && phoneStep !== "verified"}
         >
           {createPending ? "Creating…" : "Create user"}
         </Button>
 
-        {FIREBASE_CONFIGURED && !isKhati && phoneEntered && phoneStep !== "verified" && (
+        {FIREBASE_CONFIGURED && !simplePhoneOnly && phoneEntered && phoneStep !== "verified" && (
           <p className="text-center text-xs text-amber-600">
             Verify the phone number before creating the user.
           </p>

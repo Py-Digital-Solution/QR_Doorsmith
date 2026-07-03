@@ -127,8 +127,12 @@ export function RegisterForm({ token, role }: { token: string; role: "khati" | "
       {/* Photo */}
       <div className="space-y-2">
         <Label>
-          Profile photo{" "}
-          <span className="text-xs font-normal text-gray-400">(optional)</span>
+          {role === "counter" ? "Counter photo" : "Profile photo"}{" "}
+          {role === "counter" ? (
+            <span className="text-red-500">*</span>
+          ) : (
+            <span className="text-xs font-normal text-gray-400">(optional)</span>
+          )}
         </Label>
 
         {preview ? (
@@ -199,25 +203,41 @@ export function RegisterForm({ token, role }: { token: string; role: "khati" | "
         />
       </div>
 
-      {/* DOB  khati only */}
-      {role === "khati" && (
-        <div>
-          <Label>Date of birth <span className="text-red-500">*</span></Label>
-          <Input name="dob" type="date" required max={new Date().toISOString().slice(0, 10)} />
-        </div>
-      )}
+      {/* DOB */}
+      <div>
+        <Label>Date of birth <span className="text-red-500">*</span></Label>
+        <Input name="dob" type="date" required max={new Date().toISOString().slice(0, 10)} />
+      </div>
 
-      {/* Email  khati only (counters already have one on file) */}
-      {role === "khati" && (
-        <div>
-          <Label>
-            Email address{" "}
+      {/* Email  required for counters, optional for khati */}
+      <div>
+        <Label>
+          Email address{" "}
+          {role === "counter" ? (
+            <span className="text-red-500">*</span>
+          ) : (
             <span className="text-xs font-normal text-gray-400">(optional)</span>
-          </Label>
+          )}
+        </Label>
+        <Input
+          name="email"
+          type="email"
+          required={role === "counter"}
+          placeholder="you@example.com"
+        />
+      </div>
+
+      {/* Password  counter only, sets their staff login credential */}
+      {role === "counter" && (
+        <div>
+          <Label>Password <span className="text-red-500">*</span></Label>
           <Input
-            name="email"
-            type="email"
-            placeholder="you@example.com"
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
           />
         </div>
       )}

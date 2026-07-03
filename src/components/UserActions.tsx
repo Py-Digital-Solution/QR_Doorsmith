@@ -69,7 +69,9 @@ export function UserActions({
     });
   }
 
-  const isKhatiPending = user.role === "khati" && user.kycStatus !== "approved";
+  const isKhatiPending =
+    (user.role === "khati" && user.kycStatus !== "approved") ||
+    (user.role === "counter" && Boolean(user.hasRegistrationToken));
 
   const btn =
     size === "md"

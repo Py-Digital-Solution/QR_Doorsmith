@@ -15,6 +15,7 @@ export async function submitRegistrationAction(
   const address = String(formData.get("address") ?? "").trim();
   const dob = String(formData.get("dob") ?? "").trim() || undefined;
   const email = String(formData.get("email") ?? "").trim() || undefined;
+  const password = String(formData.get("password") ?? "").trim() || undefined;
 
   if (!token) return { error: "Invalid registration link." };
   if (!address) return { error: "Address is required." };
@@ -36,7 +37,7 @@ export async function submitRegistrationAction(
     }
   }
 
-  const result = await submitKhatiProfile(token, { address, dob, email, photoData });
+  const result = await submitKhatiProfile(token, { address, dob, email, password, photoData });
   if ("error" in result) return { error: result.error };
   return { ok: true };
 }

@@ -56,7 +56,8 @@ export async function createUserAction(
 
   // For staff with a phone: require OTP verification in production.
   // Accepts either a Firebase ID token (SMS path) or a WhatsApp OTP-verified phone.
-  if (role !== "khati" && phone && process.env.NODE_ENV === "production") {
+  // Khati and counter skip this  they just get a WhatsApp registration link.
+  if (role !== "khati" && role !== "counter" && phone && process.env.NODE_ENV === "production") {
     const idToken = String(formData.get("firebaseIdToken") ?? "").trim();
     const waVerifiedPhone = String(formData.get("waVerifiedPhone") ?? "").trim();
 
@@ -89,8 +90,9 @@ export async function createUserAction(
       counterId,
     });
 
-    // Send welcome email to staff accounts (non-fatal if SMTP not configured)
-    if (role !== "khati" && email && password) {
+    // Send welcome email to staff accounts (non-fatal if SMTP not configured).
+    // Khati and counter set their own credentials via the registration link.
+    if (role !== "khati" && role !== "counter" && email && password) {
       await sendWelcomeEmail({ to: email, name, role, password }).catch(() => {});
     }
 
@@ -138,8 +140,15 @@ export async function resendRegistrationLinkAction(userId: string): Promise<Acti
   try {
     await connectDB();
     const user = await User.findById(userId);
-    if (!user || user.role !== "khati") return { error: "Karigar not found." };
-    if (user.kycStatus === "approved") return { error: "This karigar is already approved." };
+    if (!user || (user.role !== "khati" && user.role !== "counter")) {
+      return { error: "User not found." };
+    }
+    if (user.role === "khati" && user.kycStatus === "approved") {
+      return { error: "This karigar is already approved." };
+    }
+    if (user.role === "counter" && user.counterKycCompletedAt) {
+      return { error: "This counter has already completed registration." };
+    }
     if (!user.phone) return { error: "No phone number on record." };
 
     // Reuse existing token or generate a fresh one

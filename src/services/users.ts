@@ -130,17 +130,40 @@ export async function createUser(input: CreateUserInput) {
       // stay pending until they complete registration via the WhatsApp link.
       const khatiStatus = input.actorRole === "admin" ? ("active" as const) : ("pending" as const);
       const newKhati = await User.create({ ...base, phone, counterId, counterIds: [counterId], registrationToken, status: khatiStatus });
-      const { headers } = await import("next/headers");
-      const hdrs = await headers();
-      const proto = hdrs.get("x-forwarded-proto") ?? "https";
-      const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
-      const appUrl = `${proto}://${host}`;
+      const appUrl = await currentAppUrl();
       waSend(
         phone,
         `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका कारीगर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें  इसमें केवल एक मिनट लगेगा।\nYour karigar account has been created. Complete your registration using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/khati/login\nAfter registration, log in here: ${appUrl}/khati/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
         "welcome",
       ).catch((err) => console.error("[wa] Welcome message failed:", err));
       return newKhati;
+    } catch (e) {
+      if (isDuplicateKeyError(e)) throw new Error("A user with this phone already exists.");
+      throw e;
+    }
+  }
+
+  if (input.role === "counter") {
+    // Counters onboard exactly like a khati: just name + phone here. Everything
+    // else (photo, address, DOB, email, password) is filled in by the counter
+    // themselves via the WhatsApp registration link.
+    if (!input.phone) throw new Error("Phone is required for a counter.");
+    const phone = normalizePhone(input.phone);
+
+    if (await User.findOne({ phone })) {
+      throw new Error("A user with this phone number already exists.");
+    }
+
+    try {
+      const registrationToken = randomBytes(24).toString("base64url");
+      const newCounter = await User.create({ ...base, phone, registrationToken });
+      const appUrl = await currentAppUrl();
+      waSend(
+        phone,
+        `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका काउंटर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें  इसमें केवल एक मिनट लगेगा।\nYour counter account has been created. Complete your registration using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/login\nAfter registration, log in here: ${appUrl}/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+        "welcome",
+      ).catch((err) => console.error("[wa] Counter welcome message failed:", err));
+      return newCounter;
     } catch (e) {
       if (isDuplicateKeyError(e)) throw new Error("A user with this phone already exists.");
       throw e;
@@ -167,25 +190,6 @@ export async function createUser(input: CreateUserInput) {
 
   const passwordHash = await hashPassword(input.password);
   try {
-    if (input.role === "counter") {
-      // Counters onboard the same way a khati does: a WhatsApp link to a
-      // public registration page where they add their photo + address before
-      // their account is fully set up. Login credentials still go out by email.
-      const registrationToken = randomBytes(24).toString("base64url");
-      const created = await User.create({ ...base, email, passwordHash, phone, registrationToken });
-      const { headers } = await import("next/headers");
-      const hdrs = await headers();
-      const proto = hdrs.get("x-forwarded-proto") ?? "https";
-      const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
-      const appUrl = `${proto}://${host}`;
-      waSend(
-        phone,
-        `🎉 *DoorSmith में आपका स्वागत है, ${base.name}! | Welcome to DoorSmith, ${base.name}!*\n\nआपका काउंटर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपनी KYC पूरी करें  इसमें केवल एक मिनट लगेगा।\nYour counter account has been created. Complete your KYC using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nलॉगिन विवरण आपके ईमेल (${email}) पर भेजे गए हैं। आप फोन नंबर से OTP द्वारा भी लॉग इन कर सकते हैं।\nYour login details have been sent to your email (${email}). You can also log in with your phone number via OTP.\n\n🔗 लॉग इन करें | Log in: ${appUrl}/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
-        "welcome",
-      ).catch((err) => console.error("[wa] Counter welcome message failed:", err));
-      return created;
-    }
-
     const created = await User.create({ ...base, email, passwordHash, phone });
     notifyStaffWelcome(phone, base.name, input.role, email);
     return created;
@@ -197,6 +201,15 @@ export async function createUser(input: CreateUserInput) {
     if (isDuplicateKeyError(e)) throw new Error("A user with these details already exists.");
     throw e;
   }
+}
+
+/** Best-effort app base URL from the current request headers  used to build links in WA messages. */
+async function currentAppUrl(): Promise<string> {
+  const { headers } = await import("next/headers");
+  const hdrs = await headers();
+  const proto = hdrs.get("x-forwarded-proto") ?? "https";
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
+  return `${proto}://${host}`;
 }
 
 export type UserDTO = {

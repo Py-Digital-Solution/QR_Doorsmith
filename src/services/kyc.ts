@@ -4,6 +4,7 @@ import { User } from "@/models/User";
 import { waSend } from "@/services/whatsapp";
 import { notifyCounterKycToAdmin } from "@/services/wa-notify";
 import { uploadAvatar, toPhotoUrl } from "@/lib/storage";
+import { hashPassword } from "@/lib/password";
 
 export type KycStatus =
   | "not_submitted"
@@ -64,26 +65,45 @@ export async function getKhatiByToken(token: string): Promise<KhatiProfileDTO | 
 
 export async function submitKhatiProfile(
   token: string,
-  data: { address: string; dob?: string; email?: string; photoData?: { buffer: Buffer; contentType: string; ext: string } },
+  data: {
+    address: string;
+    dob?: string;
+    email?: string;
+    password?: string;
+    photoData?: { buffer: Buffer; contentType: string; ext: string };
+  },
 ): Promise<{ ok: true } | { error: string }> {
   await connectDB();
   const user = await User.findOne({ registrationToken: token, role: { $in: ["khati", "counter"] } });
   if (!user) return { error: "Invalid or expired registration link." };
 
-  // Counters: self-service, same as the old first-login KYC  no admin review,
-  // just photo + address, then their account is ready to use.
+  // Counters: self-service, same as the old first-login KYC  no admin review.
+  // They fill in everything staff normally would (photo, address, DOB, email,
+  // password) themselves via this link.
   if (user.role === "counter") {
     if (user.counterKycCompletedAt) return { error: "Registration already submitted." };
+    if (!data.dob) return { error: "Date of birth is required." };
+    if (!data.email) return { error: "Email is required." };
+    if (!data.password || data.password.length < 8) {
+      return { error: "Password must be at least 8 characters." };
+    }
+    if (!data.photoData) return { error: "Photo is required." };
+
+    const email = data.email.trim().toLowerCase();
+    const existingEmail = await User.findOne({ email, _id: { $ne: user._id } }).select("_id").lean();
+    if (existingEmail) return { error: "This email is already in use." };
+
+    try {
+      user.photoUrl = await uploadAvatar(String(user._id), data.photoData.buffer, data.photoData.contentType, data.photoData.ext);
+    } catch (err) {
+      console.error("[kyc] Counter photo upload failed:", err);
+      return { error: "Failed to upload photo. Please try again." };
+    }
 
     user.address = data.address.trim();
-    if (data.photoData) {
-      try {
-        user.photoUrl = await uploadAvatar(String(user._id), data.photoData.buffer, data.photoData.contentType, data.photoData.ext);
-      } catch (err) {
-        console.error("[kyc] Counter photo upload failed:", err);
-        return { error: "Failed to upload photo. Please try again." };
-      }
-    }
+    user.dob = new Date(data.dob);
+    user.email = email;
+    user.passwordHash = await hashPassword(data.password);
     user.counterKycCompletedAt = new Date();
     user.registrationToken = undefined;
     await user.save();
