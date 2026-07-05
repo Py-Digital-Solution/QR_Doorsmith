@@ -53,13 +53,14 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
 
         <p className="relative text-xs text-gray-400">
           © 2026 DoorSmith · Powered by{" "}
+          <span className="font-medium text-gray-300">Gati Growth Labs</span>
+          {" · "}
+          Support:{" "}
           <a
-            href="https://gatigrowthlabs.com"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="tel:+918950483393"
             className="font-medium text-gray-300 transition-colors hover:text-white hover:underline"
           >
-            Gati Growth Labs
+            +91 89504 83393
           </a>
         </p>
       </aside>

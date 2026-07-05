@@ -412,13 +412,11 @@ export default function InstallClient() {
         <div className="container mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <p className="text-sm text-gray-400">
             © 2026 DoorSmith · Powered by{" "}
-            <a
-              href="https://gatigrowthlabs.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand hover:underline font-medium"
-            >
-              Gati Growth Labs
+            <span className="text-gray-300 font-medium">Gati Growth Labs</span>
+            {" · "}
+            Support:{" "}
+            <a href="tel:+918950483393" className="text-brand hover:underline font-medium">
+              +91 89504 83393
             </a>
           </p>
           <div className="flex items-center gap-6 text-sm text-gray-400">
