@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { Camera, X } from "lucide-react";
 import { createDispatchAction, type ActionState } from "@/actions/dispatch";
 import { QrScanner } from "./QrScanner";
@@ -180,10 +179,10 @@ export function DispatchClient({
         )}
       </div>
 
-      {/* Selected list */}
+      {/* Selected list  newest addition shown first */}
       {serials.length > 0 && (
         <div className="rounded-md border border-gray-200">
-          {serials.map((s) => (
+          {[...serials].reverse().map((s) => (
             <div
               key={s}
               className="flex items-center justify-between border-b border-gray-100 px-3 py-2 text-sm last:border-0"
@@ -205,14 +204,8 @@ export function DispatchClient({
       {state.error && <Alert variant="error">{state.error}</Alert>}
       {state.ok && (
         <Alert variant="success">
-          Dispatched ✓ Receipt {state.billNo} · {state.total} codes ·{" "}
-          <Link
-            href={`/admin/dispatch/${state.dispatchId}/bill`}
-            target="_blank"
-            className="font-medium underline"
-          >
-            Print Dispatch Receipt
-          </Link>
+          Saved as draft ✓ Receipt {state.billNo} · {state.total} item(s). Dispatch it from
+          the list below when ready.
         </Alert>
       )}
 
@@ -222,7 +215,7 @@ export function DispatchClient({
         loading={pending}
         disabled={serials.length === 0}
       >
-        {pending ? "Dispatching…" : `Dispatch ${serials.length} item(s)`}
+        {pending ? "Saving…" : `Save Draft (${serials.length} item(s))`}
       </Button>
     </div>
   );

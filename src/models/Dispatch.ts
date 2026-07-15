@@ -1,6 +1,6 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 
-export const DISPATCH_STATUSES = ["dispatched"] as const;
+export const DISPATCH_STATUSES = ["draft", "dispatched"] as const;
 
 /**
  * Dispatch ("bill")  warehouse sends one or more scanned units (and everything
@@ -27,7 +27,7 @@ const dispatchSchema = new Schema(
       type: String,
       enum: DISPATCH_STATUSES,
       required: true,
-      default: "dispatched",
+      default: "draft",
     },
   },
   { timestamps: true },

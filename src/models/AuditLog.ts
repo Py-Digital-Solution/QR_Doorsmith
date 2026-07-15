@@ -10,6 +10,7 @@ export type AuditAction =
   | "qr_batch_create"
   | "qr_code_edit"
   | "qr_code_delete"
+  | "dispatch_draft_create"
   | "dispatch_create"
   | "return_create"
   | "return_approve"

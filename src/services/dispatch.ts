@@ -59,13 +59,12 @@ async function collectUndispatchedDescendants(
 }
 
 /**
- * Create a dispatch bill: validate the scanned serials (any level  master box,
- * small box, or a single unique product code), link each scanned unit plus all
- * of its descendants to the chosen counter, activate them, and record the bill.
- * (Should become transactional once the Mongo replica set is configured  see
- * Docs/SECURITY.md.)
+ * Save a dispatch draft: validate the scanned serials (any level  master box,
+ * small box, or a single unique product code) are real and not already
+ * dispatched, and record the bill with status "draft". Nothing is linked or
+ * activated yet  that happens when the draft is dispatched from the list.
  */
-export async function createDispatch(input: {
+export async function createDraftDispatch(input: {
   createdBy: string;
   counterId: string;
   serials: string[];
@@ -93,15 +92,7 @@ export async function createDispatch(input: {
     throw new Error(`Already dispatched: ${already.map((r) => r.serialNo).join(", ")}`);
   }
 
-  const seen = new Set<string>();
-  const rootIds: Types.ObjectId[] = [];
-  for (const r of roots) {
-    const oid = r._id as Types.ObjectId;
-    seen.add(String(oid));
-    rootIds.push(oid);
-  }
-  const descendantIds = await collectUndispatchedDescendants(rootIds, seen);
-  const allIds = [...rootIds, ...descendantIds];
+  const rootIds = roots.map((r) => r._id as Types.ObjectId);
 
   const billNo = await nextBillNo();
   const dispatch = await Dispatch.create({
@@ -112,18 +103,54 @@ export async function createDispatch(input: {
     rootCount: rootIds.length,
     masterQrIds: rootIds, // mirror for backward compatibility
     masterCount: rootIds.length,
-    totalCodes: allIds.length,
-    status: "dispatched",
+    totalCodes: rootIds.length,
+    status: "draft",
   });
+
+  return { billNo, dispatchId: String(dispatch._id), totalCodes: rootIds.length };
+}
+
+/**
+ * Dispatch a saved draft: re-validate the roots are still undispatched, link
+ * each root plus all of its descendants to the counter, activate them, mark
+ * the bill "dispatched", and notify the counter.
+ * (Should become transactional once the Mongo replica set is configured  see
+ * Docs/SECURITY.md.)
+ */
+export async function dispatchDraft(dispatchId: string): Promise<CreateDispatchResult> {
+  await connectDB();
+
+  const dispatch = await Dispatch.findById(dispatchId).populate<{
+    counterId: { _id: Types.ObjectId; phone?: string; name?: string };
+  }>("counterId", "phone name");
+  if (!dispatch) throw new Error("Dispatch not found.");
+  if (dispatch.status !== "draft") throw new Error("Dispatch is already finalized.");
+
+  const rootIds = (dispatch.rootQrIds ?? []) as Types.ObjectId[];
+  const roots = await QrCode.find({ _id: { $in: rootIds } });
+  const already = roots.filter((r) => r.counterId);
+  if (already.length) {
+    throw new Error(`Already dispatched: ${already.map((r) => r.serialNo).join(", ")}`);
+  }
+
+  const seen = new Set<string>(rootIds.map((id) => String(id)));
+  const descendantIds = await collectUndispatchedDescendants(rootIds, seen);
+  const allIds = [...rootIds, ...descendantIds];
+
+  const counter = dispatch.counterId as unknown as { _id: Types.ObjectId; phone?: string; name?: string };
 
   await QrCode.updateMany(
     { _id: { $in: allIds } },
     { $set: { counterId: counter._id, dispatchId: dispatch._id, status: "active" } },
   );
 
-  notifyDispatchCreated(counter.phone, counter.name, billNo, allIds.length);
+  dispatch.totalCodes = allIds.length;
+  dispatch.status = "dispatched";
+  await dispatch.save();
 
-  return { billNo, dispatchId: String(dispatch._id), totalCodes: allIds.length };
+  notifyDispatchCreated(counter.phone, counter.name, dispatch.billNo, allIds.length);
+
+  return { billNo: dispatch.billNo, dispatchId: String(dispatch._id), totalCodes: allIds.length };
 }
 
 // ---- read models ----
@@ -348,7 +375,7 @@ export async function listCounterDispatches(
 ): Promise<Paginated<DispatchDTO>> {
   await connectDB();
   const cid = new Types.ObjectId(counterId);
-  const q: Record<string, unknown> = { counterId: cid };
+  const q: Record<string, unknown> = { counterId: cid, status: "dispatched" };
   if (search) q.billNo = { $regex: search, $options: "i" };
   const { page, pageSize } = pagination;
   const total = await Dispatch.countDocuments(q);
