@@ -11,6 +11,7 @@ export type AuditAction =
   | "qr_code_edit"
   | "qr_code_delete"
   | "dispatch_draft_create"
+  | "dispatch_draft_update"
   | "dispatch_create"
   | "return_create"
   | "return_approve"

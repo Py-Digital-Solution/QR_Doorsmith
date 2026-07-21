@@ -76,7 +76,42 @@ export async function processQrScan(
     }).lean();
 
     if (productCodes.length === 0) {
-      throw new Error("No unscanned products remain in this small box.");
+      // Distinguish "this box never had product-level QR codes" (batch generated
+      // with productPerSmall: 0  the box itself is the scannable unit, worth its
+      // own snapshotted points) from "it had them but they're all used up"
+      // (genuine already-scanned case).
+      const everHadChildren = await QrCode.exists({ parentQrId: code._id, type: "product" });
+      if (everHadChildren) {
+        throw new Error("No unscanned products remain in this small box.");
+      }
+
+      const pts = code.rewardPoints ?? 0;
+      await QrCode.findByIdAndUpdate(code._id, {
+        $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now },
+      });
+      const updated = await User.findByIdAndUpdate(
+        khatiId,
+        { $inc: { points: pts, lifetimePoints: pts } },
+        { returnDocument: "after" },
+      ).lean();
+      const newBal = updated?.points ?? pts;
+      PointTransaction.create({
+        khatiId, qrCodeId: code._id, type: "scan_small_box",
+        points: pts, balanceAfter: newBal,
+        description: "Small box scan (no product codes)",
+        sku: code.sku, serialNo: code.serialNo,
+      }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
+
+      notifyScanEarned(khati.phone, khati.name, pts, newBal);
+
+      return {
+        serialNo: code.serialNo,
+        sku: code.sku ?? "",
+        pointsEarned: pts,
+        newBalance: newBal,
+        type: "small",
+        productsScanned: 0,
+      };
     }
 
     const totalPts = productCodes.reduce((sum, c) => sum + (c.rewardPoints ?? 0), 0);

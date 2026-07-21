@@ -39,9 +39,23 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function EditLink({ id }: { id: string }) {
+  return (
+    <a
+      href={`/admin/dispatch/${id}/edit`}
+      className="focus-ring inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
+    >
+      Edit
+    </a>
+  );
+}
+
 function Action({ d }: { d: DispatchDTO }) {
   return d.status === "draft" ? (
-    <DispatchRowAction dispatchId={d.id} />
+    <div className="flex items-center justify-end gap-1">
+      <EditLink id={d.id} />
+      <DispatchRowAction dispatchId={d.id} />
+    </div>
   ) : (
     <BillLink id={d.id} />
   );

@@ -58,11 +58,6 @@ export function PwaInstallBanner() {
     setShowSteps((v) => !v);
   }
 
-  function dismiss() {
-    sessionStorage.setItem("pwa-dismissed", "1");
-    setDismissed(true);
-  }
-
   if (isStandalone || dismissed) return null;
 
   const steps =
@@ -91,7 +86,6 @@ export function PwaInstallBanner() {
         </div>
       </div>
       <div className="mt-3 flex justify-end gap-2">
-        <button onClick={dismiss} className="rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-orange-100">Not now</button>
         {/* Hide the redundant button on iOS where steps are already shown. */}
         {!(platform === "ios" && !prompt) && (
           <button onClick={install} className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark">

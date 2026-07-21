@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Camera, X } from "lucide-react";
-import { createDispatchAction, type ActionState } from "@/actions/dispatch";
+import { createDispatchAction, updateDraftDispatchAction, type ActionState } from "@/actions/dispatch";
 import { QrScanner } from "./QrScanner";
 import { Input, Select } from "./ui/Input";
 import { Label } from "./ui/Field";
@@ -13,11 +14,15 @@ type CodeHit = { id: string; serialNo: string; type: string; sku: string };
 
 export function DispatchClient({
   counters,
+  editDraft,
 }: {
   counters: { id: string; label: string }[];
+  /** When set, edits an existing draft in place instead of creating a new one. */
+  editDraft?: { dispatchId: string; billNo: string; counterId: string; serials: string[] };
 }) {
-  const [serials, setSerials] = useState<string[]>([]);
-  const [counterId, setCounterId] = useState(counters[0]?.id ?? "");
+  const router = useRouter();
+  const [serials, setSerials] = useState<string[]>(editDraft?.serials ?? []);
+  const [counterId, setCounterId] = useState(editDraft?.counterId ?? counters[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CodeHit[]>([]);
   const [searching, setSearching] = useState(false);
@@ -87,9 +92,18 @@ export function DispatchClient({
   async function submit() {
     setPending(true);
     setState({});
-    const res = await createDispatchAction({ counterId, serials });
+    const res = editDraft
+      ? await updateDraftDispatchAction(editDraft.dispatchId, { counterId, serials })
+      : await createDispatchAction({ counterId, serials });
     setState(res);
-    if (res.ok) setSerials([]);
+    if (res.ok) {
+      if (editDraft) {
+        router.push("/admin/dispatch");
+        router.refresh();
+      } else {
+        setSerials([]);
+      }
+    }
     setPending(false);
   }
 
@@ -105,7 +119,9 @@ export function DispatchClient({
 
   return (
     <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
-      <h2 className="text-sm font-semibold text-gray-900">New dispatch</h2>
+      <h2 className="text-sm font-semibold text-gray-900">
+        {editDraft ? `Edit draft ${editDraft.billNo}` : "New dispatch"}
+      </h2>
 
       {/* Counter */}
       <div>
@@ -202,7 +218,7 @@ export function DispatchClient({
       )}
 
       {state.error && <Alert variant="error">{state.error}</Alert>}
-      {state.ok && (
+      {state.ok && !editDraft && (
         <Alert variant="success">
           Saved as draft ✓ Receipt {state.billNo} · {state.total} item(s). Dispatch it from
           the list below when ready.
@@ -215,7 +231,11 @@ export function DispatchClient({
         loading={pending}
         disabled={serials.length === 0}
       >
-        {pending ? "Saving…" : `Save Draft (${serials.length} item(s))`}
+        {pending
+          ? "Saving…"
+          : editDraft
+            ? `Save Changes (${serials.length} item(s))`
+            : `Save Draft (${serials.length} item(s))`}
       </Button>
     </div>
   );

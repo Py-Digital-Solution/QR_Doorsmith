@@ -110,6 +110,80 @@ export async function createDraftDispatch(input: {
   return { billNo, dispatchId: String(dispatch._id), totalCodes: rootIds.length };
 }
 
+export type DraftDispatchDTO = {
+  dispatchId: string;
+  billNo: string;
+  counterId: string;
+  serials: string[];
+};
+
+/** Load a draft for editing (counter + scanned serials). */
+export async function getDraftDispatch(id: string): Promise<DraftDispatchDTO | null> {
+  await connectDB();
+  const dispatch = await Dispatch.findById(id).lean();
+  if (!dispatch || dispatch.status !== "draft") return null;
+
+  const rootIds = dispatch.rootQrIds ?? [];
+  const roots = await QrCode.find({ _id: { $in: rootIds } }).select("serialNo").lean();
+  const bySerial = new Map(roots.map((r) => [String(r._id), r.serialNo]));
+
+  return {
+    dispatchId: String(dispatch._id),
+    billNo: dispatch.billNo,
+    counterId: String(dispatch.counterId),
+    serials: rootIds.map((id) => bySerial.get(String(id))).filter((s): s is string => Boolean(s)),
+  };
+}
+
+/**
+ * Replace a draft's counter + serials (re-validated exactly like creating a
+ * fresh draft). Only allowed while the bill is still a draft.
+ */
+export async function updateDraftDispatch(
+  id: string,
+  input: { counterId: string; serials: string[] },
+): Promise<CreateDispatchResult> {
+  await connectDB();
+
+  const dispatch = await Dispatch.findById(id);
+  if (!dispatch) throw new Error("Dispatch not found.");
+  if (dispatch.status !== "draft") throw new Error("Dispatch is already finalized.");
+
+  const counter = await User.findOne({ _id: input.counterId, role: "counter" });
+  if (!counter) throw new Error("Select a valid counter.");
+
+  const serials = Array.from(
+    new Set(input.serials.map((s) => s.trim()).filter(Boolean)),
+  );
+  if (serials.length === 0) throw new Error("Scan at least one QR code.");
+
+  const roots = await QrCode.find({ serialNo: { $in: serials } });
+  const found = new Set(roots.map((r) => r.serialNo));
+  const missing = serials.filter((s) => !found.has(s));
+  if (missing.length) {
+    throw new Error(`Not found: ${missing.join(", ")}`);
+  }
+
+  // Drafts never touch QrCode.counterId (only finalizing does), so any code
+  // that already has one was dispatched by a different, already-finalized bill.
+  const already = roots.filter((r) => r.counterId);
+  if (already.length) {
+    throw new Error(`Already dispatched: ${already.map((r) => r.serialNo).join(", ")}`);
+  }
+
+  const rootIds = roots.map((r) => r._id as Types.ObjectId);
+
+  dispatch.counterId = counter._id;
+  dispatch.rootQrIds = rootIds;
+  dispatch.rootCount = rootIds.length;
+  dispatch.masterQrIds = rootIds;
+  dispatch.masterCount = rootIds.length;
+  dispatch.totalCodes = rootIds.length;
+  await dispatch.save();
+
+  return { billNo: dispatch.billNo, dispatchId: String(dispatch._id), totalCodes: rootIds.length };
+}
+
 /**
  * Dispatch a saved draft: re-validate the roots are still undispatched, link
  * each root plus all of its descendants to the counter, activate them, mark
