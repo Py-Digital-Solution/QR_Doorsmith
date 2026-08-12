@@ -1,12 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/nightly-summary",
-      "schedule": "0 18 * * *"
-    },
-    {
-      "path": "/api/cron/broadcast",
-      "schedule": "0 1 * * *"
-    }
-  ]
+  "buildCommand": "SKIP_ENV_VALIDATION=1 npm run build",
+  "framework": "nextjs"
 }
