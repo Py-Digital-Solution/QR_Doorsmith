@@ -14,7 +14,9 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
 
   // --- Auth (Phase 1) ---
-  NEXTAUTH_URL: z.string().url("NEXTAUTH_URL must be a valid URL"),
+  // Runtime-only: not present during `next build` on Vercel unless explicitly
+  // added as a Build env var. Auth.js reads this directly from process.env.
+  NEXTAUTH_URL: z.string().url("NEXTAUTH_URL must be a valid URL").optional(),
   AUTH_SECRET: z.string().min(1).optional(),
   // Bootstrap first admin (used by `npm run db:create-admin`).
   ADMIN_EMAIL: z.string().email().optional(),
