@@ -69,6 +69,7 @@ export async function createDispatch(input: {
   createdBy: string;
   counterId: string;
   serials: string[];
+  orgId?: string;
 }): Promise<CreateDispatchResult> {
   await connectDB();
 
@@ -81,7 +82,9 @@ export async function createDispatch(input: {
   if (serials.length === 0) throw new Error("Scan at least one QR code.");
 
   // Roots can be ANY type: master, small, or product (unique code).
-  const roots = await QrCode.find({ serialNo: { $in: serials } });
+  const rootFilter: Record<string, unknown> = { serialNo: { $in: serials } };
+  if (input.orgId) rootFilter.orgId = input.orgId;
+  const roots = await QrCode.find(rootFilter);
   const found = new Set(roots.map((r) => r.serialNo));
   const missing = serials.filter((s) => !found.has(s));
   if (missing.length) {
@@ -105,6 +108,7 @@ export async function createDispatch(input: {
 
   const billNo = await nextBillNo();
   const dispatch = await Dispatch.create({
+    orgId: input.orgId,
     billNo,
     counterId: counter._id,
     createdBy: input.createdBy,
@@ -145,10 +149,12 @@ function counterLabel(c: { name?: string; email?: string } | null): string {
 export async function listDispatches(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   search?: string,
+  orgId?: string,
 ): Promise<Paginated<DispatchDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
   const query: Record<string, unknown> = {};
+  if (orgId) query.orgId = orgId;
   if (search) query.billNo = { $regex: search, $options: "i" };
   const total = await Dispatch.countDocuments(query);
   const docs = await Dispatch.find(query)
@@ -238,9 +244,11 @@ export async function searchDispatchableCodes(input: {
   query?: string;
   limit?: number;
   excludeDescendantsOf?: string[];
+  orgId?: string;
 }): Promise<DispatchableCodeDTO[]> {
   await connectDB();
   const q: Record<string, unknown> = { counterId: null };
+  if (input.orgId) q.orgId = input.orgId;
   if (input.type) q.type = input.type;
   const query = (input.query ?? "").trim();
   if (query) q.serialNo = { $regex: escapeRegex(query), $options: "i" };

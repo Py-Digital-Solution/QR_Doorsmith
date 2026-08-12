@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand-color: #f6821f;
+  --brand-secondary: #0f2444;
+  --brand-dark: #d96d10;
+  --brand-light: #fff3e8;
 }
 
 @theme inline {
@@ -14,11 +18,11 @@
 
 /* DoorSmith brand palette (sampled from the logo) */
 @theme {
-  --color-brand: #f6821f; /* primary orange */
-  --color-brand-dark: #d96d10; /* hover */
-  --color-brand-light: #fff3e8; /* tint background */
+  --color-brand: var(--brand-color, #f6821f); /* primary brand color */
+  --color-brand-dark: var(--brand-dark, #d96d10); /* hover accent */
+  --color-brand-light: var(--brand-light, #fff3e8); /* tint background */
   --color-brand-blue: #2d60b2; /* logo blue accent */
-  --color-brand-navy: #0f2444; /* deep navy panels */
+  --color-brand-navy: var(--brand-secondary, #0f2444); /* secondary panels */
 
   /* Elevation  navy-tinted so shadows read as depth, not dirt */
   --shadow-card: 0 1px 2px 0 rgb(15 36 68 / 0.05);

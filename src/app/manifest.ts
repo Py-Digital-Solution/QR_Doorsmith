@@ -2,15 +2,15 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "DoorSmith Karigar Rewards",
-    short_name: "DoorSmith",
+    name: "Gati Growth Labs Karigar Rewards",
+    short_name: "Gati Growth Labs",
     description: "Scan product QR codes and earn reward points",
     start_url: "/khati",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
     background_color: "#ffffff",
-    theme_color: "#f6821f",
+    theme_color: "#0038a8",
     categories: ["business", "utilities"],
     icons: [
       {

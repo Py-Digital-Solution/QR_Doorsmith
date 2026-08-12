@@ -191,6 +191,19 @@ export async function GET(req: NextRequest) {
   const q = sp.get("q") ?? undefined;
   const uid = session.user.id;
   const role = session.user.role;
+  const orgId = session.user.orgId; // undefined for super_admin = see all
+
+  // Admin-only export types must not be accessible to counter/khati users
+  const ADMIN_TYPES = ["users", "products", "qr-batches", "qr-codes", "dispatches"];
+  if (ADMIN_TYPES.includes(type) && role !== "admin" && role !== "super_admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Rate limit: 30 export requests per user per minute
+  const { rateLimit, rateLimitResponse } = await import("@/lib/rate-limit");
+  const rl = rateLimit(`export:${session.user.id}`, 30, 60_000);
+  const rlRes = rateLimitResponse(rl);
+  if (rlRes) return rlRes;
 
   const branding = await getCompanyBranding();
 
@@ -199,19 +212,19 @@ export async function GET(req: NextRequest) {
       case "users": {
         const filterRole = sp.get("role") as import("@/lib/roles").UserRole | null;
         const createdBy = sp.get("createdBy") ?? undefined;
-        const result = await listUsers({ role: filterRole ?? undefined, createdBy, search: q }, ALL);
+        const result = await listUsers({ role: filterRole ?? undefined, createdBy, search: q, orgId }, ALL);
         return respond(format, "Users", ["Name", "Email", "Phone", "Role", "Status"],
           result.items.map((u) => [u.name, u.email, u.phone, u.role, u.status]), branding);
       }
 
       case "products": {
-        const result = await listProducts(ALL, q);
+        const result = await listProducts(ALL, q, undefined, orgId);
         return respond(format, "Products", ["SKU", "Name", "MRP", "Sales Price", "Reward Pts", "Status"],
           result.items.map((p) => [p.sku, p.name, String(p.mrp), String(p.salesPrice), String(p.rewardPoints), p.status]), branding);
       }
 
       case "qr-batches": {
-        const result = await listBatches(ALL, q);
+        const result = await listBatches(ALL, q, orgId);
         return respond(format, "QR Batches", ["Product SKU", "Total", "Masters", "Serial Start", "Serial End", "Status"],
           result.items.map((b) => [b.productSku, String(b.total), String(b.masterCount), String(b.serialStart), String(b.serialEnd), b.status]), branding);
       }
@@ -226,21 +239,21 @@ export async function GET(req: NextRequest) {
       }
 
       case "dispatches": {
-        const result = await listDispatches(ALL, q);
+        const result = await listDispatches(ALL, q, orgId);
         return respond(format, "Dispatches", ["Bill No", "Counter", "Units", "Total Codes", "Date"],
           result.items.map((d) => [d.billNo, d.counterLabel, String(d.unitCount), String(d.totalCodes), formatISTDate(d.createdAt)]), branding);
       }
 
       case "counter-khatis": {
         const createdBy = role === "admin" ? undefined : uid;
-        const result = await listUsers({ role: "khati", createdBy, search: q }, ALL);
+        const result = await listUsers({ role: "khati", createdBy, search: q, orgId }, ALL);
         return respond(format, "Khatis", ["Name", "Phone", "Status"],
           result.items.map((u) => [u.name, u.phone, u.status]), branding);
       }
 
       case "sales-counters": {
         const createdBy = role === "admin" ? undefined : uid;
-        const result = await listUsers({ role: "counter", createdBy, search: q }, ALL);
+        const result = await listUsers({ role: "counter", createdBy, search: q, orgId }, ALL);
         return respond(format, "Counters", ["Name", "Email", "Status"],
           result.items.map((u) => [u.name, u.email, u.status]), branding);
       }

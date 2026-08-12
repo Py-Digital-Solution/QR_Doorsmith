@@ -127,7 +127,8 @@ export function KhatiShell({
 
         {/* ── Mobile header (hidden on desktop) ──────────────────────────── */}
         <header className="z-40 flex h-14 shrink-0 items-center border-b border-gray-100 bg-white/95 px-4 shadow-card backdrop-blur-sm md:hidden">
-          <Image src="/logo.png" alt="DoorSmith" width={110} height={18} className="h-5 w-auto" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="Gati Growth Labs" className="h-6 w-auto object-contain" />
         </header>
 
         {/* ── Page content ───────────────────────────────────────────────── */}
@@ -332,7 +333,8 @@ export function KhatiShell({
                 </div>
                 <div className="space-y-4 px-5 py-5">
                   <div className="flex flex-col items-center gap-2 py-2">
-                    <Image src="/logo.png" alt="DoorSmith" width={140} height={23} className="h-7 w-auto" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo.svg" alt="Gati Growth Labs" className="h-8 w-auto object-contain" />
                     <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand">Karigar Rewards</span>
                   </div>
                   <div className="space-y-2 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">

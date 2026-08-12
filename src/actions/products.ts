@@ -1,5 +1,7 @@
 "use server";
 
+import { safeError } from "@/lib/safe-error";
+
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import {
@@ -11,9 +13,9 @@ import type { ProductStatus } from "@/lib/product";
 
 export type ActionState = { error?: string; ok?: boolean };
 
-async function requireAdmin(): Promise<string | null> {
+async function getAdminSession() {
   const session = await auth();
-  return session?.user?.role === "admin" ? session.user.id : null;
+  return session?.user?.role === "admin" || session?.user?.role === "super_admin" ? session : null;
 }
 
 function parse(formData: FormData) {
@@ -38,13 +40,14 @@ export async function createProductAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  if (!(await requireAdmin())) return { error: "Not authorized." };
+  const session = await getAdminSession();
+  if (!session) return { error: "Not authorized." };
   try {
-    await createProduct(parse(formData));
+    await createProduct({ ...parse(formData), orgId: session.user.orgId });
     revalidatePath("/admin/products");
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to create product." };
+    return { error: safeError(e, "Failed to create product.") };
   }
 }
 
@@ -52,23 +55,25 @@ export async function updateProductAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  if (!(await requireAdmin())) return { error: "Not authorized." };
+  const session = await getAdminSession();
+  if (!session) return { error: "Not authorized." };
   try {
-    await updateProduct(String(formData.get("id") ?? ""), parse(formData));
+    await updateProduct(String(formData.get("id") ?? ""), { ...parse(formData), orgId: session.user.orgId });
     revalidatePath("/admin/products");
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to update product." };
+    return { error: safeError(e, "Failed to update product.") };
   }
 }
 
 export async function deleteProductAction(id: string): Promise<ActionState> {
-  if (!(await requireAdmin())) return { error: "Not authorized." };
+  const session = await getAdminSession();
+  if (!session) return { error: "Not authorized." };
   try {
-    await deleteProduct(id);
+    await deleteProduct(id, session.user.orgId);
     revalidatePath("/admin/products");
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to delete product." };
+    return { error: safeError(e, "Failed to delete product.") };
   }
 }

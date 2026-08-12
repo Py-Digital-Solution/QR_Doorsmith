@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import Link from "next/link";
 import { parsePageParams } from "@/lib/pagination";
 import { listPointTransactions, summarizePointTransactions, ledgerTypeLabel } from "@/services/ledger";
@@ -21,12 +22,14 @@ export default async function LedgerDashboard({
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string; type?: string }>;
 }) {
+  const session = await auth();
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
   const type = (TYPES.includes(sp.type as PtType) ? sp.type : undefined) as PtType | undefined;
 
-  const filter = { search: q || undefined, type };
+  const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
+  const filter = { search: q || undefined, type, orgId: orgIdFilter };
   const [page, summary] = await Promise.all([
     listPointTransactions(filter, pagination),
     summarizePointTransactions(filter),

@@ -24,6 +24,7 @@ export type KhatiProfileDTO = {
   dob?: string;
   kycStatus: KycStatus;
   registrationToken?: string;
+  registrationTokenExpiresAt?: string;
   counterId?: string;
   /** Counters only: registration is self-service, so this tells the page whether it's already done. */
   completed?: boolean;
@@ -58,6 +59,7 @@ export async function getKhatiByToken(token: string): Promise<KhatiProfileDTO | 
     dob: user.dob ? new Date(user.dob as Date).toISOString().slice(0, 10) : undefined,
     kycStatus: (user.kycStatus as KycStatus) ?? "not_submitted",
     registrationToken: user.registrationToken ?? undefined,
+    registrationTokenExpiresAt: user.registrationTokenExpiresAt ? new Date(user.registrationTokenExpiresAt as Date).toISOString() : undefined,
     counterId: user.counterId ? String(user.counterId) : undefined,
     completed: user.role === "counter" ? Boolean(user.counterKycCompletedAt) : undefined,
   };

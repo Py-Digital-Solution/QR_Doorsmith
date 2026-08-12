@@ -34,6 +34,7 @@ const sheetConfigSchema = new Schema(
 
 const qrBatchSchema = new Schema(
   {
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
     masterCount: { type: Number, default: 0 },

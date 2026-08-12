@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CounterReturnPanel } from "@/components/CounterReturnPanel";
 import { listAllReturns } from "@/services/returns";
@@ -22,11 +23,13 @@ export default async function AdminReturnsPage({
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
+  const session = await auth();
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
 
-  const history = await listAllReturns(pagination, q || undefined);
+  const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
+  const history = await listAllReturns(pagination, q || undefined, orgIdFilter);
 
   const fp = new URLSearchParams();
   if (q) fp.set("q", q);

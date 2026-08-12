@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /super-admin/
+Disallow: /api/
+Disallow: /counter/
+Disallow: /khati/
+Disallow: /sales/
+Allow: /org/
+Allow: /register/
+
+Sitemap: https://doorsmith.in/sitemap.xml

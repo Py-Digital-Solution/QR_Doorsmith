@@ -7,7 +7,8 @@ import { PRODUCT_STATUSES } from "../lib/product";
  */
 const productSchema = new Schema(
   {
-    sku: { type: String, required: true, unique: true, trim: true },
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
+    sku: { type: String, required: true, trim: true },
     name: { type: String, required: true, trim: true },
     mrp: { type: Number, required: true, min: 0 },
     salesPrice: { type: Number, required: true, min: 0 },
@@ -25,6 +26,8 @@ const productSchema = new Schema(
   },
   { timestamps: true },
 );
+
+productSchema.index({ orgId: 1, sku: 1 }, { unique: true });
 
 export type ProductDoc = InferSchemaType<typeof productSchema>;
 

@@ -23,12 +23,14 @@ function detectPlatform(): Platform {
  * `beforeinstallprompt`. When the native prompt is available we use it (one
  * tap); otherwise we show platform-appropriate manual steps.
  */
-export function PwaInstallBanner() {
+export function PwaInstallBanner({ appName = "Gati Growth Labs", logoUrl }: { appName?: string; logoUrl?: string }) {
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [platform, setPlatform] = useState<Platform>("other");
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
+
+  const iconSrc = logoUrl && logoUrl !== "/logo.png" ? logoUrl : "/logo.svg";
 
   useEffect(() => {
     const standalone =
@@ -75,18 +77,26 @@ export function PwaInstallBanner() {
       : [
           { icon: "⋮", text: "Open your browser menu (top-right)" },
           { icon: "➕", text: 'Tap "Install app" or "Add to Home screen"' },
-          { icon: "✅", text: "Confirm to add DoorSmith to your home screen" },
+          { icon: "✅", text: `Confirm to add ${appName} to your home screen` },
         ];
 
   // iOS never fires beforeinstallprompt, so show its steps inline by default.
   const stepsOpen = showSteps || (platform === "ios" && !prompt);
+  const hasImageLogo = logoUrl && logoUrl !== "/logo.png" && (logoUrl.startsWith("data:") || logoUrl.startsWith("http") || logoUrl.startsWith("/"));
 
   return (
     <div className="mb-5 rounded-xl border border-brand/20 bg-brand-light p-3 shadow-card">
       <div className="flex items-center gap-3">
-        <Image src="/icons/icon-192.png" alt="DoorSmith app icon" width={44} height={44} className="shrink-0 rounded-xl" />
+        {hasImageLogo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt={`${appName} app icon`} className="size-11 shrink-0 rounded-xl object-contain" />
+        ) : (
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand text-lg font-extrabold text-white shadow-sm select-none">
+            {appName.charAt(0).toUpperCase()}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900">Install DoorSmith App</p>
+          <p className="text-sm font-semibold text-gray-900">Install {appName} App</p>
           <p className="text-xs text-gray-500">Add to home screen for quick access</p>
         </div>
       </div>

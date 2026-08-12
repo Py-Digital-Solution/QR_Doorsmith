@@ -3,6 +3,7 @@
  * from client components as well as server code and CLI scripts.
  */
 export const USER_ROLES = [
+  "super_admin",
   "admin",
   "sales_rep",
   "distributor",

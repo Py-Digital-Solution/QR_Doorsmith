@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { listDispatches } from "@/services/dispatch";
 import { listCounters } from "@/services/users";
 import { parsePageParams } from "@/lib/pagination";
@@ -12,13 +13,15 @@ export default async function DispatchPage({
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
+  const session = await auth();
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
 
+  const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
   const [result, counters] = await Promise.all([
-    listDispatches(pagination, q || undefined),
-    listCounters(),
+    listDispatches(pagination, q || undefined, orgIdFilter),
+    listCounters(orgIdFilter),
   ]);
 
   const fp = new URLSearchParams();

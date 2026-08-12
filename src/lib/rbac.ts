@@ -7,6 +7,7 @@ import type { UserRole } from "@/models/User";
 
 /** Landing route for each role after login. */
 export const ROLE_HOME: Record<UserRole, string> = {
+  super_admin: "/super-admin",
   admin: "/admin/dashboards/overview",
   sales_rep: "/sales/dashboard",
   distributor: "/sales/dashboard",
@@ -16,6 +17,7 @@ export const ROLE_HOME: Record<UserRole, string> = {
 
 /** Which roles each role is allowed to create (admin user management, SOW 1.2). */
 export const CAN_CREATE: Record<UserRole, UserRole[]> = {
+  super_admin: ["admin"],
   admin: ["sales_rep", "distributor", "counter", "khati"],
   sales_rep: ["counter"],
   distributor: ["counter"], // can register counters, but NOT approve khatis
@@ -29,6 +31,7 @@ export function canCreate(actor: UserRole, target: UserRole): boolean {
 
 /** Route-prefix → roles permitted to access it. */
 export const AREA_ROLES: Record<string, UserRole[]> = {
+  "/super-admin": ["super_admin"],
   "/admin/kyc": ["admin", "sales_rep", "distributor"],
   "/admin": ["admin"],
   "/sales": ["sales_rep", "distributor"],

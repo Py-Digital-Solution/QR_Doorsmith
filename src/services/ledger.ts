@@ -26,6 +26,7 @@ export type LedgerFilter = {
   /** inclusive lower bound on createdAt */
   since?: Date;
   search?: string;
+  orgId?: string;
 };
 
 const TYPE_LABELS: Record<PtType, string> = {
@@ -43,6 +44,9 @@ export function ledgerTypeLabel(t: string): string {
 
 function buildQuery(filter: LedgerFilter): Record<string, unknown> {
   const q: Record<string, unknown> = {};
+  if (filter.orgId) {
+    q.orgId = new Types.ObjectId(filter.orgId);
+  }
   if (filter.khatiId) {
     q.khatiId = new Types.ObjectId(filter.khatiId);
   } else if (filter.khatiIds?.length) {

@@ -2,8 +2,14 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import { Check } from "lucide-react";
 import { PoweredBy } from "@/components/PoweredBy";
+import { getCompanyBranding } from "@/services/branding";
 
-export default function LoginLayout({ children }: { children: ReactNode }) {
+export default async function LoginLayout({ children }: { children: ReactNode }) {
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "GGPL";
+  const logoUrl = branding.logo || "";
+  const supportPhone = branding.phone || "+91 89504 83393";
+
   return (
     <div className="flex min-h-screen">
       {/* Left  branding / details (hidden on small screens) */}
@@ -12,14 +18,18 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-brand-blue/20 blur-3xl" />
 
-        <Image
-          src="/logo.png"
-          alt="DoorSmith"
-          width={156}
-          height={26}
-          priority
-          className="relative h-7 w-auto self-start"
-        />
+        {logoUrl && logoUrl !== "/logo.png" && (logoUrl.startsWith("data:") || logoUrl.startsWith("http") || logoUrl.startsWith("/")) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt={companyName}
+            className="relative max-h-16 max-w-full w-auto self-start object-contain object-left"
+          />
+        ) : (
+          <span className="relative text-2xl font-black tracking-wider text-brand">
+            {companyName}
+          </span>
+        )}
 
         <div className="relative max-w-md space-y-6">
           <h2 className="text-3xl font-semibold leading-tight">
@@ -52,15 +62,15 @@ export default function LoginLayout({ children }: { children: ReactNode }) {
         </div>
 
         <p className="relative text-xs text-gray-400">
-          © 2026 DoorSmith · Powered by{" "}
+          © 2026 {companyName} · Powered by{" "}
           <span className="font-medium text-gray-300">Gati Growth Labs</span>
           {" · "}
           Support:{" "}
           <a
-            href="tel:+918950483393"
+            href={`tel:${supportPhone.replace(/\s+/g, "")}`}
             className="font-medium text-gray-300 transition-colors hover:text-white hover:underline"
           >
-            +91 89504 83393
+            {supportPhone}
           </a>
         </p>
       </aside>

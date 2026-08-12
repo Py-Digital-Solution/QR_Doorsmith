@@ -61,6 +61,7 @@ export type GenerateBatchInput = {
   productPerSmall: number;
   qrSizes?: QrSizes;
   sheetConfig?: SheetConfig;
+  orgId?: string;
 };
 
 /**
@@ -112,6 +113,7 @@ export async function generateBatch(input: GenerateBatchInput) {
         : productStart + totalProducts - 1;
 
   const batch = await QrBatch.create({
+    orgId: input.orgId,
     productId: product._id,
     createdBy: input.createdBy,
     masterCount,
@@ -126,6 +128,7 @@ export async function generateBatch(input: GenerateBatchInput) {
   });
 
   const meta = {
+    orgId: input.orgId,
     productId: product._id,
     batchId: batch._id,
     sku: product.sku,
@@ -254,10 +257,12 @@ async function dispatchedCountsByBatch(
 export async function listBatches(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   search?: string,
+  orgId?: string,
 ): Promise<Paginated<BatchDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
   const query: Record<string, unknown> = {};
+  if (orgId) query.orgId = orgId;
   if (search) {
     // Search by product SKU (text) and/or master serial number (numeric range).
     const skuMatches = await Product.find({ sku: { $regex: search, $options: "i" } })

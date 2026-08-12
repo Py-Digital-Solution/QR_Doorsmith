@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { listBatches } from "@/services/qr";
 import { listActiveProducts } from "@/services/products";
 import { parsePageParams } from "@/lib/pagination";
@@ -12,13 +13,15 @@ export default async function QrPage({
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
+  const session = await auth();
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
 
+  const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
   const [result, products] = await Promise.all([
-    listBatches(pagination, q || undefined),
-    listActiveProducts(),
+    listBatches(pagination, q || undefined, orgIdFilter),
+    listActiveProducts(orgIdFilter),
   ]);
   const productOptions = products.map((p) => ({ id: p.id, sku: p.sku, name: p.name }));
 

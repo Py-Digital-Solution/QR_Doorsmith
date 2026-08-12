@@ -1,5 +1,7 @@
 "use server";
 
+import { safeError } from "@/lib/safe-error";
+
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import {
@@ -40,7 +42,7 @@ export async function updateBatchAction(
     revalidatePath(`/admin/qr/${batchId}`);
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to update batch." };
+    return { error: safeError(e, "Failed to update batch.") };
   }
 }
 
@@ -53,7 +55,7 @@ export async function deleteBatchAction(
     revalidatePath("/admin/qr");
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to delete batch." };
+    return { error: safeError(e, "Failed to delete batch.") };
   }
 }
 
@@ -73,7 +75,7 @@ export async function updateQrCodeAction(
     revalidatePath(`/admin/qr/${batchId}`);
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to update code." };
+    return { error: safeError(e, "Failed to update code.") };
   }
 }
 
@@ -93,7 +95,7 @@ export async function deleteQrCodeAction(
     revalidatePath("/admin/qr");
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to delete code." };
+    return { error: safeError(e, "Failed to delete code.") };
   }
 }
 
@@ -110,6 +112,7 @@ export async function generateBatchAction(
     const res = await generateBatch({
       productId,
       createdBy: session.user.id,
+      orgId: session.user.orgId,
       masterCount: Number(formData.get("masterCount") ?? 0),
       smallPerMaster: Number(formData.get("smallPerMaster") ?? 0),
       productPerSmall: Number(formData.get("productPerSmall") ?? 0),
@@ -132,6 +135,6 @@ export async function generateBatchAction(
     revalidatePath("/admin/qr");
     return { ok: true, total: res.total };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to generate batch." };
+    return { error: safeError(e, "Failed to generate batch.") };
   }
 }

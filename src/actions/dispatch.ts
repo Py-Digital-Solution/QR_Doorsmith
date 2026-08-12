@@ -1,5 +1,7 @@
 "use server";
 
+import { safeError } from "@/lib/safe-error";
+
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { createDispatch } from "@/services/dispatch";
@@ -25,6 +27,7 @@ export async function createDispatchAction(input: {
       createdBy: session.user.id,
       counterId: input.counterId,
       serials: input.serials,
+      orgId: session.user.orgId,
     });
     logAudit({
       actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "",
@@ -41,6 +44,6 @@ export async function createDispatchAction(input: {
       total: res.totalCodes,
     };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Dispatch failed." };
+    return { error: safeError(e, "Dispatch failed.") };
   }
 }

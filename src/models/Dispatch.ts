@@ -14,7 +14,8 @@ export const DISPATCH_STATUSES = ["dispatched"] as const;
  */
 const dispatchSchema = new Schema(
   {
-    billNo: { type: String, required: true, unique: true },
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
+    billNo: { type: String, required: true },
     counterId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
     rootQrIds: [{ type: Schema.Types.ObjectId, ref: "QrCode" }],
@@ -32,6 +33,8 @@ const dispatchSchema = new Schema(
   },
   { timestamps: true },
 );
+
+dispatchSchema.index({ orgId: 1, billNo: 1 }, { unique: true });
 
 export type DispatchDoc = InferSchemaType<typeof dispatchSchema>;
 

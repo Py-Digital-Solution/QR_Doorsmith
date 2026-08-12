@@ -23,6 +23,7 @@ export type AuditAction =
 
 const auditLogSchema = new Schema(
   {
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     actorId:    { type: Schema.Types.ObjectId, ref: "User" },
     actorRole:  { type: String },
     actorName:  { type: String },

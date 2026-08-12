@@ -5,6 +5,7 @@ export type RedemptionStatus = (typeof REDEMPTION_STATUSES)[number];
 
 const redemptionSchema = new Schema(
   {
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     khatiId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     counterId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     points: { type: Number, required: true },

@@ -7,6 +7,7 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
  */
 const settlementSchema = new Schema(
   {
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     /** The counter being settled with (Redemption.processedBy). */
     counterId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     /** The admin who performed the settlement. */

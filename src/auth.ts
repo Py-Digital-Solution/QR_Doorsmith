@@ -24,13 +24,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
+        session.user.orgId = token.orgId as string | undefined;
       }
       if (token?.id) {
         await connectDB();
-        const user = await User.findById(token.id).select("name").lean();
+        const user = await User.findById(token.id).select("name orgId").lean();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (!user) return null as any;
         if (!session.user.name && user.name) session.user.name = user.name;
+        if (user.orgId) session.user.orgId = user.orgId.toString();
       }
       return session;
     },
@@ -63,6 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email ?? undefined,
           name: user.name ?? undefined,
           role: user.role as UserRole,
+          orgId: user.orgId?.toString(),
         };
       },
     }),
@@ -86,15 +89,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           } catch {
             return null;
           }
-        } else if (
-          (process.env.OTP_DEV_MODE === "true" || process.env.NODE_ENV !== "production") &&
-          phone &&
-          code === "1111"
-        ) {
-          // Debug/dev shortcut: magic OTP 1111 bypasses Firebase. Active in dev, or
-          // anywhere OTP_DEV_MODE=true (e.g. to open the khati app without real OTP).
-          // Normalize same as Firebase production: bare 10-digit → +91xxxxxxxxxx.
-          resolvedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
         } else if (phone && code) {
           // WhatsApp OTP fallback: server-generated code sent via WhatsApp, verified against DB.
           // Works in both production and dev (dev magic code 1111 is accepted by verifyOtp).
@@ -131,6 +125,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user._id.toString(),
           name: user.name ?? undefined,
           role: user.role as UserRole,
+          orgId: user.orgId?.toString(),
         };
       },
     }),

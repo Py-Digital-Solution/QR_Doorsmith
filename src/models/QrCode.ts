@@ -13,6 +13,7 @@ import { QR_TYPES, QR_STATUSES } from "../lib/qr";
  */
 const qrCodeSchema = new Schema(
   {
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     serialNo: { type: String, required: true, unique: true },
     type: { type: String, enum: QR_TYPES, required: true, index: true },
     parentQrId: { type: Schema.Types.ObjectId, ref: "QrCode", default: null, index: true },
@@ -38,7 +39,7 @@ const qrCodeSchema = new Schema(
     rewardPoints: { type: Number },
 
     // scan lifecycle (filled in Phase 4)
-    scannedByKhatiId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    scannedByKhatiId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
     scannedAt: { type: Date, default: null },
     // return lifecycle  scannedByKhatiId is kept for history; returned=true means points were reversed
     returned: { type: Boolean, default: false },
@@ -46,6 +47,9 @@ const qrCodeSchema = new Schema(
   },
   { timestamps: true },
 );
+
+qrCodeSchema.index({ scannedByKhatiId: 1, scannedAt: -1 });
+qrCodeSchema.index({ orgId: 1, status: 1 });
 
 export type QrCodeDoc = InferSchemaType<typeof qrCodeSchema>;
 

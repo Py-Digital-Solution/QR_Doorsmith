@@ -20,6 +20,18 @@ export default async function RegisterPage({ params }: { params: Promise<{ token
     );
   }
 
+  if (!khati.registrationTokenExpiresAt || new Date(khati.registrationTokenExpiresAt) < new Date()) {
+    return (
+      <Shell>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <XCircle className="size-12 text-red-400" />
+          <h1 className="text-lg font-semibold text-gray-900">Link expired</h1>
+          <p className="text-sm text-gray-500">This registration link has expired. Please contact support.</p>
+        </div>
+      </Shell>
+    );
+  }
+
   // Counters: self-service, no approval chain  just gate on whether they've
   // already completed it via this same link.
   if (khati.role === "counter") {

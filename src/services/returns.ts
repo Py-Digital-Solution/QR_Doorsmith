@@ -25,18 +25,21 @@ export async function listCounterReturns(
 export async function listAllReturns(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   search?: string,
+  orgId?: string,
 ): Promise<Paginated<ReturnDTO>> {
-  return listReturns(pagination, search);
+  return listReturns(pagination, search, undefined, orgId);
 }
 
 async function listReturns(
   pagination: Pagination,
   search?: string,
   counterId?: string,
+  orgId?: string,
 ): Promise<Paginated<ReturnDTO>> {
   await connectDB();
   const q: Record<string, unknown> = {};
   if (counterId) q.counterId = counterId;
+  if (orgId) q.orgId = orgId;
   if (search) q.$or = [
     { serialNo: { $regex: search, $options: "i" } },
     { sku: { $regex: search, $options: "i" } },

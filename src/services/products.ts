@@ -31,12 +31,15 @@ export type ProductInput = {
   description?: string;
   videoLinks?: string[];
   status?: ProductStatus;
+  orgId?: string;
 };
 
-async function generateSku(): Promise<string> {
+async function generateSku(orgId?: string): Promise<string> {
   const year = new Date().getFullYear();
   // Only match auto-generated SKUs for this year (4-digit SNO): SKU-20260001
-  const last = await Product.findOne({ sku: new RegExp(`^SKU-${year}\\d{4}$`) })
+  const filter: Record<string, unknown> = { sku: new RegExp(`^SKU-${year}\\d{4}$`) };
+  if (orgId) filter.orgId = orgId;
+  const last = await Product.findOne(filter)
     .sort({ sku: -1 })
     .select("sku")
     .lean();
@@ -69,10 +72,10 @@ function assertValid(input: ProductInput) {
 
 export async function createProduct(input: ProductInput) {
   await connectDB();
-  const sku = input.sku?.trim() || await generateSku();
+  const sku = input.sku?.trim() || await generateSku(input.orgId);
   const fullInput = { ...input, sku };
   assertValid(fullInput);
-  const exists = await Product.findOne({ sku });
+  const exists = await Product.findOne({ sku, ...(input.orgId ? { orgId: input.orgId } : {}) });
   if (exists) throw new Error("A product with this SKU already exists.");
   try {
     return await Product.create({
@@ -84,6 +87,7 @@ export async function createProduct(input: ProductInput) {
       description: input.description?.trim(),
       videoLinks: cleanVideoLinks(input.videoLinks),
       status: input.status ?? "active",
+      ...(input.orgId ? { orgId: input.orgId } : {}),
     });
   } catch (e) {
     if (isDuplicateKeyError(e)) throw new Error("A product with this SKU already exists.");
@@ -97,8 +101,12 @@ export async function updateProduct(id: string, input: ProductInput) {
   assertValid(input);
   const product = await Product.findById(id);
   if (!product) throw new Error("Product not found.");
+  // Org ownership check: if caller has an orgId, product must belong to same org
+  if (input.orgId && product.orgId?.toString() !== input.orgId) {
+    throw new Error("Product not found.");
+  }
   const sku = input.sku.trim();
-  const clash = await Product.findOne({ sku, _id: { $ne: id } });
+  const clash = await Product.findOne({ sku, _id: { $ne: id }, ...(input.orgId ? { orgId: input.orgId } : {}) });
   if (clash) throw new Error("Another product already uses this SKU.");
 
   product.sku = sku;
@@ -112,10 +120,13 @@ export async function updateProduct(id: string, input: ProductInput) {
   await product.save();
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string, orgId?: string) {
   await connectDB();
   const product = await Product.findById(id);
   if (!product) throw new Error("Product not found.");
+  if (orgId && product.orgId?.toString() !== orgId) {
+    throw new Error("Product not found.");
+  }
   await product.deleteOne();
 }
 
@@ -147,11 +158,13 @@ export async function listProducts(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
   search?: string,
   statusFilter?: ProductStatus,
+  orgId?: string,
 ): Promise<Paginated<ProductDTO>> {
   await connectDB();
   const { page, pageSize } = pagination;
   const query: Record<string, unknown> = {};
   if (statusFilter) query.status = statusFilter;
+  if (orgId) query.orgId = orgId;
   if (search) query.$or = [{ name: { $regex: search, $options: "i" } }, { sku: { $regex: search, $options: "i" } }];
   const total = await Product.countDocuments(query);
   const docs = await Product.find(query)
@@ -163,8 +176,10 @@ export async function listProducts(
 }
 
 /** Active products for select inputs (QR generation). */
-export async function listActiveProducts(): Promise<ProductDTO[]> {
+export async function listActiveProducts(orgId?: string): Promise<ProductDTO[]> {
   await connectDB();
-  const docs = await Product.find({ status: "active" }).sort({ name: 1 }).lean();
+  const query: Record<string, unknown> = { status: "active" };
+  if (orgId) query.orgId = orgId;
+  const docs = await Product.find(query).sort({ name: 1 }).lean();
   return docs.map(toDTO);
 }

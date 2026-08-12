@@ -36,17 +36,20 @@ export function BrandingForm({ initial }: { initial: CompanyBranding }) {
   const [address, setAddress] = useState(initial.address);
 
   const [logoUrl, setLogoUrl] = useState(initial.logo);
+  const [faviconUrl, setFaviconUrl] = useState(initial.favicon || "");
   const [converting, setConverting] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const faviconFileRef = useRef<HTMLInputElement>(null);
   const fileInputId = useId();
+  const faviconInputId = useId();
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!["image/png", "image/jpeg"].includes(file.type)) {
-      setUploadError("Only PNG and JPEG files are supported.");
+    if (!["image/png", "image/jpeg", "image/x-icon", "image/vnd.microsoft.icon", "image/svg+xml"].includes(file.type)) {
+      setUploadError("Only PNG, JPEG, and ICO/SVG files are supported.");
       return;
     }
     if (file.size > MAX_BYTES) {
@@ -67,68 +70,242 @@ export function BrandingForm({ initial }: { initial: CompanyBranding }) {
     }
   }
 
+  async function handleFaviconChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 200 * 1024) {
+      setUploadError("Favicon must be under 200 KB.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readAsDataUrl(file);
+      setFaviconUrl(dataUrl);
+    } catch {
+      setUploadError("Could not read the favicon file.");
+    } finally {
+      if (faviconFileRef.current) faviconFileRef.current.value = "";
+    }
+  }
+
+  const [brandColor, setBrandColor] = useState(initial.brandColor || "#f6821f");
+  const [brandSecondary, setBrandSecondary] = useState(initial.brandSecondary || "#0d1f38");
+  const [brandDark, setBrandDark] = useState(initial.brandDark || "#d96d10");
+  const [brandLight, setBrandLight] = useState(initial.brandLight || "#FFF3E8");
+  const [fontFamily, setFontFamily] = useState(initial.fontFamily || "geist");
+
   return (
-    <form action={formAction} className="space-y-5">
-      {/* Logo */}
-      <div>
-        <Label>Company logo</Label>
-        <div className="flex items-center gap-4">
-          <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoUrl}
-                alt="Company logo"
-                className="h-full w-full object-contain p-1"
-              />
-            ) : (
-              <Building2 className="size-8 text-gray-300" />
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <input
-              ref={fileRef}
-              id={fileInputId}
-              type="file"
-              accept="image/png,image/jpeg"
-              className="sr-only"
-              disabled={converting}
-              onChange={handleLogoChange}
-            />
-            <label
-              htmlFor={fileInputId}
-              className={`focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-card transition-colors hover:bg-gray-50 hover:text-gray-900 ${converting ? "pointer-events-none opacity-50" : ""}`}
-            >
-              {converting ? (
-                <svg className="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
+    <form action={formAction} className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {/* Logo */}
+        <div>
+          <Label>Company logo</Label>
+          <div className="flex items-center gap-4">
+            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt="Company logo"
+                  className="h-full w-full object-contain p-1"
+                />
               ) : (
-                <Upload className="size-3.5" />
+                <Building2 className="size-8 text-gray-300" />
               )}
-              {converting ? "Reading…" : "Upload logo"}
-            </label>
-            <p className="text-xs text-gray-400">PNG or JPEG · max 500 KB</p>
-            {logoUrl && (
-              <button
-                type="button"
-                onClick={() => setLogoUrl("")}
-                className="flex items-center gap-1 text-xs text-red-500 hover:underline"
+            </div>
+            <div className="space-y-1.5">
+              <input
+                ref={fileRef}
+                id={fileInputId}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml"
+                className="sr-only"
+                disabled={converting}
+                onChange={handleLogoChange}
+              />
+              <label
+                htmlFor={fileInputId}
+                className={`focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-card transition-colors hover:bg-gray-50 hover:text-gray-900 ${converting ? "pointer-events-none opacity-50" : ""}`}
               >
-                <X className="size-3" /> Remove
-              </button>
-            )}
+                {converting ? (
+                  <svg className="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                ) : (
+                  <Upload className="size-3.5" />
+                )}
+                {converting ? "Reading…" : "Upload logo"}
+              </label>
+              <p className="text-xs text-gray-400">PNG or JPEG · max 500 KB</p>
+              {logoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setLogoUrl("")}
+                  className="flex items-center gap-1 text-xs text-red-500 hover:underline"
+                >
+                  <X className="size-3" /> Remove
+                </button>
+              )}
+            </div>
+          </div>
+          <input type="hidden" name="company_logo" value={logoUrl} />
+        </div>
+
+        {/* Favicon */}
+        <div>
+          <Label>Website Favicon</Label>
+          <div className="flex items-center gap-4">
+            <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+              {faviconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={faviconUrl}
+                  alt="Favicon"
+                  className="size-8 object-contain"
+                />
+              ) : (
+                <Building2 className="size-6 text-gray-300" />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <input
+                ref={faviconFileRef}
+                id={faviconInputId}
+                type="file"
+                accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml"
+                className="sr-only"
+                onChange={handleFaviconChange}
+              />
+              <label
+                htmlFor={faviconInputId}
+                className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-card transition-colors hover:bg-gray-50 hover:text-gray-900"
+              >
+                <Upload className="size-3.5" /> Upload Favicon
+              </label>
+              <p className="text-xs text-gray-400">ICO, PNG or SVG · max 200 KB</p>
+              {faviconUrl && (
+                <button
+                  type="button"
+                  onClick={() => setFaviconUrl("")}
+                  className="flex items-center gap-1 text-xs text-red-500 hover:underline"
+                >
+                  <X className="size-3" /> Remove
+                </button>
+              )}
+            </div>
+          </div>
+          <input type="hidden" name="company_favicon" value={faviconUrl} />
+        </div>
+      </div>
+      {uploadError && (
+        <p className="mt-1.5 text-xs text-red-600">{uploadError}</p>
+      )}
+
+      {/* Brand Theme Customization */}
+      <div className="space-y-4 pt-2 border-t border-gray-100">
+        <h2 className="text-sm font-semibold text-gray-900">Brand Colors & Theme Styling</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label>Primary Brand Color</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="color"
+                name="company_brand_color_picker"
+                value={brandColor}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="h-10 w-14 cursor-pointer rounded border border-gray-300 p-1"
+              />
+              <Input
+                name="company_brand_color"
+                value={brandColor}
+                onChange={(e) => setBrandColor(e.target.value)}
+                placeholder="#F97316"
+                className="uppercase font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label>Secondary Brand Color</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="color"
+                name="company_brand_secondary_picker"
+                value={brandSecondary}
+                onChange={(e) => setBrandSecondary(e.target.value)}
+                className="h-10 w-14 cursor-pointer rounded border border-gray-300 p-1"
+              />
+              <Input
+                name="company_brand_secondary"
+                value={brandSecondary}
+                onChange={(e) => setBrandSecondary(e.target.value)}
+                placeholder="#0D1F38"
+                className="uppercase font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label>Hover / Dark Accent</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="color"
+                name="company_brand_dark_picker"
+                value={brandDark}
+                onChange={(e) => setBrandDark(e.target.value)}
+                className="h-10 w-14 cursor-pointer rounded border border-gray-300 p-1"
+              />
+              <Input
+                name="company_brand_dark"
+                value={brandDark}
+                onChange={(e) => setBrandDark(e.target.value)}
+                placeholder="#D96D10"
+                className="uppercase font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label>Light Background Tint</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="color"
+                name="company_brand_light_picker"
+                value={brandLight}
+                onChange={(e) => setBrandLight(e.target.value)}
+                className="h-10 w-14 cursor-pointer rounded border border-gray-300 p-1"
+              />
+              <Input
+                name="company_brand_light"
+                value={brandLight}
+                onChange={(e) => setBrandLight(e.target.value)}
+                placeholder="#FFF3E8"
+                className="uppercase font-mono"
+              />
+            </div>
           </div>
         </div>
-        {uploadError && (
-          <p className="mt-1.5 text-xs text-red-600">{uploadError}</p>
-        )}
-        {/* Logo is saved as a base64 data URL along with the rest of the form */}
-        <input type="hidden" name="company_logo" value={logoUrl} />
+
+        <div>
+          <Label>Typography / Font Family</Label>
+          <select
+            name="company_font_family"
+            value={fontFamily}
+            onChange={(e) => setFontFamily(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand focus:outline-none"
+          >
+            <option value="geist">Geist Sans (Modern & Clean - Default)</option>
+            <option value="inter">Inter (Sleek Tech Standard)</option>
+            <option value="poppins">Poppins (Friendly & Geometric)</option>
+            <option value="roboto">Roboto (Classic Enterprise)</option>
+            <option value="jakarta">Plus Jakarta Sans (Premium SaaS)</option>
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2 border-t border-gray-100">
         <div>
           <Label>Company name</Label>
           <Input

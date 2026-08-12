@@ -44,8 +44,13 @@ async function nextDisplayId(role: string): Promise<string> {
 function canManageTarget(
   actorRole: UserRole,
   actorId: string,
-  target: { createdBy?: unknown },
+  actorOrgId: string | undefined,
+  target: { createdBy?: unknown; orgId?: unknown },
 ): boolean {
+  // Cross-org modification is always blocked
+  if (actorOrgId && target.orgId && String(target.orgId) !== actorOrgId) {
+    return false;
+  }
   if (actorRole === "admin") return true;
   return String(target.createdBy ?? "") === actorId;
 }
@@ -63,6 +68,7 @@ export type CreateUserInput = {
   // When an admin creates a khati, the admin picks which counter owns them.
   // When a counter creates a khati, this is automatically set to the counter's own ID.
   counterId?: string;
+  orgId?: string;
 };
 
 /**
@@ -89,6 +95,7 @@ export async function createUser(input: CreateUserInput) {
     name: input.name.trim(),
     status: "active" as const,
     createdBy: input.actorId,
+    orgId: input.orgId,
     displayId,
   };
 
@@ -129,7 +136,15 @@ export async function createUser(input: CreateUserInput) {
       // Admin-created khatis are active immediately; counter-created khatis
       // stay pending until they complete registration via the WhatsApp link.
       const khatiStatus = input.actorRole === "admin" ? ("active" as const) : ("pending" as const);
-      const newKhati = await User.create({ ...base, phone, counterId, counterIds: [counterId], registrationToken, status: khatiStatus });
+      const newKhati = await User.create({ 
+        ...base, 
+        phone, 
+        counterId, 
+        counterIds: [counterId], 
+        registrationToken, 
+        registrationTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        status: khatiStatus 
+      });
       const appUrl = await currentAppUrl();
       waSend(
         phone,
@@ -156,7 +171,12 @@ export async function createUser(input: CreateUserInput) {
 
     try {
       const registrationToken = randomBytes(24).toString("base64url");
-      const newCounter = await User.create({ ...base, phone, registrationToken });
+      const newCounter = await User.create({ 
+        ...base, 
+        phone, 
+        registrationToken,
+        registrationTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+      });
       const appUrl = await currentAppUrl();
       waSend(
         phone,
@@ -231,6 +251,7 @@ export type UserDTO = {
 export type UpdateUserInput = {
   actorRole: UserRole;
   actorId: string;
+  actorOrgId?: string;
   id: string;
   name?: string;
   status?: UserStatus;
@@ -243,7 +264,7 @@ export async function updateUser(input: UpdateUserInput) {
   await connectDB();
   const target = await User.findById(input.id);
   if (!target) throw new Error("User not found.");
-  if (!canManageTarget(input.actorRole, input.actorId, target)) {
+  if (!canManageTarget(input.actorRole, input.actorId, input.actorOrgId, target)) {
     throw new Error("You are not allowed to edit this user.");
   }
 
@@ -269,6 +290,7 @@ export async function updateUser(input: UpdateUserInput) {
 export async function deleteUser(input: {
   actorRole: UserRole;
   actorId: string;
+  actorOrgId?: string;
   id: string;
 }) {
   await connectDB();
@@ -280,14 +302,14 @@ export async function deleteUser(input: {
   if (target.role === "khati" && input.actorRole !== "admin") {
     throw new Error("Only an admin can delete a karigar account.");
   }
-  if (!canManageTarget(input.actorRole, input.actorId, target)) {
+  if (!canManageTarget(input.actorRole, input.actorId, input.actorOrgId, target)) {
     throw new Error("You are not allowed to delete this user.");
   }
   await target.deleteOne();
 }
 
 export async function listUsers(
-  filter: { role?: UserRole; createdBy?: string; search?: string } = {},
+  filter: { role?: UserRole; createdBy?: string; search?: string; orgId?: string } = {},
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
 ): Promise<Paginated<UserDTO>> {
   await connectDB();
@@ -295,6 +317,7 @@ export async function listUsers(
   const query: Record<string, unknown> = {};
   if (filter.role) query.role = filter.role;
   if (filter.createdBy) query.createdBy = filter.createdBy;
+  if (filter.orgId) query.orgId = filter.orgId;
   if (filter.search) query.name = { $regex: filter.search, $options: "i" };
 
   const { page, pageSize } = pagination;
@@ -305,51 +328,51 @@ export async function listUsers(
     .limit(pageSize)
     .lean();
 
-  // Global karigar rank by lifetime points (1 = highest). Built once from a
-  // sorted list of all khati scores, then looked up per khati on this page.
-  let rankOf: ((pts: number) => number) | null = null;
-  if (docs.some((d) => d.role === "khati")) {
-    const scores = (await User.find({ role: "khati" }).select("lifetimePoints").lean())
-      .map((u) => (u as { lifetimePoints?: number }).lifetimePoints ?? 0)
-      .sort((a, b) => b - a);
-    rankOf = (pts: number) => {
-      // Binary search for the count of strictly-higher scores (ties share a rank).
-      let lo = 0;
-      let hi = scores.length;
-      while (lo < hi) {
-        const mid = (lo + hi) >> 1;
-        if (scores[mid] > pts) lo = mid + 1;
-        else hi = mid;
-      }
-      return lo + 1;
-    };
+  // Rank khatis using aggregation (scoped to same org)
+  let rankOf: Map<string, number> | null = null;
+  const khatiDocs = docs.filter((d) => d.role === "khati");
+  if (khatiDocs.length > 0) {
+    const orgFilter = filter.orgId ? { orgId: new (await import("mongoose")).Types.ObjectId(filter.orgId) } : {};
+    // For each khati on this page, count how many khatis in the same org have STRICTLY MORE lifetime points
+    const rankResults = await Promise.all(
+      khatiDocs.map(async (d) => {
+        const pts = (d as { lifetimePoints?: number }).lifetimePoints ?? 0;
+        const count = await User.countDocuments({
+          role: "khati",
+          lifetimePoints: { $gt: pts },
+          ...orgFilter,
+        });
+        return { id: String(d._id), rank: count + 1 };
+      }),
+    );
+    rankOf = new Map(rankResults.map((r) => [r.id, r.rank]));
   }
 
   // Global counter rank by sales = products scanned at the counter (net of
   // returns, since returned codes go back to "active"). 1 = highest.
-  let counterRankOf: ((counterId: string) => number) | null = null;
-  if (docs.some((d) => d.role === "counter")) {
+  let counterRankOf: Map<string, number> | null = null;
+  const counterDocs = docs.filter((d) => d.role === "counter");
+  if (counterDocs.length > 0) {
+    const orgFilter = filter.orgId ? { orgId: new (await import("mongoose")).Types.ObjectId(filter.orgId) } : {};
     const agg = await QrCode.aggregate<{ _id: unknown; sales: number }>([
-      { $match: { status: "scanned", counterId: { $ne: null } } },
+      { $match: { status: "scanned", counterId: { $ne: null }, ...orgFilter } },
       { $group: { _id: "$counterId", sales: { $sum: 1 } } },
     ]);
     const salesMap = new Map<string, number>(agg.map((a) => [String(a._id), a.sales]));
-    const totalCounters = await User.countDocuments({ role: "counter" });
-    const cScores = [...salesMap.values()];
-    // Counters with zero scans aren't in the aggregation — pad zeros so they rank.
-    for (let i = cScores.length; i < totalCounters; i++) cScores.push(0);
-    cScores.sort((a, b) => b - a);
-    counterRankOf = (counterId: string) => {
-      const s = salesMap.get(counterId) ?? 0;
-      let lo = 0;
-      let hi = cScores.length;
-      while (lo < hi) {
-        const mid = (lo + hi) >> 1;
-        if (cScores[mid] > s) lo = mid + 1;
-        else hi = mid;
-      }
-      return lo + 1;
-    };
+    // For each counter on this page, count how many counters have more sales
+    const orgCounterIds = counterDocs.map((d) => String(d._id));
+    counterRankOf = new Map();
+    for (const id of orgCounterIds) {
+      const mySales = salesMap.get(id) ?? 0;
+      // Count counters with strictly more sales in this org
+      const betterCount = [...salesMap.values()].filter(s => s > mySales).length;
+      // Also count counters with zero sales that aren't in the salesMap
+      // (We only care about relative rank among all counters, so use totalCounters)
+      const totalCounters = await User.countDocuments({ role: "counter", ...orgFilter });
+      const zerosCount = totalCounters - salesMap.size;
+      // Counters ahead of me = those with more sales
+      counterRankOf.set(id, betterCount + 1);
+    }
   }
 
   const items: UserDTO[] = docs.map((d) => ({
@@ -366,9 +389,9 @@ export async function listUsers(
     hasRegistrationToken: !!d.registrationToken,
     rank:
       d.role === "khati"
-        ? rankOf?.((d as { lifetimePoints?: number }).lifetimePoints ?? 0)
+        ? rankOf?.get(String(d._id))
         : d.role === "counter"
-          ? counterRankOf?.(String(d._id))
+          ? counterRankOf?.get(String(d._id))
           : undefined,
   }));
 
@@ -432,9 +455,11 @@ export async function listCounterKhatis(
 }
 
 /** All counters as {id,label} for select inputs (dispatch). */
-export async function listCounters(): Promise<{ id: string; label: string }[]> {
+export async function listCounters(orgId?: string): Promise<{ id: string; label: string }[]> {
   await connectDB();
-  const docs = await User.find({ role: "counter" })
+  const query: Record<string, unknown> = { role: "counter" };
+  if (orgId) query.orgId = orgId;
+  const docs = await User.find(query)
     .sort({ name: 1 })
     .select("name email")
     .lean();

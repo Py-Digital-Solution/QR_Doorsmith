@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { listProducts } from "@/services/products";
 import { parsePageParams } from "@/lib/pagination";
 import { ProductCreatePanel } from "@/components/ProductCreatePanel";
@@ -11,11 +12,13 @@ export default async function ProductsPage({
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
+  const session = await auth();
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
 
-  const result = await listProducts(pagination, q || undefined);
+  const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
+  const result = await listProducts(pagination, q || undefined, undefined, orgIdFilter);
 
   const fp = new URLSearchParams();
   if (q) fp.set("q", q);

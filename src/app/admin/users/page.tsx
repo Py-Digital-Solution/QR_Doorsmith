@@ -31,10 +31,12 @@ export default async function UsersPage({
   const q = sp.q ?? "";
   const role = (sp.role ?? "") as UserRole | "";
 
+  const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
+
   const [result, distributorEnabled, counters] = await Promise.all([
-    listUsers({ search: q || undefined, role: role || undefined }, pagination),
+    listUsers({ search: q || undefined, role: role || undefined, orgId: orgIdFilter }, pagination),
     isDistributorEnabled(),
-    listCounters(),
+    listCounters(orgIdFilter),
   ]);
   const allowedRoles = distributorEnabled
     ? CAN_CREATE.admin

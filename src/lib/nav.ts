@@ -5,6 +5,11 @@ export type NavItem = { href: string; label: string; icon: IconName };
 
 /** Sidebar navigation per role. Grows as later phases add sections. */
 export const NAV: Record<UserRole, NavItem[]> = {
+  super_admin: [
+    { href: "/super-admin/organizations", label: "Organizations", icon: "store" },
+    { href: "/super-admin/users", label: "System Admins", icon: "users" },
+    { href: "/super-admin/settings", label: "SaaS Settings", icon: "settings" },
+  ],
   admin: [
     { href: "/admin/dashboards/overview", label: "Overview", icon: "dashboard" },
     { href: "/admin/dashboards/ledger", label: "Points Ledger", icon: "receipt" },

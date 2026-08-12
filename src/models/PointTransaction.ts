@@ -10,6 +10,7 @@ export type PtType =
 
 const pointTransactionSchema = new Schema(
   {
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     khatiId:      { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     qrCodeId:     { type: Schema.Types.ObjectId, ref: "QrCode" },
     returnId:     { type: Schema.Types.ObjectId, ref: "Return" },
@@ -26,6 +27,7 @@ const pointTransactionSchema = new Schema(
 
 pointTransactionSchema.index({ khatiId: 1, createdAt: -1 });
 pointTransactionSchema.index({ createdAt: -1 });
+pointTransactionSchema.index({ orgId: 1, khatiId: 1, createdAt: -1 });
 
 export const PointTransaction =
   mongoose.models.PointTransaction ??

@@ -17,6 +17,7 @@ export type { UserRole, UserStatus } from "../lib/roles";
 const userSchema = new Schema(
   {
     role: { type: String, enum: USER_ROLES, required: true, index: true },
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", index: true },
     name: { type: String },
     // sparse + unique: not every user has both phone and email.
     phone: { type: String, unique: true, sparse: true },
@@ -30,11 +31,11 @@ const userSchema = new Schema(
       default: "pending",
       index: true,
     },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", index: true },
     // Explicit counter link for khatis. When a counter creates a khati, this
     // equals createdBy. When an admin creates a khati, createdBy = admin but
     // counterId = the selected counter. This stays the khati's PRIMARY counter.
-    counterId: { type: Schema.Types.ObjectId, ref: "User" },
+    counterId: { type: Schema.Types.ObjectId, ref: "User", index: true },
     // All counters a khati is linked to (one person can belong to multiple
     // counters). Includes the primary counterId. Points remain a single shared
     // wallet on this same document — scans at any linked counter add to it.
@@ -55,6 +56,7 @@ const userSchema = new Schema(
     counterKycCompletedAt: { type: Date },
     // One-time token included in the WhatsApp registration link; cleared on approval
     registrationToken: { type: String, sparse: true, unique: true },
+    registrationTokenExpiresAt: { type: Date, default: null },
     // Human-readable role-scoped ID (e.g. KH-0001, SR-0001, CN-0001)
     displayId: { type: String, unique: true, sparse: true },
   },
@@ -63,6 +65,8 @@ const userSchema = new Schema(
 
 // Composite index for khati ranking query (role + status + lifetimePoints)
 userSchema.index({ role: 1, status: 1, lifetimePoints: -1 });
+userSchema.index({ orgId: 1, role: 1, status: 1 });
+userSchema.index({ registrationToken: 1, registrationTokenExpiresAt: 1 });
 
 export type UserDoc = InferSchemaType<typeof userSchema>;
 

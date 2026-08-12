@@ -7,12 +7,15 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
  */
 const settingsSchema = new Schema(
   {
-    key: { type: String, required: true, unique: true },
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
+    key: { type: String, required: true },
     value: { type: Schema.Types.Mixed, required: true },
     description: { type: String },
   },
   { timestamps: true },
 );
+
+settingsSchema.index({ orgId: 1, key: 1 }, { unique: true });
 
 export type SettingsDoc = InferSchemaType<typeof settingsSchema>;
 

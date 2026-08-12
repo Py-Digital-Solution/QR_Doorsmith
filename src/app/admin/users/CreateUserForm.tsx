@@ -17,6 +17,7 @@ import { Alert } from "@/components/ui/Alert";
 const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 
 const ROLE_LABEL: Record<UserRole, string> = {
+  super_admin: "Super Admin",
   admin: "Admin",
   sales_rep: "Sales Rep",
   distributor: "Distributor",

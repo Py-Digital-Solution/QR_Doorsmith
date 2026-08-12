@@ -12,3 +12,5 @@ export * from "./QrCode";
 export * from "./Dispatch";
 export * from "./Redemption";
 export * from "./Settlement";
+export * from "./Organization";
+

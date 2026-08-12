@@ -2,6 +2,7 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
 
 const returnSchema = new Schema(
   {
+    orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     counterId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     khatiId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     serialNo: { type: String, required: true },

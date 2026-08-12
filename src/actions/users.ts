@@ -1,5 +1,7 @@
 "use server";
 
+import { safeError } from "@/lib/safe-error";
+
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -29,7 +31,7 @@ export async function verifyPhoneOtpAction(
     if (!ok) return { error: "Incorrect or expired OTP. Try again." };
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Verification failed." };
+    return { error: safeError(e, "Verification failed.") };
   }
 }
 
@@ -88,6 +90,7 @@ export async function createUserAction(
       password,
       phone,
       counterId,
+      orgId: session.user.orgId,
     });
 
     // Send welcome email to staff accounts (non-fatal if SMTP not configured).
@@ -100,7 +103,7 @@ export async function createUserAction(
     revalidateAreas();
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to create user." };
+    return { error: safeError(e, "Failed to create user.") };
   }
 }
 
@@ -115,6 +118,7 @@ export async function updateUserAction(
     await updateUser({
       actorRole: session.user.role,
       actorId: session.user.id,
+      actorOrgId: session.user.orgId,
       id: String(formData.get("id") ?? ""),
       name: String(formData.get("name") ?? ""),
       status: (String(formData.get("status") ?? "") || undefined) as
@@ -128,7 +132,7 @@ export async function updateUserAction(
     revalidateAreas();
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to update user." };
+    return { error: safeError(e, "Failed to update user.") };
   }
 }
 
@@ -173,7 +177,7 @@ export async function resendRegistrationLinkAction(userId: string): Promise<Acti
     revalidatePath("/admin/users");
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to resend link." };
+    return { error: safeError(e, "Failed to resend link.") };
   }
 }
 
@@ -185,12 +189,13 @@ export async function deleteUserAction(id: string): Promise<ActionState> {
     await deleteUser({
       actorRole: session.user.role,
       actorId: session.user.id,
+      actorOrgId: session.user.orgId,
       id,
     });
     logAudit({ actorId: session.user.id, actorRole: session.user.role, actorName: session.user.name ?? "", action: "user_delete", entityType: "user", entityId: id });
     revalidateAreas();
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to delete user." };
+    return { error: safeError(e, "Failed to delete user.") };
   }
 }
