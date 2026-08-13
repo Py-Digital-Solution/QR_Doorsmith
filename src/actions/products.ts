@@ -23,6 +23,7 @@ function parse(formData: FormData) {
     mrp: Number(formData.get("mrp") ?? 0),
     salesPrice: Number(formData.get("salesPrice") ?? 0),
     rewardPoints: Number(formData.get("rewardPoints") ?? 0),
+    counterRewardPoints: Number(formData.get("counterRewardPoints") ?? 0),
     description: String(formData.get("description") ?? "") || undefined,
     videoLinks: formData
       .getAll("videoLinks")

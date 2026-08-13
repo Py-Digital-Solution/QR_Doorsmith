@@ -17,6 +17,7 @@ export type ProductDTO = {
   mrp: number;
   salesPrice: number;
   rewardPoints: number;
+  counterRewardPoints: number;
   description: string;
   videoLinks: string[];
   status: ProductStatus;
@@ -28,6 +29,7 @@ export type ProductInput = {
   mrp: number;
   salesPrice: number;
   rewardPoints: number;
+  counterRewardPoints: number;
   description?: string;
   videoLinks?: string[];
   status?: ProductStatus;
@@ -61,7 +63,8 @@ function assertValid(input: ProductInput) {
   for (const [k, v] of [
     ["MRP", input.mrp],
     ["Sales price", input.salesPrice],
-    ["Reward points", input.rewardPoints],
+    ["Reward points (Karigar)", input.rewardPoints],
+    ["Reward points (Counter)", input.counterRewardPoints],
   ] as const) {
     if (!Number.isFinite(v) || v < 0) throw new Error(`${k} must be a number ≥ 0.`);
   }
@@ -81,6 +84,7 @@ export async function createProduct(input: ProductInput) {
       mrp: input.mrp,
       salesPrice: input.salesPrice,
       rewardPoints: input.rewardPoints,
+      counterRewardPoints: input.counterRewardPoints,
       description: input.description?.trim(),
       videoLinks: cleanVideoLinks(input.videoLinks),
       status: input.status ?? "active",
@@ -106,6 +110,7 @@ export async function updateProduct(id: string, input: ProductInput) {
   product.mrp = input.mrp;
   product.salesPrice = input.salesPrice;
   product.rewardPoints = input.rewardPoints;
+  product.counterRewardPoints = input.counterRewardPoints;
   product.description = input.description?.trim();
   product.videoLinks = cleanVideoLinks(input.videoLinks);
   if (input.status) product.status = input.status;
@@ -126,6 +131,7 @@ function toDTO(d: {
   mrp?: number;
   salesPrice?: number;
   rewardPoints?: number;
+  counterRewardPoints?: number;
   description?: string | null;
   videoLinks?: string[] | null;
   status?: string;
@@ -137,6 +143,7 @@ function toDTO(d: {
     mrp: d.mrp ?? 0,
     salesPrice: d.salesPrice ?? 0,
     rewardPoints: d.rewardPoints ?? 0,
+    counterRewardPoints: d.counterRewardPoints ?? 0,
     description: d.description ?? "",
     videoLinks: d.videoLinks ?? [],
     status: (d.status as ProductStatus) ?? "active",

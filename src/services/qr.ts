@@ -132,6 +132,7 @@ export async function generateBatch(input: GenerateBatchInput) {
     mrp: product.mrp,
     salesPrice: product.salesPrice,
     rewardPoints: product.rewardPoints,
+    counterRewardPoints: product.counterRewardPoints ?? 0,
     status: "inactive" as QrStatus,
   };
 
@@ -395,6 +396,7 @@ export async function updateBatch(batchId: string, input: UpdateBatchInput) {
           mrp: product.mrp,
           salesPrice: product.salesPrice,
           rewardPoints: product.rewardPoints,
+          counterRewardPoints: product.counterRewardPoints ?? 0,
         },
       },
     );
@@ -573,6 +575,7 @@ export async function updateQrCode(
           mrp: product.mrp,
           salesPrice: product.salesPrice,
           rewardPoints: product.rewardPoints,
+          counterRewardPoints: product.counterRewardPoints ?? 0,
         },
       },
     );

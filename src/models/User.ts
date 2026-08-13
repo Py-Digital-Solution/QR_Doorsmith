@@ -42,6 +42,9 @@ const userSchema = new Schema(
     // Khati rewards (Phase 4). Default 0 so old documents behave correctly.
     points: { type: Number, default: 0 },
     lifetimePoints: { type: Number, default: 0, index: true },
+    // Counter rewards: points earned by counters when their khatis scan products.
+    counterPoints: { type: Number, default: 0 },
+    counterLifetimePoints: { type: Number, default: 0 },
     // KYC registration profile
     address: { type: String },
     dob: { type: Date },

@@ -170,7 +170,7 @@ export default async function OverviewDashboard() {
   const HistoryIcon = ICONS["history"];
   const AlertIcon = ICONS["clock"];
 
-  const pendingActions = d.pendingKyc + d.pendingRedemptions;
+  const pendingActions = d.pendingKyc;
 
   return (
     <div className="space-y-6">
@@ -240,7 +240,7 @@ export default async function OverviewDashboard() {
               </p>
               <p className={`mt-2 text-4xl font-bold ${pendingActions > 0 ? "text-yellow-700" : "text-gray-900"}`}>{pendingActions}</p>
               <p className={`mt-1 text-xs ${pendingActions > 0 ? "text-yellow-600" : "text-gray-500"}`}>
-                {d.pendingKyc} KYC · {d.pendingRedemptions} redemptions
+                {d.pendingKyc} KYC pending
               </p>
             </div>
             <span className={`flex size-10 items-center justify-center rounded-xl ${pendingActions > 0 ? "bg-yellow-100 text-yellow-600" : "bg-gray-100 text-gray-500"}`}>
@@ -272,25 +272,7 @@ export default async function OverviewDashboard() {
               </Link>
             </div>
           )}
-          {d.pendingRedemptions > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <span className="flex size-9 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-                  <GiftIcon className="size-4" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-orange-800">{d.pendingRedemptions} redemption{d.pendingRedemptions > 1 ? "s" : ""} pending</p>
-                  <p className="text-xs text-orange-600">Points redemption requests awaiting approval</p>
-                </div>
-              </div>
-              <Link
-                href="/admin/users"
-                className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700"
-              >
-                View →
-              </Link>
-            </div>
-          )}
+
         </div>
       )}
 

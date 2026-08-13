@@ -63,7 +63,21 @@ export default async function CounterDashboard() {
       </div>
 
       {/* ── Hero KPIs ── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        {/* Counter Reward Points */}
+        <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-5 shadow-card">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Counter Points</p>
+              <p className="mt-2 text-4xl font-bold text-orange-900">{d.counterPoints}</p>
+              <p className="mt-1 text-xs text-orange-700">{d.counterLifetimePoints} lifetime earned</p>
+            </div>
+            <span className="flex size-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+              <CoinsIcon className="size-5" aria-hidden />
+            </span>
+          </div>
+        </div>
+
         {/* Scans today */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
           <div className="flex items-start justify-between">
@@ -82,7 +96,7 @@ export default async function CounterDashboard() {
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Points Today</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Karigar Points Today</p>
               <p className="mt-2 text-4xl font-bold text-gray-900">{d.pointsToday}</p>
               <p className="mt-1 text-xs text-gray-500">{d.pointsDistributed} all-time to {d.khatiActive} active karigars</p>
             </div>

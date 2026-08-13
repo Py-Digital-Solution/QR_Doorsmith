@@ -86,15 +86,24 @@ export async function processQrScan(
       }
 
       const pts = code.rewardPoints ?? 0;
+      const counterPts = code.counterRewardPoints ?? 0;
       await QrCode.findByIdAndUpdate(code._id, {
         $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now },
       });
-      const updated = await User.findByIdAndUpdate(
-        khatiId,
-        { $inc: { points: pts, lifetimePoints: pts } },
-        { returnDocument: "after" },
-      ).lean();
-      const newBal = updated?.points ?? pts;
+      const [updated] = await Promise.all([
+        User.findByIdAndUpdate(
+          khatiId,
+          { $inc: { points: pts, lifetimePoints: pts } },
+          { returnDocument: "after" },
+        ).lean(),
+        // Credit the counter that owns this QR code
+        counterPts > 0 && code.counterId
+          ? User.findByIdAndUpdate(code.counterId, {
+              $inc: { counterPoints: counterPts, counterLifetimePoints: counterPts },
+            })
+          : Promise.resolve(),
+      ]);
+      const newBal = (updated as { points?: number } | null)?.points ?? pts;
       PointTransaction.create({
         khatiId, qrCodeId: code._id, type: "scan_small_box",
         points: pts, balanceAfter: newBal,
@@ -115,6 +124,7 @@ export async function processQrScan(
     }
 
     const totalPts = productCodes.reduce((sum, c) => sum + (c.rewardPoints ?? 0), 0);
+    const totalCounterPts = productCodes.reduce((sum, c) => sum + (c.counterRewardPoints ?? 0), 0);
 
     await Promise.all([
       // Mark every product code as scanned
@@ -128,12 +138,20 @@ export async function processQrScan(
       }),
     ]);
 
-    const updated = await User.findByIdAndUpdate(
-      khatiId,
-      { $inc: { points: totalPts, lifetimePoints: totalPts } },
-      { returnDocument: "after" },
-    ).lean();
-    const newBal = updated?.points ?? totalPts;
+    const [updated] = await Promise.all([
+      User.findByIdAndUpdate(
+        khatiId,
+        { $inc: { points: totalPts, lifetimePoints: totalPts } },
+        { returnDocument: "after" },
+      ).lean(),
+      // Credit the counter for this small-box scan
+      totalCounterPts > 0 && code.counterId
+        ? User.findByIdAndUpdate(code.counterId, {
+            $inc: { counterPoints: totalCounterPts, counterLifetimePoints: totalCounterPts },
+          })
+        : Promise.resolve(),
+    ]);
+    const newBal = (updated as { points?: number } | null)?.points ?? totalPts;
     PointTransaction.create({
       khatiId, qrCodeId: code._id, type: "scan_small_box",
       points: totalPts, balanceAfter: newBal,
@@ -155,17 +173,26 @@ export async function processQrScan(
 
   // ── Single product scan ──
   const pts = code.rewardPoints ?? 0;
+  const counterPts = code.counterRewardPoints ?? 0;
 
   await QrCode.findByIdAndUpdate(code._id, {
     $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now, returned: false, returnedAt: null },
   });
 
-  const updated = await User.findByIdAndUpdate(
-    khatiId,
-    { $inc: { points: pts, lifetimePoints: pts } },
-    { returnDocument: "after" },
-  ).lean();
-  const newBalance = updated?.points ?? pts;
+  const [updated] = await Promise.all([
+    User.findByIdAndUpdate(
+      khatiId,
+      { $inc: { points: pts, lifetimePoints: pts } },
+      { returnDocument: "after" },
+    ).lean(),
+    // Credit the counter that owns this QR code
+    counterPts > 0 && code.counterId
+      ? User.findByIdAndUpdate(code.counterId, {
+          $inc: { counterPoints: counterPts, counterLifetimePoints: counterPts },
+        })
+      : Promise.resolve(),
+  ]);
+  const newBalance = (updated as { points?: number } | null)?.points ?? pts;
   PointTransaction.create({
     khatiId, qrCodeId: code._id, type: "scan_product",
     points: pts, balanceAfter: newBalance,
@@ -217,6 +244,7 @@ export async function processQrReturn(
 
   const counterId = opts.adminOverride ? String(code.counterId) : actorId;
   const pts = code.rewardPoints ?? 0;
+  const counterPts = code.counterRewardPoints ?? 0;
   const [khati, counter] = await Promise.all([
     User.findById(code.scannedByKhatiId).select("name points phone").lean(),
     User.findById(counterId).select("name").lean(),
@@ -226,11 +254,19 @@ export async function processQrReturn(
   const khatiName = khati.name ?? "Unknown";
   const counterName = counter?.name ?? "Unknown Counter";
 
-  const updatedKhati = await User.findByIdAndUpdate(
-    code.scannedByKhatiId,
-    { $inc: { points: -pts, lifetimePoints: -pts } },
-    { returnDocument: "after" },
-  ).lean();
+  const [updatedKhati] = await Promise.all([
+    User.findByIdAndUpdate(
+      code.scannedByKhatiId,
+      { $inc: { points: -pts, lifetimePoints: -pts } },
+      { returnDocument: "after" },
+    ).lean(),
+    // Reverse counter points on return
+    counterPts > 0
+      ? User.findByIdAndUpdate(counterId, {
+          $inc: { counterPoints: -counterPts, counterLifetimePoints: -counterPts },
+        })
+      : Promise.resolve(),
+  ]);
 
   await QrCode.findByIdAndUpdate(code._id, {
     $set: { status: "active", returned: true, returnedAt: new Date() },

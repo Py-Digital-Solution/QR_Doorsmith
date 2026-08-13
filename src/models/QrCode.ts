@@ -36,6 +36,8 @@ const qrCodeSchema = new Schema(
     mrp: { type: Number },
     salesPrice: { type: Number },
     rewardPoints: { type: Number },
+    /** Counter-reward snapshot: points the counter earns when this code is scanned. */
+    counterRewardPoints: { type: Number, default: 0 },
 
     // scan lifecycle (filled in Phase 4)
     scannedByKhatiId: { type: Schema.Types.ObjectId, ref: "User", default: null },

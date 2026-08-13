@@ -37,6 +37,9 @@ export function ProductForm({
   const [rewardPoints, setRewardPoints] = useState(
     product?.rewardPoints?.toString() ?? "",
   );
+  const [counterRewardPoints, setCounterRewardPoints] = useState(
+    product?.counterRewardPoints?.toString() ?? "",
+  );
   const [description, setDescription] = useState(product?.description ?? "");
   const [status, setStatus] = useState<ProductStatus>(product?.status ?? "active");
   const [videoLinks, setVideoLinks] = useState<string[]>(
@@ -119,7 +122,7 @@ export function ProductForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label>MRP (₹)</Label>
           <Input
@@ -144,17 +147,44 @@ export function ProductForm({
             required
           />
         </div>
-        <div>
-          <Label>Reward points</Label>
-          <Input
-            name="rewardPoints"
-            type="number"
-            min={0}
-            step="1"
-            value={rewardPoints}
-            onChange={(e) => setRewardPoints(e.target.value)}
-            required
-          />
+      </div>
+
+      {/* Reward points — two separate inputs */}
+      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Reward Points</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <Label>
+              Karigar points{" "}
+              <span className="font-normal text-gray-400">(earned by khati on scan)</span>
+            </Label>
+            <Input
+              name="rewardPoints"
+              type="number"
+              min={0}
+              step="1"
+              placeholder="0"
+              value={rewardPoints}
+              onChange={(e) => setRewardPoints(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Label>
+              Counter points{" "}
+              <span className="font-normal text-gray-400">(earned by counter on scan)</span>
+            </Label>
+            <Input
+              name="counterRewardPoints"
+              type="number"
+              min={0}
+              step="1"
+              placeholder="0"
+              value={counterRewardPoints}
+              onChange={(e) => setCounterRewardPoints(e.target.value)}
+              required
+            />
+          </div>
         </div>
       </div>
 

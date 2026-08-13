@@ -12,6 +12,8 @@ const productSchema = new Schema(
     mrp: { type: Number, required: true, min: 0 },
     salesPrice: { type: Number, required: true, min: 0 },
     rewardPoints: { type: Number, required: true, min: 0 },
+    /** Points credited to the counter when a khati scans this product. */
+    counterRewardPoints: { type: Number, required: true, min: 0, default: 0 },
     description: { type: String, trim: true },
     // SOW 1.3  installation video links (YouTube/Instagram/Facebook) shown to khatis.
     videoLinks: { type: [String], default: [] },

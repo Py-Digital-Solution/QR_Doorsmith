@@ -41,7 +41,8 @@ export function ProductsTable({ products }: { products: ProductDTO[] }) {
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
               <span>MRP ₹{p.mrp}</span>
               <span>Sales ₹{p.salesPrice}</span>
-              <span className="font-medium text-brand-dark">{p.rewardPoints} pts</span>
+              <span className="font-medium text-brand-dark">{p.rewardPoints} karigar pts</span>
+              <span className="font-medium text-orange-600">{p.counterRewardPoints ?? 0} counter pts</span>
             </div>
           </MobileCard>
         ))}
@@ -55,7 +56,8 @@ export function ProductsTable({ products }: { products: ProductDTO[] }) {
             <TH>Name</TH>
             <TH align="right">MRP</TH>
             <TH align="right">Sales</TH>
-            <TH align="right">Points</TH>
+            <TH align="right">Karigar pts</TH>
+            <TH align="right">Counter pts</TH>
             <TH>Status</TH>
             <TH align="right">Actions</TH>
           </THead>
@@ -68,6 +70,9 @@ export function ProductsTable({ products }: { products: ProductDTO[] }) {
                 <TD align="right" className="text-gray-600">₹{p.salesPrice}</TD>
                 <TD align="right" className="font-medium text-brand-dark">
                   {p.rewardPoints}
+                </TD>
+                <TD align="right" className="font-medium text-orange-600">
+                  {p.counterRewardPoints ?? 0}
                 </TD>
                 <TD>
                   <Badge tone={statusTone(p.status)}>{p.status}</Badge>

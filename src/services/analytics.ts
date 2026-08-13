@@ -140,6 +140,8 @@ export type CounterDashboard = {
   returnsWeek: number;
   returnsToday: number;
   inventoryActive: number;
+  counterPoints: number;
+  counterLifetimePoints: number;
   topKhatis: { name: string; points: number }[];
   recentTransactions: RecentTx[];
   recentKhatis: RecentKhati[];
@@ -172,6 +174,7 @@ export async function getCounterDashboard(counterId: string): Promise<CounterDas
     returnsWeek,
     inventoryActive,
     recentTxDocs,
+    counterUser,
   ] = await Promise.all([
     QrCode.countDocuments({ counterId: _id, status: "scanned", scannedAt: { $gte: today } }),
     QrCode.countDocuments({ counterId: _id, status: "scanned", scannedAt: { $gte: week } }),
@@ -196,6 +199,7 @@ export async function getCounterDashboard(counterId: string): Promise<CounterDas
           .select("khatiId type points balanceAfter serialNo createdAt")
           .lean()
       : Promise.resolve([]),
+    User.findById(counterId).select("counterPoints counterLifetimePoints").lean(),
   ]);
 
   // Resolve khati names for transactions
@@ -247,6 +251,8 @@ export async function getCounterDashboard(counterId: string): Promise<CounterDas
     returnsTotal,
     returnsWeek,
     inventoryActive,
+    counterPoints: counterUser?.counterPoints ?? 0,
+    counterLifetimePoints: counterUser?.counterLifetimePoints ?? 0,
     topKhatis,
     recentTransactions,
     recentKhatis,

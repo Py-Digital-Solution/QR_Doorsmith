@@ -48,5 +48,12 @@ next-env.d.ts
 whatsapp-service/node_modules/
 whatsapp-service/package-lock.json
 
+# scratch & temp scripts
+scratch/
+*.tmp
+push-env.py
+set-vercel-env.bat
+
+
 .vercel
 .env*
