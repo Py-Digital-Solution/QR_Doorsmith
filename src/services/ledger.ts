@@ -9,6 +9,8 @@ export type LedgerEntry = {
   id: string;
   khatiId: string;
   khatiName: string;
+  userRole?: string;
+  userPhone?: string;
   type: PtType;
   points: number;
   balanceAfter: number;
@@ -21,6 +23,7 @@ export type LedgerEntry = {
 export type LedgerFilter = {
   khatiId?: string;
   type?: PtType;
+  userType?: "khati" | "counter" | "all";
   /** restrict to a set of khati IDs (e.g. a counter's khatis) */
   khatiIds?: string[];
   /** inclusive lower bound on createdAt */
@@ -42,12 +45,16 @@ export function ledgerTypeLabel(t: string): string {
   return TYPE_LABELS[t as PtType] ?? t;
 }
 
-function buildQuery(filter: LedgerFilter): Record<string, unknown> {
+async function buildQuery(filter: LedgerFilter): Promise<Record<string, unknown>> {
   const q: Record<string, unknown> = {};
   if (filter.orgId) {
     q.orgId = new Types.ObjectId(filter.orgId);
   }
-  if (filter.khatiId) {
+  if (filter.userType && filter.userType !== "all") {
+    const roleUsers = await User.find({ role: filter.userType }).select("_id").lean();
+    const roleUserIds = roleUsers.map((u) => u._id);
+    q.khatiId = { $in: roleUserIds };
+  } else if (filter.khatiId) {
     q.khatiId = new Types.ObjectId(filter.khatiId);
   } else if (filter.khatiIds?.length) {
     q.khatiId = { $in: filter.khatiIds.map((id) => new Types.ObjectId(id)) };
@@ -69,7 +76,7 @@ export async function listPointTransactions(
   pagination: Pagination = { page: 1, pageSize: DEFAULT_PAGE_SIZE },
 ): Promise<Paginated<LedgerEntry>> {
   await connectDB();
-  const q = buildQuery(filter);
+  const q = await buildQuery(filter);
   const { page, pageSize } = pagination;
 
   const [total, docs] = await Promise.all([
@@ -81,24 +88,29 @@ export async function listPointTransactions(
       .lean(),
   ]);
 
-  // Resolve khati names in one query.
+  // Resolve user names and roles in one query.
   const ids = [...new Set(docs.map((d) => String(d.khatiId)))];
-  const users = await User.find({ _id: { $in: ids } }).select("name phone").lean();
-  const nameMap = new Map(users.map((u) => [String(u._id), u.name || u.phone || ""]));
+  const users = await User.find({ _id: { $in: ids } }).select("name phone role").lean();
+  const userMap = new Map(users.map((u) => [String(u._id), u]));
 
   return paginated(
-    docs.map((d) => ({
-      id: String(d._id),
-      khatiId: String(d.khatiId),
-      khatiName: nameMap.get(String(d.khatiId)) ?? "",
-      type: d.type as PtType,
-      points: d.points ?? 0,
-      balanceAfter: d.balanceAfter ?? 0,
-      description: d.description ?? "",
-      sku: d.sku ?? "",
-      serialNo: d.serialNo ?? "",
-      createdAt: (d.createdAt as Date)?.toISOString() ?? "",
-    })),
+    docs.map((d) => {
+      const u = userMap.get(String(d.khatiId));
+      return {
+        id: String(d._id),
+        khatiId: String(d.khatiId),
+        khatiName: u?.name || u?.phone || "—",
+        userRole: u?.role || undefined,
+        userPhone: u?.phone || undefined,
+        type: d.type as PtType,
+        points: d.points ?? 0,
+        balanceAfter: d.balanceAfter ?? 0,
+        description: d.description ?? "",
+        sku: d.sku ?? "",
+        serialNo: d.serialNo ?? "",
+        createdAt: (d.createdAt as Date)?.toISOString() ?? "",
+      };
+    }),
     total,
     pagination,
   );
@@ -115,7 +127,7 @@ export type LedgerSummary = {
 /** Aggregate totals for the same filter, used as ledger header cards. */
 export async function summarizePointTransactions(filter: LedgerFilter = {}): Promise<LedgerSummary> {
   await connectDB();
-  const q = buildQuery(filter);
+  const q = await buildQuery(filter);
 
   const rows = await PointTransaction.aggregate([
     { $match: q },

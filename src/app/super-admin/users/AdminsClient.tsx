@@ -27,6 +27,7 @@ type AdminUserItem = {
   displayId: string;
   name: string;
   email: string;
+  phone?: string;
   status: string;
   orgId?: string;
   orgName: string;
@@ -43,6 +44,7 @@ export default function AdminsClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [orgId, setOrgId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export default function AdminsClient({
   const [editingAdmin, setEditingAdmin] = useState<AdminUserItem | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editOrgId, setEditOrgId] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
@@ -70,6 +73,7 @@ export default function AdminsClient({
       const formData = new FormData();
       formData.set("name", name);
       formData.set("email", email);
+      formData.set("phone", phone);
       formData.set("password", password);
       formData.set("orgId", orgId);
 
@@ -79,6 +83,7 @@ export default function AdminsClient({
       } else {
         setName("");
         setEmail("");
+        setPhone("");
         setPassword("");
         setOrgId("");
         setIsModalOpen(false);
@@ -90,6 +95,7 @@ export default function AdminsClient({
     setEditingAdmin(admin);
     setEditName(admin.name);
     setEditEmail(admin.email);
+    setEditPhone(admin.phone || "");
     setEditPassword("");
     setEditOrgId(admin.orgId || "");
     setEditError(null);
@@ -104,6 +110,7 @@ export default function AdminsClient({
       const formData = new FormData();
       formData.set("name", editName);
       formData.set("email", editEmail);
+      formData.set("phone", editPhone);
       formData.set("password", editPassword);
       formData.set("orgId", editOrgId);
 
@@ -148,6 +155,7 @@ export default function AdminsClient({
               <TH>ID</TH>
               <TH>Name</TH>
               <TH>Email</TH>
+              <TH>Mobile Number</TH>
               <TH>Organization</TH>
               <TH>Status</TH>
               <TH>Created At</TH>
@@ -159,6 +167,7 @@ export default function AdminsClient({
                   <TD className="text-gray-600 font-mono">{admin.displayId}</TD>
                   <TD className="font-semibold text-gray-900">{admin.name}</TD>
                   <TD className="text-gray-600">{admin.email}</TD>
+                  <TD className="text-gray-700 font-mono text-xs">{admin.phone || <span className="text-gray-300">—</span>}</TD>
                   <TD className="font-medium text-brand-blue">{admin.orgName}</TD>
                   <TD>
                     <Badge tone={admin.status === "active" ? "green" : "red"}>
@@ -210,6 +219,15 @@ export default function AdminsClient({
               onChange={(e) => setEmail(e.target.value)} 
               placeholder="e.g. admin@acme.com" 
               required 
+            />
+          </Field>
+
+          <Field label="Mobile Number" hint="10-digit mobile number for WhatsApp & notifications">
+            <Input 
+              type="tel"
+              value={phone} 
+              onChange={(e) => setPhone(e.target.value)} 
+              placeholder="e.g. 9876543210" 
             />
           </Field>
 
@@ -278,6 +296,15 @@ export default function AdminsClient({
               onChange={(e) => setEditEmail(e.target.value)}
               placeholder="e.g. admin@acme.com"
               required
+            />
+          </Field>
+
+          <Field label="Mobile Number">
+            <Input
+              type="tel"
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+              placeholder="e.g. 9876543210"
             />
           </Field>
 

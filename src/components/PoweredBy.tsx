@@ -1,5 +1,6 @@
 const SUPPORT_PHONE_DISPLAY = "+91 89504 83393";
 const SUPPORT_PHONE_TEL = "+918950483393";
+const SUPPORT_EMAIL = "support@gatigrowthlabs.com";
 
 /**
  * "Powered by Gati Growth Labs" + support contact credit line. Server-safe (no
@@ -16,6 +17,13 @@ export function PoweredBy({ className = "" }: { className?: string }) {
         className="font-medium text-gray-500 transition-colors hover:text-brand hover:underline"
       >
         {SUPPORT_PHONE_DISPLAY}
+      </a>
+      {" · "}
+      <a
+        href={`mailto:${SUPPORT_EMAIL}`}
+        className="font-medium text-gray-500 transition-colors hover:text-brand hover:underline"
+      >
+        {SUPPORT_EMAIL}
       </a>
     </p>
   );

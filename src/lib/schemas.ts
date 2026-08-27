@@ -59,6 +59,7 @@ export const createOrgSchema = z.object({
 export const createOrgAdminSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email("Invalid email address"),
+  phone: z.string().optional().or(z.literal("")),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")

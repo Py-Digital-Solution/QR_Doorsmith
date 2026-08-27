@@ -5,6 +5,7 @@ import { waSend } from "@/services/whatsapp";
 import { notifyCounterKycToAdmin } from "@/services/wa-notify";
 import { uploadAvatar, toPhotoUrl } from "@/lib/storage";
 import { hashPassword } from "@/lib/password";
+import { getCompanyBranding } from "@/services/branding";
 
 export type KycStatus =
   | "not_submitted"
@@ -39,6 +40,8 @@ export type PendingKhatiDTO = {
   dob?: string;
   kycStatus: KycStatus;
   submittedAt?: string;
+  counterName?: string;
+  counterStatus?: string;
 };
 
 /** Looks up either a khati or a counter by their registration token  both now onboard via the same public link. */
@@ -139,9 +142,11 @@ export async function submitKhatiProfile(
   // Notify admin
   const admin = await User.findOne({ role: "admin" }).lean();
   if (admin?.phone) {
+    const branding = await getCompanyBranding();
+    const companyName = branding.name || "Rewards Platform";
     waSend(
       admin.phone,
-      `🆕 *नई कारीगर पंजीकरण | New Karigar Registration*\n\n*${user.name}* (${user.phone}) ने अपना प्रोफाइल जमा कर दिया है और आपकी मंजूरी का इंतज़ार कर रहे हैं।\n*${user.name}* has submitted their profile and is awaiting your approval.\n\nDoorSmith ऐप पर लॉग इन करें और मंजूरी दें।\nLog in to DoorSmith to review and approve.`,
+      `🆕 *नई कारीगर पंजीकरण | New Karigar Registration*\n\n*${user.name}* (${user.phone}) ने अपना प्रोफाइल जमा कर दिया है और आपकी मंजूरी का इंतज़ार कर रहे हैं।\n*${user.name}* has submitted their profile and is awaiting your approval.\n\n${companyName} ऐप पर लॉग इन करें और मंजूरी दें।\nLog in to ${companyName} to review and approve.`,
       "kyc",
     ).catch((err) => console.error("[kyc] Admin WA notify failed:", err));
   }
@@ -199,7 +204,28 @@ async function paginatedKyc(
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .lean();
-  return { items: docs.map(toDTO), total, page, pageSize, pageCount: Math.max(1, Math.ceil(total / pageSize)) };
+
+  const counterIds = docs.map((d) => d.counterId).filter(Boolean);
+  const counters = await User.find({ _id: { $in: counterIds } }).select("name status phone").lean();
+  const counterMap = new Map(counters.map((c) => [String(c._id), c]));
+
+  const items = docs.map((d) => {
+    const counter = d.counterId ? counterMap.get(String(d.counterId)) : null;
+    return {
+      id: String(d._id),
+      name: d.name ?? "",
+      phone: d.phone ?? "",
+      photoUrl: toPhotoUrl(d.photoUrl) || undefined,
+      address: d.address ?? undefined,
+      dob: d.dob ? new Date(d.dob as Date).toISOString().slice(0, 10) : undefined,
+      kycStatus: (d.kycStatus as KycStatus) ?? "not_submitted",
+      submittedAt: (d.updatedAt as Date)?.toISOString() ?? undefined,
+      counterName: counter?.name || counter?.phone || "Direct / Admin",
+      counterStatus: counter?.status || "active",
+    };
+  });
+
+  return { items, total, page, pageSize, pageCount: Math.max(1, Math.ceil(total / pageSize)) };
 }
 
 export async function listPendingForCounter(
@@ -252,10 +278,29 @@ export async function approveKyc(actorId: string, actorRole: string, khatiId: st
   khati.registrationToken = undefined;
   await khati.save();
 
+async function getAppBaseUrl(): Promise<string> {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL.replace(/\/$/, "");
+  try {
+    const { headers } = await import("next/headers");
+    const hdrs = await headers();
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host");
+    if (host) return `${proto}://${host}`;
+  } catch {
+    // fallback outside request context
+  }
+  return "https://rewards.app";
+}
+
   if (khati.phone) {
+    const [branding, appUrl] = await Promise.all([
+      getCompanyBranding(),
+      getAppBaseUrl(),
+    ]);
+    const companyName = branding.name || "Rewards Platform";
     waSend(
       khati.phone,
-      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\nhttps://app.doorsmith.in/login/khati\n\nआपका कारीगर खाता तैयार है! 🚀\nYour karigar account is ready!`,
+      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका ${companyName} पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour ${companyName} registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\n${appUrl}/login/khati\n\nआपका कारीगर खाता तैयार है! 🚀\nYour karigar account is ready!`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
   }
@@ -274,9 +319,11 @@ export async function rejectKyc(actorId: string, actorRole: string, khatiId: str
   await khati.save();
 
   if (khati.phone) {
+    const branding = await getCompanyBranding();
+    const companyName = branding.name || "Rewards Platform";
     waSend(
       khati.phone,
-      `❌ *कारीगर पंजीकरण अस्वीकृत | Karigar Registration Rejected*\n\nप्रिय *${khati.name}*, दुर्भाग्यवश आपका DoorSmith पंजीकरण अभी स्वीकृत नहीं हो सका।\nDear *${khati.name}*, unfortunately your DoorSmith registration could not be approved at this time.\n\n*कारण | Reason:*\n${reason || "कोई कारण नहीं दिया गया | No reason provided."}\n\n📞 कृपया सहायता के लिए अपने काउंटर से संपर्क करें।\nPlease contact your counter for further assistance.`,
+      `❌ *कारीगर पंजीकरण अस्वीकृत | Karigar Registration Rejected*\n\nप्रिय *${khati.name}*, दुर्भाग्यवश आपका ${companyName} पंजीकरण अभी स्वीकृत नहीं हो सका।\nDear *${khati.name}*, unfortunately your ${companyName} registration could not be approved at this time.\n\n*कारण | Reason:*\n${reason || "कोई कारण नहीं दिया गया | No reason provided."}\n\n📞 कृपया सहायता के लिए अपने काउंटर से संपर्क करें।\nPlease contact your counter for further assistance.`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati rejection WA failed:", err));
   }

@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { listProducts } from "@/services/products";
+import { isCounterRewardsEnabled } from "@/services/settings";
 import { parsePageParams } from "@/lib/pagination";
 import { ProductCreatePanel } from "@/components/ProductCreatePanel";
 import { ProductsTable } from "@/components/ProductsTable";
@@ -18,7 +19,10 @@ export default async function ProductsPage({
   const q = sp.q ?? "";
 
   const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
-  const result = await listProducts(pagination, q || undefined, undefined, orgIdFilter);
+  const [result, counterRewardsEnabled] = await Promise.all([
+    listProducts(pagination, q || undefined, undefined, orgIdFilter),
+    isCounterRewardsEnabled(),
+  ]);
 
   const fp = new URLSearchParams();
   if (q) fp.set("q", q);
@@ -30,12 +34,12 @@ export default async function ProductsPage({
       <PageHeader
         title="Products"
         description="SKUs, pricing and reward points used to generate QR codes."
-        actions={<ProductCreatePanel />}
+        actions={<ProductCreatePanel counterRewardsEnabled={counterRewardsEnabled} />}
       />
 
       <FilterBar placeholder="Search by name or SKU…" exportType="products" />
 
-      <ProductsTable products={result.items} />
+      <ProductsTable products={result.items} counterRewardsEnabled={counterRewardsEnabled} />
 
       <Pagination
         page={result.page}

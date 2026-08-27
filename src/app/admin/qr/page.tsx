@@ -34,7 +34,7 @@ export default async function QrPage({
     <div className="space-y-4">
       <PageHeader
         title="QR Generation"
-        description="Generate Master → Small → Product QR batches and print sheets."
+        description="Generate Product → Small → Master QR batches and print sheets."
         actions={<GenerateBatchPanel products={productOptions} />}
       />
 

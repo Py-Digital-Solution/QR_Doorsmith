@@ -17,14 +17,15 @@ export default async function SystemAdminsPage() {
     .lean();
 
   const admins = adminDocs.map((doc) => {
-    // Resolve organization name through populated orgId
     const org = doc.orgId as any;
     return {
       _id: String(doc._id),
       displayId: String(doc.displayId ?? "N/A"),
       name: String(doc.name ?? ""),
       email: String(doc.email ?? ""),
+      phone: String(doc.phone ?? ""),
       status: String(doc.status),
+      orgId: org ? String(org._id || org) : undefined,
       orgName: org ? String(org.name) : "No Org",
       createdAt: String(doc.createdAt),
     };

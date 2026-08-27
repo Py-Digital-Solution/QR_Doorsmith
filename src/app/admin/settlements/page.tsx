@@ -13,7 +13,13 @@ import {
 } from "@/components/ui/Table";
 import { Store } from "lucide-react";
 
+import { redirect } from "next/navigation";
+import { isRedemptionsEnabled } from "@/services/settings";
+
 export default async function AdminSettlementsPage() {
+  if (!(await isRedemptionsEnabled())) {
+    redirect("/admin/dashboards/overview");
+  }
   const rows = await listCounterSettlements();
 
   const totalOutstanding = rows.reduce((s, r) => s + r.outstandingPoints, 0);

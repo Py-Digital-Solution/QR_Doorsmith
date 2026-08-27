@@ -2,6 +2,7 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { env } from "@/lib/env";
 import { welcomeEmailHtml } from "@/lib/email-templates";
+import { getCompanyBranding } from "@/services/branding";
 
 function getTransport() {
   if (!env.SMTP_HOST) return null;
@@ -25,9 +26,19 @@ export async function sendWelcomeEmail({
   password: string;
 }): Promise<void> {
   const transport = getTransport();
-  const from = env.SMTP_FROM ?? "DoorSmith <no-reply@doorsmith.app>";
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "Rewards Platform";
+  const from = env.SMTP_FROM ?? `${companyName} <no-reply@rewards.app>`;
 
-  const html = welcomeEmailHtml({ to, name, role, password });
+  const html = welcomeEmailHtml({
+    to,
+    name,
+    role,
+    password,
+    companyName: branding.name,
+    logoUrl: branding.logo,
+    address: branding.address,
+  });
 
   if (!transport) {
     console.log(
@@ -36,7 +47,7 @@ export async function sendWelcomeEmail({
     return;
   }
 
-  await transport.sendMail({ from, to, subject: `Welcome to DoorSmith — your account details`, html });
+  await transport.sendMail({ from, to, subject: `Welcome to ${companyName} — your account details`, html });
 }
 
 export async function sendWaFailureAlert({
@@ -53,7 +64,9 @@ export async function sendWaFailureAlert({
   message: string;
 }): Promise<void> {
   const transport = getTransport();
-  const from = env.SMTP_FROM ?? "DoorSmith <no-reply@doorsmith.app>";
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "Rewards Platform";
+  const from = env.SMTP_FROM ?? `${companyName} <no-reply@rewards.app>`;
 
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
@@ -64,7 +77,7 @@ export async function sendWaFailureAlert({
         <tr><td style="padding:8px;color:#666">Error</td><td style="padding:8px;color:#b91c1c">${error}</td></tr>
         <tr style="background:#f9f9f9"><td style="padding:8px;color:#666;vertical-align:top">Message</td><td style="padding:8px;white-space:pre-wrap;color:#374151">${message.slice(0, 300)}</td></tr>
       </table>
-      <p style="font-size:12px;color:#aaa;margin-top:32px">DoorSmith  WhatsApp audit alert</p>
+      <p style="font-size:12px;color:#aaa;margin-top:32px">${companyName} — WhatsApp audit alert</p>
     </div>
   `;
 
@@ -73,7 +86,7 @@ export async function sendWaFailureAlert({
     return;
   }
 
-  await transport.sendMail({ from, to, subject: `[DoorSmith] WhatsApp message failed  ${type}`, html });
+  await transport.sendMail({ from, to, subject: `[${companyName}] WhatsApp message failed — ${type}`, html });
 }
 
 /**
@@ -91,7 +104,9 @@ export async function sendWaDisconnectedAlert({
   reason: string;
 }): Promise<void> {
   const transport = getTransport();
-  const from = env.SMTP_FROM ?? "DoorSmith <no-reply@doorsmith.app>";
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "Rewards Platform";
+  const from = env.SMTP_FROM ?? `${companyName} <no-reply@rewards.app>`;
 
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
@@ -107,7 +122,7 @@ export async function sendWaDisconnectedAlert({
       <p style="font-size:14px;color:#374151">
         Please reconnect the WhatsApp bridge so OTPs are delivered over WhatsApp again.
       </p>
-      <p style="font-size:12px;color:#aaa;margin-top:32px">DoorSmith  WhatsApp connectivity alert</p>
+      <p style="font-size:12px;color:#aaa;margin-top:32px">${companyName} — WhatsApp connectivity alert</p>
     </div>
   `;
 
@@ -119,7 +134,29 @@ export async function sendWaDisconnectedAlert({
   await transport.sendMail({
     from,
     to,
-    subject: `[DoorSmith] WhatsApp not connected — OTP fell back to SMS`,
+    subject: `[${companyName}] WhatsApp not connected — OTP fell back to SMS`,
     html,
   });
+}
+
+export async function sendCustomEmail({
+  to,
+  subject,
+  html,
+  text,
+}: {
+  to: string;
+  subject: string;
+  html?: string;
+  text?: string;
+}): Promise<void> {
+  const transport = getTransport();
+  const from = env.SMTP_FROM ?? "No Reply <no-reply@doorsmith.app>";
+
+  if (!transport) {
+    console.log(`\n[EMAIL][dev] Custom email to ${to}: ${subject}\n${text || html}\n`);
+    return;
+  }
+
+  await transport.sendMail({ from, to, subject, html: html || text, text });
 }

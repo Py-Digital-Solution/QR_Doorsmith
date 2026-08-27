@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/session";
 import { getCounterKycState } from "@/services/kyc";
+import { getCompanyBranding } from "@/services/branding";
 import { PoweredBy } from "@/components/PoweredBy";
 import { MessageCircle } from "lucide-react";
 
@@ -14,14 +15,24 @@ import { MessageCircle } from "lucide-react";
 export default async function CounterKycPage() {
   const user = await requireRole(["counter"]);
 
-  const state = await getCounterKycState(user.id);
+  const [state, branding] = await Promise.all([
+    getCounterKycState(user.id),
+    getCompanyBranding(),
+  ]);
   if (state.completed) redirect("/counter/dashboard");
+
+  const logo = branding?.logo;
+  const name = branding?.name || "Logo";
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-lg sm:p-8">
         <div className="mb-6 flex justify-center">
-          <Image src="/logo.png" alt="DoorSmith" width={156} height={26} priority className="h-7 w-auto" />
+          {logo ? (
+            <img src={logo} alt={name} className="h-8 max-w-[200px] object-contain" />
+          ) : (
+            <Image src="/logo.png" alt={name} width={156} height={26} priority className="h-7 w-auto" />
+          )}
         </div>
 
         <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-brand-light">

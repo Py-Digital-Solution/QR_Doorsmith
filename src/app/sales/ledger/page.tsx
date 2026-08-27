@@ -28,6 +28,8 @@ async function getNetworkKhatiIds(salesId: string): Promise<string[]> {
   return khatis.map((k) => String(k._id));
 }
 
+import { isReturnsEnabled } from "@/services/settings";
+
 export default async function SalesLedgerPage({
   searchParams,
 }: {
@@ -37,7 +39,14 @@ export default async function SalesLedgerPage({
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
-  const type = (TYPES.includes(sp.type as PtType) ? sp.type : undefined) as PtType | undefined;
+
+  const returnsEnabled = await isReturnsEnabled();
+  const activeTypes = TYPES.filter((t) => {
+    if (t === "return_reversal" && !returnsEnabled) return false;
+    return true;
+  });
+
+  const type = (activeTypes.includes(sp.type as PtType) ? sp.type : undefined) as PtType | undefined;
 
   const khatiIds = await getNetworkKhatiIds(session!.user.id);
 
@@ -99,7 +108,7 @@ export default async function SalesLedgerPage({
           >
             All
           </Link>
-          {TYPES.map((t) => (
+          {activeTypes.map((t) => (
             <Link
               key={t}
               href={pillHref(t)}

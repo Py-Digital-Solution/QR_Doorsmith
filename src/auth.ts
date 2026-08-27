@@ -129,5 +129,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+    Credentials({
+      id: "magic-token",
+      name: "Magic Link Token",
+      credentials: { token: {} },
+      authorize: async (creds) => {
+        const token = String(creds.token ?? "").trim();
+        if (!token) return null;
+        await connectDB();
+        const { verifyMagicToken } = await import("@/services/magic-link");
+        const user = await verifyMagicToken(token);
+        if (!user || user.status !== "active") return null;
+
+        if (user.role === "distributor" && !(await isDistributorEnabled())) {
+          return null;
+        }
+
+        return {
+          id: user._id.toString(),
+          email: user.email ?? undefined,
+          name: user.name ?? undefined,
+          role: user.role as UserRole,
+          orgId: user.orgId?.toString(),
+        };
+      },
+    }),
   ],
 });

@@ -117,10 +117,10 @@ export function BatchesTable({
           <THead>
             <TH className="whitespace-nowrap">Date</TH>
             <TH>Product</TH>
-            <TH className="whitespace-nowrap">Structure (M×S×P)</TH>
+            <TH className="whitespace-nowrap">Structure (P×S×M)</TH>
             <TH align="right">Total</TH>
             <TH align="right" className="whitespace-nowrap">Warehouse / Sent</TH>
-            <TH className="whitespace-nowrap">Master serial range</TH>
+            <TH className="whitespace-nowrap">Serial range</TH>
             <TH align="center">Status</TH>
             <TH align="right">Actions</TH>
           </THead>
@@ -132,12 +132,12 @@ export function BatchesTable({
                   <div>
                     <span className="font-mono text-xs text-gray-500">{b.productSku}</span>
                     {b.productName && (
-                      <p className="text-sm text-gray-900">{b.productName}</p>
+                       <p className="text-sm text-gray-900">{b.productName}</p>
                     )}
                   </div>
                 </TD>
                 <TD className="whitespace-nowrap text-gray-700">
-                  {b.masterCount}×{b.smallPerMaster}×{b.productPerSmall}
+                  {b.productPerSmall}×{b.smallPerMaster}×{b.masterCount}
                 </TD>
                 <TD align="right" className="font-semibold text-gray-900">
                   {b.total}

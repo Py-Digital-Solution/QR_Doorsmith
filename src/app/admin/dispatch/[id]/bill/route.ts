@@ -101,9 +101,11 @@ export async function GET(
 
   // ── Table header ────────────────────────────────────────────────
   text("#", M, y, 9, bold, gray);
-  text("SERIAL", M + 30, y, 9, bold, gray);
-  text("TYPE", M + 200, y, 9, bold, gray);
-  text("SKU", M + 290, y, 9, bold, gray);
+  text("SERIAL", M + 25, y, 9, bold, gray);
+  text("TYPE", M + 175, y, 9, bold, gray);
+  text("SKU", M + 255, y, 9, bold, gray);
+  text("KARIGAR PTS", M + 355, y, 9, bold, gray);
+  text("COUNTER PTS", M + 445, y, 9, bold, gray);
   y -= 6;
   page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 0.5, color: gray });
   y -= 16;
@@ -114,18 +116,20 @@ export async function GET(
       page = pdf.addPage([W, H]);
       y = H - M;
     }
-    text(String(i + 1), M, y, 10);
-    text(u.serialNo, M + 30, y, 10);
-    text(u.type.toUpperCase(), M + 200, y, 10);
-    text(u.sku || "—", M + 290, y, 10);
+    text(String(i + 1), M, y, 9);
+    text(u.serialNo, M + 25, y, 9);
+    text(u.type.toUpperCase(), M + 175, y, 9);
+    text(u.sku || "—", M + 255, y, 9);
+    text(String(u.karigarPoints ?? 0), M + 355, y, 9);
+    text(String(u.counterPoints ?? 0), M + 445, y, 9);
     y -= 16;
   });
 
   y -= 10;
   page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 0.5, color: gray });
   y -= 18;
-  text(`Scanned units: ${bill.unitCount}`, M, y, 10, bold);
-  text(`Total codes: ${bill.totalCodes}`, M + 200, y, 10, bold);
+  text(`Scanned units: ${bill.unitCount}   ·   Total codes: ${bill.totalCodes}`, M, y, 10, bold);
+  text(`Total Karigar Pts: ${bill.totalKarigarPoints ?? 0}   ·   Total Counter Pts: ${bill.totalCounterPoints ?? 0}`, M + 230, y, 10, bold);
 
   const bytes = await pdf.save();
   return new Response(new Uint8Array(bytes), {

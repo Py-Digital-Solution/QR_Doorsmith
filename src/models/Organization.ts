@@ -17,6 +17,10 @@ const organizationSchema = new Schema(
       email: { type: String, default: "" },
       address: { type: String, default: "" },
       tagline: { type: String, default: "" },
+      website: { type: String, default: "" },
+      instagramUrl: { type: String, default: "" },
+      facebookUrl: { type: String, default: "" },
+      youtubeUrl: { type: String, default: "" },
     },
   },
   { timestamps: true }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import type QrScannerType from "qr-scanner";
 
-type CameraErrorKind = "permission" | "not_found" | "in_use" | "unknown";
+type CameraErrorKind = "permission" | "not_found" | "in_use" | "insecure_context" | "unknown";
 
 /**
  * Camera QR scanner backed by qr-scanner (Nimiq).
@@ -26,6 +26,17 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
     if (!videoRef.current) return;
     let destroyed = false;
     setCameraError(null);
+
+    // Check for insecure context (e.g. mobile accessing http://192.168.x.x:3000)
+    if (
+      typeof window !== "undefined" &&
+      window.isSecureContext === false &&
+      location.hostname !== "localhost" &&
+      location.hostname !== "127.0.0.1"
+    ) {
+      setCameraError("insecure_context");
+      return;
+    }
 
     (async () => {
       const { default: QrScannerLib } = await import("qr-scanner");
@@ -67,20 +78,22 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
 
   if (cameraError) {
     return (
-      <div className="flex min-h-[280px] w-full max-w-xs flex-col items-center justify-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-center">
-        <p className="text-sm text-red-600">{CAMERA_ERROR_COPY[cameraError].message}</p>
+      <div className="flex min-h-[260px] w-full max-w-xs flex-col items-center justify-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+        <p className="text-sm font-medium text-red-700">{CAMERA_ERROR_COPY[cameraError].message}</p>
         {CAMERA_ERROR_COPY[cameraError].hint && (
-          <p className="text-xs text-red-500">{CAMERA_ERROR_COPY[cameraError].hint}</p>
+          <p className="text-xs text-red-600">{CAMERA_ERROR_COPY[cameraError].hint}</p>
         )}
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setAttempt((n) => n + 1)}
-            className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
-          >
-            <RotateCcw className="size-3.5" aria-hidden />
-            Try again
-          </button>
+          {cameraError !== "insecure_context" && (
+            <button
+              type="button"
+              onClick={() => setAttempt((n) => n + 1)}
+              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+            >
+              <RotateCcw className="size-3.5" aria-hidden />
+              Try again
+            </button>
+          )}
           {cameraError === "permission" && isAndroidChrome() && (
             <a
               href="intent://com.android.chrome#Intent;scheme=package;package=com.android.chrome;action=android.settings.APPLICATION_DETAILS_SETTINGS;end"
@@ -106,12 +119,17 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
 }
 
 const CAMERA_ERROR_COPY: Record<CameraErrorKind, { message: string; hint?: string }> = {
+  insecure_context: {
+    message: "Camera requires HTTPS on mobile devices.",
+    hint: "Browsers block live camera streaming over non-localhost HTTP. You can upload a photo or enter the serial code manually below.",
+  },
   permission: {
     message: "Camera permission is blocked for this site.",
     hint: "Tap the lock/site-info icon next to the address bar → Permissions → Camera → Allow, then tap \"Try again\".",
   },
   not_found: {
-    message: "No camera found on this device.",
+    message: "No camera found or permission denied.",
+    hint: "Make sure camera permission is granted, or upload a photo / enter code manually below.",
   },
   in_use: {
     message: "Camera is already in use by another app.",
@@ -119,6 +137,7 @@ const CAMERA_ERROR_COPY: Record<CameraErrorKind, { message: string; hint?: strin
   },
   unknown: {
     message: "Camera unavailable. Please try again.",
+    hint: "You can also upload a photo or enter the code manually below.",
   },
 };
 

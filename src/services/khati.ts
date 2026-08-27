@@ -50,10 +50,18 @@ export async function processQrScan(
   if (code.type === "master") throw new Error("Master box QR codes cannot be scanned for points.");
   if (code.type !== "product" && code.type !== "small") throw new Error("Only product or small box QR codes earn points.");
   if (code.status === "scanned") throw new Error("This QR code has already been scanned.");
-  if (code.status !== "active") throw new Error("QR code is not active  it must be dispatched to a counter first.");
-  if (!code.counterId) throw new Error("QR code has not been dispatched to a counter.");
 
-  const khati = await User.findById(khatiId).select("phone name").lean();
+  const { isDispatchEnabled } = await import("@/services/settings");
+  const dispatchEnabled = await isDispatchEnabled();
+
+  if (code.status !== "active") {
+    throw new Error(dispatchEnabled ? "QR code is not active — it must be dispatched to a counter first." : "QR code is not active.");
+  }
+  if (dispatchEnabled && !code.counterId) {
+    throw new Error("QR code has not been dispatched to a counter.");
+  }
+
+  const khati = await User.findById(khatiId).select("phone name counterId").lean();
   if (!khati) throw new Error("Karigar account not found.");
   // A karigar may scan a product dispatched to ANY counter — points go into
   // their single shared wallet regardless of which counter owns the QR. The
@@ -61,18 +69,19 @@ export async function processQrScan(
   // returned; redemption stays restricted to the karigar's registered counter.
 
   const now = new Date();
+  const effectiveCounterId = code.counterId || khati.counterId || null;
 
   // ── Small-box scan: credit only the still-unscanned product children ──
   // Already-scanned products (status !== "active") are deliberately excluded so
   // they stay owned by the khati who scanned them first. Ownership is tracked
   // per product via scannedByKhatiId, so returns reverse points from the exact
-  // owner  never from whoever happened to scan the box.
+  // owner — never from whoever happened to scan the box.
   if (code.type === "small") {
     const productCodes = await QrCode.find({
       parentQrId: code._id,
       type: "product",
       status: "active",
-      counterId: code.counterId, // never assign a child re-dispatched elsewhere
+      ...(code.counterId ? { counterId: code.counterId } : {}),
     }).lean();
 
     if (productCodes.length === 0) {
@@ -85,11 +94,25 @@ export async function processQrScan(
       // Mark every product code as scanned
       QrCode.updateMany(
         { _id: { $in: productCodes.map((c) => c._id) } },
-        { $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now, returned: false, returnedAt: null } },
+        {
+          $set: {
+            status: "scanned",
+            scannedByKhatiId: khatiId,
+            scannedAt: now,
+            returned: false,
+            returnedAt: null,
+            ...(!code.counterId && effectiveCounterId ? { counterId: effectiveCounterId } : {}),
+          },
+        },
       ),
       // Mark the small box itself as scanned for traceability
       QrCode.findByIdAndUpdate(code._id, {
-        $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now },
+        $set: {
+          status: "scanned",
+          scannedByKhatiId: khatiId,
+          scannedAt: now,
+          ...(!code.counterId && effectiveCounterId ? { counterId: effectiveCounterId } : {}),
+        },
       }),
     ]);
 
@@ -122,7 +145,14 @@ export async function processQrScan(
   const pts = code.rewardPoints ?? 0;
 
   await QrCode.findByIdAndUpdate(code._id, {
-    $set: { status: "scanned", scannedByKhatiId: khatiId, scannedAt: now, returned: false, returnedAt: null },
+    $set: {
+      status: "scanned",
+      scannedByKhatiId: khatiId,
+      scannedAt: now,
+      returned: false,
+      returnedAt: null,
+      ...(!code.counterId && effectiveCounterId ? { counterId: effectiveCounterId } : {}),
+    },
   });
 
   const updated = await User.findByIdAndUpdate(

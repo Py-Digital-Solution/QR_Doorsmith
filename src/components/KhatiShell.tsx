@@ -7,6 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOutKhati } from "@/actions/auth";
 import { PoweredBy } from "./PoweredBy";
+import { PromotionalBanner } from "./PromotionalBanner";
 import {
   Home,
   ScanLine,
@@ -31,7 +32,7 @@ import {
 } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { UserMenu } from "./UserMenu";
-import { NAV } from "@/lib/nav";
+import { NAV, type NavItem } from "@/lib/nav";
 import type { UserRole } from "@/lib/roles";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -54,10 +55,14 @@ export function KhatiShell({
   user,
   children,
   banner,
+  navItems,
+  redemptionsEnabled = true,
 }: {
   user: { name?: string; email?: string; role: UserRole };
   children: ReactNode;
   banner?: { image: string; enabled: boolean } | null;
+  navItems?: NavItem[];
+  redemptionsEnabled?: boolean;
 }) {
   const pathname = usePathname() ?? "";
   const [moreOpen, setMoreOpen] = useState(false);
@@ -65,11 +70,6 @@ export function KhatiShell({
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
-  const bannerKey = banner?.image
-    ? `khati_banner_${banner.image.length}_${banner.image.slice(-12)}`
-    : null;
-
   useEffect(() => {
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -87,17 +87,6 @@ export function KhatiShell({
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  useEffect(() => {
-    if (!bannerKey) { setShowBanner(false); return; }
-    const dismissed = localStorage.getItem(bannerKey);
-    setShowBanner(!dismissed);
-  }, [bannerKey]);
-
-  function dismissBanner() {
-    if (bannerKey) localStorage.setItem(bannerKey, "1");
-    setShowBanner(false);
-  }
-
   async function installApp() {
     if (!installPrompt) return;
     await installPrompt.prompt();
@@ -110,11 +99,16 @@ export function KhatiShell({
     setSubPanel(null);
   }
 
+  const activeTabs = TABS.filter(
+    (t) => redemptionsEnabled || t.href !== "/khati/redemptions"
+  );
+  const sidebarItems = navItems ?? NAV.khati;
+
   return (
     <div className="flex h-dvh overflow-hidden bg-gray-50">
 
       {/* ── Desktop sidebar (hidden on mobile) ─────────────────────────── */}
-      <Sidebar items={NAV.khati} className="hidden md:flex" />
+      <Sidebar items={sidebarItems} className="hidden md:flex" />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
@@ -131,30 +125,9 @@ export function KhatiShell({
           <img src="/logo.svg" alt="Gati Growth Labs" className="h-6 w-auto object-contain" />
         </header>
 
-        {/* ── Page content ───────────────────────────────────────────────── */}
-        {/* pb-24 on mobile gives room for the fixed bottom nav */}
         <main className="flex-1 overflow-y-auto">
-          {/* Promotional banner  floats at top of content, dismissible per-device */}
-          {showBanner && banner?.image && (
-            <div className="sticky top-0 z-20 w-full">
-              <div className="relative overflow-hidden shadow-overlay">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={banner.image}
-                  alt="Announcement"
-                  className="max-h-52 w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={dismissBanner}
-                  className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
-                  aria-label="Dismiss banner"
-                >
-                  <X className="size-4" aria-hidden />
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Promotional banner — floats at top of content, dismissible per-device */}
+          <PromotionalBanner banner={banner} />
 
           <div className="mx-auto w-full max-w-6xl p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}
@@ -166,7 +139,7 @@ export function KhatiShell({
       {/* ── Mobile bottom navigation (hidden on desktop) ───────────────── */}
       <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden">
         <div className="flex">
-          {TABS.map(({ href, label, Icon }) => {
+          {activeTabs.map(({ href, label, Icon }) => {
             const active = pathname === href;
             return (
               <Link

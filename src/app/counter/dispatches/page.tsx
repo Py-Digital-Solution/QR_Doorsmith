@@ -19,12 +19,18 @@ import { EmptyState } from "@/components/ui/EmptyState";
 const billLink =
   "focus-ring inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-brand-dark transition-colors hover:bg-brand-light";
 
+import { redirect } from "next/navigation";
+import { isDispatchEnabled } from "@/services/settings";
+
 export default async function CounterDispatchesPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
   const session = await auth();
+  if (!(await isDispatchEnabled())) {
+    redirect("/counter/dashboard");
+  }
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";

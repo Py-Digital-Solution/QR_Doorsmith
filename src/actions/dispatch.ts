@@ -7,6 +7,8 @@ import { auth } from "@/auth";
 import { createDispatch } from "@/services/dispatch";
 import { logAudit } from "@/services/audit";
 
+import { isDispatchEnabled } from "@/services/settings";
+
 export type ActionState = {
   error?: string;
   ok?: boolean;
@@ -21,6 +23,10 @@ export async function createDispatchAction(input: {
 }): Promise<ActionState> {
   const session = await auth();
   if (session?.user?.role !== "admin") return { error: "Not authorized." };
+
+  if (!(await isDispatchEnabled())) {
+    return { error: "Dispatch module is currently disabled." };
+  }
 
   try {
     const res = await createDispatch({

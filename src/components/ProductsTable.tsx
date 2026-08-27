@@ -13,7 +13,13 @@ import {
 } from "./ui/Table";
 import { EmptyState } from "./ui/EmptyState";
 
-export function ProductsTable({ products }: { products: ProductDTO[] }) {
+export function ProductsTable({
+  products,
+  counterRewardsEnabled = true,
+}: {
+  products: ProductDTO[];
+  counterRewardsEnabled?: boolean;
+}) {
   if (products.length === 0) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white shadow-card">
@@ -35,13 +41,16 @@ export function ProductsTable({ products }: { products: ProductDTO[] }) {
             key={p.id}
             title={p.name}
             badge={<Badge tone={statusTone(p.status)}>{p.status}</Badge>}
-            actions={<ProductActions product={p} />}
+            actions={<ProductActions product={p} counterRewardsEnabled={counterRewardsEnabled} />}
           >
             <p className="font-mono">{p.sku}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
               <span>MRP ₹{p.mrp}</span>
               <span>Sales ₹{p.salesPrice}</span>
-              <span className="font-medium text-brand-dark">{p.rewardPoints} pts</span>
+              <span className="font-medium text-brand-dark">Karigar: {p.rewardPoints} pts</span>
+              {counterRewardsEnabled && (
+                <span className="font-medium text-blue-700">Counter: {p.counterRewardPoints ?? 0} pts</span>
+              )}
             </div>
           </MobileCard>
         ))}
@@ -55,7 +64,8 @@ export function ProductsTable({ products }: { products: ProductDTO[] }) {
             <TH>Name</TH>
             <TH align="right">MRP</TH>
             <TH align="right">Sales</TH>
-            <TH align="right">Points</TH>
+            <TH align="right">Karigar Pts</TH>
+            {counterRewardsEnabled && <TH align="right">Counter Pts</TH>}
             <TH>Status</TH>
             <TH align="right">Actions</TH>
           </THead>
@@ -69,11 +79,16 @@ export function ProductsTable({ products }: { products: ProductDTO[] }) {
                 <TD align="right" className="font-medium text-brand-dark">
                   {p.rewardPoints}
                 </TD>
+                {counterRewardsEnabled && (
+                  <TD align="right" className="font-medium text-blue-700">
+                    {p.counterRewardPoints ?? 0}
+                  </TD>
+                )}
                 <TD>
                   <Badge tone={statusTone(p.status)}>{p.status}</Badge>
                 </TD>
                 <TD>
-                  <ProductActions product={p} />
+                  <ProductActions product={p} counterRewardsEnabled={counterRewardsEnabled} />
                 </TD>
               </TR>
             ))}

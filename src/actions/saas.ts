@@ -101,6 +101,8 @@ export async function toggleOrganizationStatusAction(
   }
 }
 
+import { normalizePhone } from "@/lib/phone";
+
 export async function createOrgAdminAction(
   _prev: ActionState,
   formData: FormData
@@ -112,10 +114,11 @@ export async function createOrgAdminAction(
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const rawPhone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "").trim();
   const orgId = String(formData.get("orgId") ?? "").trim();
 
-  const parsed = createOrgAdminSchema.safeParse({ name, email, password, orgId });
+  const parsed = createOrgAdminSchema.safeParse({ name, email, phone: rawPhone, password, orgId });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
@@ -125,6 +128,15 @@ export async function createOrgAdminAction(
     const existing = await User.findOne({ email });
     if (existing) {
       return { error: "A user with this email already exists." };
+    }
+
+    let phone: string | undefined = undefined;
+    if (rawPhone) {
+      phone = normalizePhone(rawPhone);
+      const existingPhone = await User.findOne({ phone });
+      if (existingPhone) {
+        return { error: "A user with this phone number already exists." };
+      }
     }
 
     const org = await Organization.findById(orgId);
@@ -139,6 +151,7 @@ export async function createOrgAdminAction(
       role: "admin",
       name,
       email,
+      phone,
       passwordHash,
       orgId,
       status: org.status === "active" ? "active" : "suspended",
@@ -226,6 +239,7 @@ export async function updateOrgAdminAction(
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const rawPhone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "").trim();
   const orgId = String(formData.get("orgId") ?? "").trim();
 
@@ -253,6 +267,18 @@ export async function updateOrgAdminAction(
     }
 
     const updates: Record<string, unknown> = { name, email, orgId };
+
+    if (rawPhone) {
+      const phone = normalizePhone(rawPhone);
+      const existingPhone = await User.findOne({ phone, _id: { $ne: userId } });
+      if (existingPhone) {
+        return { error: "Another user with this phone number already exists." };
+      }
+      updates.phone = phone;
+    } else {
+      updates.phone = undefined;
+    }
+
     if (password) {
       updates.passwordHash = await hashPassword(password);
     }

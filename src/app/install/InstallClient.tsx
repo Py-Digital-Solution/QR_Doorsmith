@@ -23,7 +23,15 @@ interface BeforeInstallPromptEvent extends Event {
 
 type Platform = "ios" | "android" | "desktop";
 
-export default function InstallClient() {
+export default function InstallClient({
+  companyName = "Rewards",
+  logo,
+  phone = "+91 89504 83393",
+}: {
+  companyName?: string;
+  logo?: string;
+  phone?: string;
+}) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [platform, setPlatform] = useState<Platform>("android");
   const [isStandalone, setIsStandalone] = useState(false);
@@ -98,15 +106,23 @@ export default function InstallClient() {
 
       <header className="container mx-auto px-6 py-6 flex items-center justify-between relative z-10">
         <Link href="/" className="flex items-center gap-2 group">
-          <Image
-            src="/icons/icon-192.png"
-            alt="DoorSmith logo"
-            width={36}
-            height={36}
-            className="rounded-lg shadow-md group-hover:scale-105 transition-transform"
-          />
+          {logo ? (
+            <img
+              src={logo}
+              alt={companyName}
+              className="h-9 w-auto rounded-lg shadow-md group-hover:scale-105 transition-transform object-contain"
+            />
+          ) : (
+            <Image
+              src="/icons/icon-192.png"
+              alt={companyName}
+              width={36}
+              height={36}
+              className="rounded-lg shadow-md group-hover:scale-105 transition-transform"
+            />
+          )}
           <span className="font-semibold text-lg tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            DoorSmith
+            {companyName}
           </span>
         </Link>
         <Link 
@@ -132,11 +148,11 @@ export default function InstallClient() {
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
                 Download & Install <br />
                 <span className="bg-gradient-to-r from-brand to-orange-400 bg-clip-text text-transparent">
-                  DoorSmith App
+                  {companyName} App
                 </span>
               </h1>
               <p className="text-gray-300 text-lg max-w-xl">
-                Install the DoorSmith Karigar Rewards app directly to your mobile device or desktop. Enjoy fast page loading, offline utility, and quick notifications.
+                Install the {companyName} Rewards app directly to your mobile device or desktop. Enjoy fast page loading, offline utility, and quick notifications.
               </p>
             </div>
 
@@ -164,7 +180,7 @@ export default function InstallClient() {
                     <Check className="size-6" />
                   </div>
                   <h3 className="font-semibold text-lg text-emerald-400">App successfully installed!</h3>
-                  <p className="text-sm text-gray-300">You can now open DoorSmith from your home screen icon.</p>
+                  <p className="text-sm text-gray-300">You can now open {companyName} from your home screen icon.</p>
                   <Link 
                     href="/khati" 
                     className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors mt-2"
@@ -299,10 +315,14 @@ export default function InstallClient() {
                 <div className="bg-brand-navy text-white px-4 pt-4 pb-6 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="size-8 bg-white rounded-lg flex items-center justify-center shadow-md">
-                      <Image src="/logo.png" alt="Brand Logo" width={24} height={24} className="h-4 w-auto object-contain" />
+                      {logo ? (
+                        <img src={logo} alt={companyName} className="h-4 w-auto object-contain" />
+                      ) : (
+                        <Image src="/logo.png" alt={companyName} width={24} height={24} className="h-4 w-auto object-contain" />
+                      )}
                     </div>
                     <div>
-                      <p className="font-bold text-[11px] leading-tight">DoorSmith</p>
+                      <p className="font-bold text-[11px] leading-tight">{companyName}</p>
                       <p className="text-[9px] text-brand">Karigar Portal</p>
                     </div>
                   </div>
@@ -340,7 +360,7 @@ export default function InstallClient() {
                           +
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800 text-[10px]">Premium Wooden Door</p>
+                          <p className="font-medium text-gray-800 text-[10px]">Premium Product</p>
                           <p className="text-[8px] text-gray-400">Scan ID: #48192</p>
                         </div>
                       </div>
@@ -354,7 +374,7 @@ export default function InstallClient() {
                           +
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800 text-[10px]">Flush Door Classic</p>
+                          <p className="font-medium text-gray-800 text-[10px]">Standard Product</p>
                           <p className="text-[8px] text-gray-400">Scan ID: #48011</p>
                         </div>
                       </div>
@@ -369,7 +389,7 @@ export default function InstallClient() {
                         </div>
                         <div>
                           <p className="font-medium text-gray-800 text-[10px]">Points Redeemed</p>
-                          <p className="text-[8px] text-gray-400">Khati Counter #3</p>
+                          <p className="text-[8px] text-gray-400">Counter #3</p>
                         </div>
                       </div>
                       <span className="font-bold text-brand-blue text-[11px]">-500 pts</span>
@@ -411,13 +431,17 @@ export default function InstallClient() {
       <footer className="border-t border-white/5 py-12 relative z-10 bg-slate-950/40">
         <div className="container mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <p className="text-sm text-gray-400">
-            © 2026 DoorSmith · Powered by{" "}
+            © {new Date().getFullYear()} {companyName} · Powered by{" "}
             <span className="text-gray-300 font-medium">Gati Growth Labs</span>
-            {" · "}
-            Support:{" "}
-            <a href="tel:+918950483393" className="text-brand hover:underline font-medium">
-              +91 89504 83393
-            </a>
+            {phone ? (
+              <>
+                {" · "}
+                Support:{" "}
+                <a href={`tel:${phone}`} className="text-brand hover:underline font-medium">
+                  {phone}
+                </a>
+              </>
+            ) : null}
           </p>
           <div className="flex items-center gap-6 text-sm text-gray-400">
             <Link href="/login" className="hover:text-white transition-colors">
@@ -439,7 +463,7 @@ export default function InstallClient() {
               <div>
                 <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                   <ArrowDownToLine className="size-5 text-brand" />
-                  Install DoorSmith App
+                  Install {companyName} App
                 </h3>
                 <p className="text-xs text-gray-400 mt-1">
                   Add to home screen for direct app access.

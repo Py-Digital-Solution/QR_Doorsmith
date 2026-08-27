@@ -3,12 +3,18 @@ import { auth } from "@/auth";
 import { processQrReturn } from "@/services/khati";
 import { logAudit } from "@/services/audit";
 
+import { isReturnsEnabled } from "@/services/settings";
+
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const session = await auth();
   if (session?.user?.role !== "counter") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!(await isReturnsEnabled())) {
+    return NextResponse.json({ error: "Returns module is currently disabled." }, { status: 400 });
   }
 
   const body = await req.json().catch(() => ({}));

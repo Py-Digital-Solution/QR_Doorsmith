@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-const DEFAULT_MESSAGE = "This is a test message from DoorSmith. If you're reading this, WhatsApp sending is working ✅";
-
 /** Send a one-off WhatsApp message to any number, to confirm the bridge is actually delivering. */
-export function TestWhatsAppForm() {
+export function TestWhatsAppForm({ companyName }: { companyName?: string }) {
+  const defaultMessage = companyName?.trim()
+    ? `This is a test message from ${companyName.trim()}. If you're reading this, WhatsApp sending is working ✅`
+    : "This is a test message. If you're reading this, WhatsApp sending is working ✅";
+
   const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState(DEFAULT_MESSAGE);
+  const [message, setMessage] = useState(defaultMessage);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 

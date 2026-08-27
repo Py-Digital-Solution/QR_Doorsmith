@@ -185,8 +185,8 @@ export function WhatsAppPanel() {
     <div className="space-y-3">
       {state.unreachable && (
         <Alert variant="error">
-          Cannot reach the WhatsApp service. Make sure the{" "}
-          <code className="font-mono text-xs">whatsapp-service</code> is running on your Oracle VM.
+          Cannot reach the WhatsApp service. Please ensure the{" "}
+          <code className="font-mono text-xs">whatsapp-service</code> bridge is running and reachable at your configured URL.
         </Alert>
       )}
 

@@ -18,6 +18,9 @@ export type CompanyBranding = {
   email: string;
   address: string;
   website: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  youtubeUrl?: string;
 };
 
 export async function getCompanyBranding(): Promise<CompanyBranding> {
@@ -37,6 +40,9 @@ export async function getCompanyBranding(): Promise<CompanyBranding> {
     email,
     address,
     website,
+    instagramUrl,
+    facebookUrl,
+    youtubeUrl,
   ] = await Promise.all([
     getSetting<string>("company_name", ""),
     getSetting<string>("company_logo", ""),
@@ -51,10 +57,13 @@ export async function getCompanyBranding(): Promise<CompanyBranding> {
     getSetting<string>("company_email", ""),
     getSetting<string>("company_address", ""),
     getSetting<string>("company_website", ""),
+    getSetting<string>("company_instagram_url", ""),
+    getSetting<string>("company_facebook_url", ""),
+    getSetting<string>("company_youtube_url", ""),
   ]);
 
   let result: CompanyBranding = {
-    name,
+    name: name || "GatiQ",
     logo,
     favicon,
     brandColor: brandColorSetting || "#F97316",
@@ -67,6 +76,9 @@ export async function getCompanyBranding(): Promise<CompanyBranding> {
     email,
     address,
     website,
+    instagramUrl: instagramUrl || "",
+    facebookUrl: facebookUrl || "",
+    youtubeUrl: youtubeUrl || "",
   };
 
   // If user belongs to an organization, override default branding with tenant org branding
@@ -88,7 +100,10 @@ export async function getCompanyBranding(): Promise<CompanyBranding> {
           phone: org.branding?.phone || result.phone,
           email: org.branding?.email || result.email,
           address: org.branding?.address || result.address,
-          website: result.website,
+          website: org.branding?.website || result.website,
+          instagramUrl: org.branding?.instagramUrl || result.instagramUrl,
+          facebookUrl: org.branding?.facebookUrl || result.facebookUrl,
+          youtubeUrl: org.branding?.youtubeUrl || result.youtubeUrl,
         };
       }
     } catch {

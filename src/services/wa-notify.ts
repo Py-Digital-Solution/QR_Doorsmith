@@ -10,7 +10,10 @@ import { waSend } from "@/services/whatsapp";
  * inside waSend()).
  */
 
+import { getCompanyBranding } from "@/services/branding";
+
 const ROLE_LABEL: Record<string, string> = {
+  super_admin: "Super Admin",
   admin: "Admin",
   sales_rep: "Sales Rep",
   distributor: "Distributor",
@@ -18,7 +21,7 @@ const ROLE_LABEL: Record<string, string> = {
   khati: "Karigar",
 };
 
-const APP_URL = "https://app.doorsmith.in";
+const getAppUrl = () => process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 function fire(phone: string | null | undefined, message: string, type: string) {
   if (!phone) return;
@@ -49,7 +52,7 @@ export function notifyReturnReversed(phone: string | null | undefined, name: str
 export function notifyRedemptionRequested(counterPhone: string | null | undefined, counterName: string, khatiName: string, points: number) {
   fire(
     counterPhone,
-    `🎁 *नई रिडेम्पशन अनुरोध | New Redemption Request*\n\nनमस्ते ${nm(counterName)}, ${nm(khatiName)} ने *${points}* अंक रिडीम करने का अनुरोध किया है।\nHi ${nm(counterName)}, ${nm(khatiName)} has requested to redeem *${points}* points.\n\nकृपया DoorSmith पर समीक्षा करें।\nPlease review it on DoorSmith.`,
+    `🎁 *नई रिडेम्पशन अनुरोध | New Redemption Request*\n\nनमस्ते ${nm(counterName)}, ${nm(khatiName)} ने *${points}* अंक रिडीम करने का अनुरोध किया है।\nHi ${nm(counterName)}, ${nm(khatiName)} has requested to redeem *${points}* points.\n\nकृपया ऐप पर समीक्षा करें।\nPlease review it on the app.`,
     "redemption",
   );
 }
@@ -91,11 +94,14 @@ export function notifyDispatchCreated(counterPhone: string | null | undefined, c
 }
 
 /** 8. Staff account created → new staff member. */
-export function notifyStaffWelcome(phone: string | null | undefined, name: string | null | undefined, role: string, email: string) {
+export async function notifyStaffWelcome(phone: string | null | undefined, name: string | null | undefined, role: string, email: string) {
   const label = ROLE_LABEL[role] ?? "Staff";
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "Gati Growth Labs";
+  const appUrl = getAppUrl();
   fire(
     phone,
-    `🎉 *DoorSmith में स्वागत है | Welcome to DoorSmith*\n\nनमस्ते ${nm(name)}, आपका ${label} खाता बन गया है।\nHi ${nm(name)}, your ${label} account has been created.\n\n🔑 लॉगिन विवरण आपके ईमेल (${email}) पर भेजे गए हैं।\nYour login details have been sent to your email (${email}).\n\n🔗 लॉग इन करें | Log in: ${APP_URL}/login`,
+    `🎉 *${companyName} में स्वागत है | Welcome to ${companyName}*\n\nनमस्ते ${nm(name)}, आपका ${label} खाता बन गया है।\nHi ${nm(name)}, your ${label} account has been created.\n\n🔑 लॉगिन विवरण आपके ईमेल (${email}) पर भेजे गए हैं।\nYour login details have been sent to your email (${email}).\n\n🔗 लॉग इन करें | Log in: ${appUrl}/login`,
     "welcome",
   );
 }
@@ -110,17 +116,19 @@ export function notifyKarigarLinked(phone: string | null | undefined, name: stri
 }
 
 /** 10. Account suspended or reactivated → the user. */
-export function notifyAccountStatus(phone: string | null | undefined, name: string | null | undefined, status: string) {
+export async function notifyAccountStatus(phone: string | null | undefined, name: string | null | undefined, status: string) {
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "Gati Growth Labs";
   if (status === "suspended") {
     fire(
       phone,
-      `⛔ *खाता निलंबित | Account Suspended*\n\nनमस्ते ${nm(name)}, आपका DoorSmith खाता निलंबित कर दिया गया है।\nHi ${nm(name)}, your DoorSmith account has been suspended.\n\nसहायता के लिए संपर्क करें।\nPlease contact support for assistance.`,
+      `⛔ *खाता निलंबित | Account Suspended*\n\nनमस्ते ${nm(name)}, आपका ${companyName} खाता निलंबित कर दिया गया है।\nHi ${nm(name)}, your ${companyName} account has been suspended.\n\nसहायता के लिए संपर्क करें।\nPlease contact support for assistance.`,
       "account_status",
     );
   } else if (status === "active") {
     fire(
       phone,
-      `✅ *खाता सक्रिय | Account Active*\n\nनमस्ते ${nm(name)}, आपका DoorSmith खाता सक्रिय है। अब आप लॉग इन कर सकते हैं।\nHi ${nm(name)}, your DoorSmith account is active. You can log in now.`,
+      `✅ *खाता सक्रिय | Account Active*\n\nनमस्ते ${nm(name)}, आपका ${companyName} खाता सक्रिय है। अब आप लॉग इन कर सकते हैं।\nHi ${nm(name)}, your ${companyName} account is active. You can log in now.`,
       "account_status",
     );
   }
@@ -133,4 +141,35 @@ export function notifyCounterKycToAdmin(adminPhone: string | null | undefined, c
     `🪪 *काउंटर KYC पूर्ण | Counter KYC Completed*\n\n*${nm(counterName)}* ने अपना KYC (फोटो + पता) पूरा कर लिया है।\n*${nm(counterName)}* has completed their KYC (photo + address).`,
     "kyc",
   );
+}
+
+/** 12. Universal Magic Login Notification (Phone + Email) */
+export async function sendMagicLoginNotification(params: {
+  phone?: string | null;
+  email?: string | null;
+  name?: string | null;
+  role: string;
+  magicUrl: string;
+}) {
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "Gati Growth Labs";
+  const roleLabel = ROLE_LABEL[params.role] ?? params.role;
+
+  if (params.phone) {
+    const msg = `🔐 *लॉगिन लिंक | Direct Login Link*\n\nनमस्ते ${nm(params.name)}, ${companyName} (${roleLabel}) में आपका स्वागत है।\nHi ${nm(params.name)}, welcome to ${companyName} (${roleLabel}).\n\nअपने खाते में तुरंत लॉग इन करने के लिए नीचे दिए गए लिंक पर क्लिक करें (OTP की जरूरत नहीं):\nClick the link below to sign in directly (no OTP needed):\n\n👉 ${params.magicUrl}\n\nयह लिंक सुरक्षित है और 7 दिनों तक मान्य है।\nThis link is secure and valid for 7 days.`;
+    fire(params.phone, msg, "magic_login");
+  }
+
+  if (params.email) {
+    try {
+      const { sendCustomEmail } = await import("@/services/email");
+      await sendCustomEmail({
+        to: params.email,
+        subject: `Your Login Link for ${companyName}`,
+        text: `Hello ${nm(params.name)},\n\nHere is your one-click magic login link for ${companyName} (${roleLabel}):\n\n${params.magicUrl}\n\nThis link is secure and valid for 7 days.\n\nThank you,\n${companyName} Team`,
+      });
+    } catch {
+      // ignore email sending errors
+    }
+  }
 }

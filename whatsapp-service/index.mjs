@@ -25,12 +25,33 @@ import {
   fetchLatestBaileysVersion,
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
-import { existsSync, promises as fsPromises } from "fs";
+import { existsSync, readFileSync, promises as fsPromises } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const __dir = dirname(fileURLToPath(import.meta.url));
+
+// Load .env if present
+const envPath = resolve(__dir, ".env");
+if (existsSync(envPath)) {
+  try {
+    const raw = readFileSync(envPath, "utf-8");
+    for (const line of raw.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const idx = trimmed.indexOf("=");
+      if (idx !== -1) {
+        const k = trimmed.slice(0, idx).trim();
+        const v = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+        if (!process.env[k]) process.env[k] = v;
+      }
+    }
+  } catch (err) {
+    console.warn("[wa] Could not read .env:", err.message);
+  }
+}
+
 const PORT = Number(process.env.WA_SERVICE_PORT || 3099);
 const SECRET = process.env.WA_SERVICE_SECRET || "";
 const AUTH_DIR = resolve(__dir, "auth_info");

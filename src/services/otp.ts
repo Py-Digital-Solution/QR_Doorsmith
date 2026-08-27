@@ -6,6 +6,8 @@ import { waSendOtp, type WaOtpFailReason } from "@/services/whatsapp";
 import { getSetting, setSetting } from "@/services/settings";
 import { sendWaDisconnectedAlert } from "@/services/email";
 
+import { getCompanyBranding } from "@/services/branding";
+
 const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN_MS = 30 * 1000; // min gap between OTP sends per phone
@@ -16,8 +18,8 @@ function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function otpMessage(code: string): string {
-  return `🔐 *DoorSmith लॉगिन कोड | Login Code*\n\nआपका लॉगिन कोड है: *${code}*\nYour login code is: *${code}*\n\n5 मिनट में समाप्त होगा। किसी के साथ साझा न करें।\nExpires in 5 minutes. Do not share with anyone.`;
+function otpMessage(code: string, companyName = "GatiQ"): string {
+  return `🔐 *${companyName} लॉगिन कोड | Login Code*\n\nआपका लॉगिन कोड है: *${code}*\nYour login code is: *${code}*\n\n5 मिनट में समाप्त होगा। किसी के साथ साझा न करें।\nExpires in 5 minutes. Do not share with anyone.`;
 }
 
 export type OtpRequestResult =
@@ -48,9 +50,10 @@ export async function requestOtp(phone: string): Promise<OtpRequestResult> {
   }
 
   const code = generateCode();
+  const branding = await getCompanyBranding();
 
   // Try WhatsApp first. Only store the code if it was actually delivered.
-  const wa = await waSendOtp(phone, otpMessage(code));
+  const wa = await waSendOtp(phone, otpMessage(code, branding.name));
   if (!wa.ok) {
     // If the WhatsApp bridge itself is down/unreachable, alert admins by email
     // before the caller falls back to Firebase SMS. `not_registered` means

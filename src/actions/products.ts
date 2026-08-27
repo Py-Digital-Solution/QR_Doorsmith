@@ -19,13 +19,30 @@ async function getAdminSession() {
 }
 
 function parse(formData: FormData) {
+  const getNum = (key: string, name: string, fallback?: number) => {
+    const raw = formData.get(key);
+    if (raw === null || String(raw).trim() === "") {
+      if (fallback !== undefined) return fallback;
+      throw new Error(`${name} is required.`);
+    }
+    const val = Number(raw);
+    if (!Number.isFinite(val) || val < 0) {
+      throw new Error(`${name} must be a number ≥ 0.`);
+    }
+    return val;
+  };
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("Product name is required.");
+
   return {
-    sku: String(formData.get("sku") ?? ""),
-    name: String(formData.get("name") ?? ""),
-    mrp: Number(formData.get("mrp") ?? 0),
-    salesPrice: Number(formData.get("salesPrice") ?? 0),
-    rewardPoints: Number(formData.get("rewardPoints") ?? 0),
-    description: String(formData.get("description") ?? "") || undefined,
+    sku: String(formData.get("sku") ?? "").trim(),
+    name,
+    mrp: getNum("mrp", "MRP", 0),
+    salesPrice: getNum("salesPrice", "Sales Price", 0),
+    rewardPoints: getNum("rewardPoints", "Karigar Points", 0),
+    counterRewardPoints: getNum("counterRewardPoints", "Counter Points", 0),
+    description: String(formData.get("description") ?? "").trim() || undefined,
     videoLinks: formData
       .getAll("videoLinks")
       .map((v) => String(v).trim())

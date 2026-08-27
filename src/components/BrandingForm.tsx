@@ -34,6 +34,9 @@ export function BrandingForm({ initial }: { initial: CompanyBranding }) {
   const [email, setEmail] = useState(initial.email);
   const [website, setWebsite] = useState(initial.website);
   const [address, setAddress] = useState(initial.address);
+  const [instagramUrl, setInstagramUrl] = useState(initial.instagramUrl || "");
+  const [facebookUrl, setFacebookUrl] = useState(initial.facebookUrl || "");
+  const [youtubeUrl, setYoutubeUrl] = useState(initial.youtubeUrl || "");
 
   const [logoUrl, setLogoUrl] = useState(initial.logo);
   const [faviconUrl, setFaviconUrl] = useState(initial.favicon || "");
@@ -312,7 +315,7 @@ export function BrandingForm({ initial }: { initial: CompanyBranding }) {
             name="company_name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. DoorSmith Hardware"
+            placeholder="e.g. Acme Hardware"
           />
         </div>
         <div>
@@ -359,6 +362,39 @@ export function BrandingForm({ initial }: { initial: CompanyBranding }) {
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
             placeholder="https://company.com"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2 border-t border-gray-100">
+        <div>
+          <Label>Instagram Page URL</Label>
+          <Input
+            name="company_instagram_url"
+            type="url"
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            placeholder="https://instagram.com/yourbrand"
+          />
+        </div>
+        <div>
+          <Label>Facebook Page URL</Label>
+          <Input
+            name="company_facebook_url"
+            type="url"
+            value={facebookUrl}
+            onChange={(e) => setFacebookUrl(e.target.value)}
+            placeholder="https://facebook.com/yourbrand"
+          />
+        </div>
+        <div>
+          <Label>YouTube Channel URL</Label>
+          <Input
+            name="company_youtube_url"
+            type="url"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder="https://youtube.com/@yourbrand"
           />
         </div>
       </div>

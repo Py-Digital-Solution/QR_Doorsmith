@@ -11,8 +11,8 @@ export function Sidebar({
   className?: string;
   branding?: { name: string; logo: string };
 }) {
-  const companyName = branding?.name || "DoorSmith";
-  const logoUrl = branding?.logo || "/logo.png";
+  const companyName = branding?.name || "GatiQ";
+  const logoUrl = branding?.logo || "";
 
   return (
     <aside

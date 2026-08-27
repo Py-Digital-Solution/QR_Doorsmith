@@ -41,6 +41,16 @@ export function KycCard({ khati, showStatus, readOnly }: { khati: PendingKhatiDT
               )}
             </div>
             <p className="text-xs text-gray-500">{khati.phone}</p>
+            {khati.counterName && (
+              <p className="mt-1 text-xs text-gray-600">
+                Counter: <span className="font-medium text-gray-800">{khati.counterName}</span>
+                {khati.counterStatus && (
+                  <span className="ml-1.5 inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.2 text-[10px] font-medium text-blue-700 capitalize">
+                    {khati.counterStatus}
+                  </span>
+                )}
+              </p>
+            )}
             {khati.dob && (
               <p className="mt-1 text-xs text-gray-500">
                 DOB:{" "}
@@ -92,6 +102,9 @@ export function KycCard({ khati, showStatus, readOnly }: { khati: PendingKhatiDT
           <div className="space-y-0.5">
             <Detail label="Name" value={khati.name} />
             <Detail label="Phone" value={khati.phone} />
+            <Detail label="Associated Counter" value={khati.counterName || "Direct / Admin"} />
+            <Detail label="Counter Status" value={khati.counterStatus || "Active"} />
+            <Detail label="Karigar KYC Status" value={STATUS_LABEL[khati.kycStatus] ?? khati.kycStatus} />
             <Detail
               label="Date of Birth"
               value={
@@ -101,7 +114,7 @@ export function KycCard({ khati, showStatus, readOnly }: { khati: PendingKhatiDT
                       month: "long",
                       year: "numeric",
                     })
-                  : "—"
+                  : ""
               }
             />
             <Detail label="Address" value={khati.address ?? "—"} />

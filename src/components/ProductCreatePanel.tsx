@@ -6,7 +6,7 @@ import { SlideOver } from "./SlideOver";
 import { ProductForm } from "./ProductForm";
 import { Button } from "./ui/Button";
 
-export function ProductCreatePanel() {
+export function ProductCreatePanel({ counterRewardsEnabled = true }: { counterRewardsEnabled?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -15,7 +15,7 @@ export function ProductCreatePanel() {
         Create product
       </Button>
       <SlideOver open={open} onClose={() => setOpen(false)} title="Create product">
-        <ProductForm onSuccess={() => setOpen(false)} />
+        <ProductForm counterRewardsEnabled={counterRewardsEnabled} onSuccess={() => setOpen(false)} />
       </SlideOver>
     </>
   );

@@ -9,7 +9,8 @@ import { Button } from "./ui/Button";
 import { Alert } from "./ui/Alert";
 import { Badge, statusTone } from "./ui/Badge";
 import { Avatar } from "./Avatar";
-import { deleteUserAction, resendRegistrationLinkAction } from "@/actions/users";
+import { deleteUserAction, resendRegistrationLinkAction, sendMagicLinkAction } from "@/actions/users";
+import { Link2 } from "lucide-react";
 import type { UserDTO } from "@/services/users";
 
 const KYC_LABEL: Record<string, { label: string; tone: "green" | "yellow" | "red" | "gray" }> = {
@@ -50,6 +51,7 @@ export function UserActions({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [magicState, setMagicState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   function onDelete() {
     setError(null);
@@ -69,6 +71,16 @@ export function UserActions({
     });
   }
 
+  function onSendMagic() {
+    setMagicState("sending");
+    setError(null);
+    startTransition(async () => {
+      const res = await sendMagicLinkAction(user.id);
+      setMagicState(res.ok ? "sent" : "error");
+      if (res.error) setError(res.error);
+    });
+  }
+
   const isKhatiPending =
     (user.role === "khati" && user.kycStatus !== "approved") ||
     (user.role === "counter" && Boolean(user.hasRegistrationToken));
@@ -81,6 +93,19 @@ export function UserActions({
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${size === "md" ? "justify-start" : "justify-end"}`}>
+      <button
+        onClick={onSendMagic}
+        disabled={magicState === "sending" || magicState === "sent"}
+        title={magicState === "sent" ? "Magic link sent to WhatsApp & Email!" : "Send direct one-click login link"}
+        className={`${btn} ${
+          magicState === "sent"
+            ? "bg-green-50 text-green-700 border-green-200"
+            : "text-purple-700 bg-purple-50 hover:bg-purple-100"
+        }`}
+      >
+        <Link2 className={icon} aria-hidden />
+        {magicState === "sending" ? "Sending…" : magicState === "sent" ? "Link Sent!" : "Magic Login"}
+      </button>
       {isKhatiPending && (
         <button
           onClick={onResend}
@@ -125,7 +150,7 @@ export function UserActions({
         </button>
       )}
 
-      {resendState === "error" && error && (
+      {(resendState === "error" || magicState === "error") && error && (
         <p className="w-full text-right text-xs text-red-500">{error}</p>
       )}
 

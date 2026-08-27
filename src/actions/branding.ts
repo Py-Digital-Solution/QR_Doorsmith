@@ -31,6 +31,9 @@ export async function saveBrandingAction(
   const companyAddress = get("company_address");
   const companyWebsite = get("company_website");
   const companyTagline = get("company_tagline");
+  const companyInstagramUrl = get("company_instagram_url");
+  const companyFacebookUrl = get("company_facebook_url");
+  const companyYoutubeUrl = get("company_youtube_url");
 
   try {
     if (session.user.orgId) {
@@ -50,6 +53,10 @@ export async function saveBrandingAction(
             email: companyEmail,
             address: companyAddress,
             tagline: companyTagline,
+            website: companyWebsite,
+            instagramUrl: companyInstagramUrl,
+            facebookUrl: companyFacebookUrl,
+            youtubeUrl: companyYoutubeUrl,
           },
         },
       });
@@ -61,6 +68,9 @@ export async function saveBrandingAction(
         setSetting("company_email", companyEmail, "Company email address"),
         setSetting("company_address", companyAddress, "Company address"),
         setSetting("company_website", companyWebsite, "Company website URL"),
+        setSetting("company_instagram_url", companyInstagramUrl, "Company Instagram page URL"),
+        setSetting("company_facebook_url", companyFacebookUrl, "Company Facebook page URL"),
+        setSetting("company_youtube_url", companyYoutubeUrl, "Company YouTube channel URL"),
         setSetting("company_logo", companyLogo, "Company logo (base64 data URL)"),
         setSetting("company_favicon", companyFavicon, "Company favicon (base64 data URL)"),
         setSetting("company_brand_color", companyBrandColor, "Company primary brand color"),

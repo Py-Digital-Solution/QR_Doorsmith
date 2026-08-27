@@ -93,6 +93,12 @@ export async function generateBatch(input: GenerateBatchInput) {
 
   const product = await Product.findById(input.productId);
   if (!product) throw new Error("Product not found.");
+  if (product.status === "inactive") {
+    throw new Error("Cannot generate QR codes for an inactive product.");
+  }
+
+  const { isDispatchEnabled } = await import("@/services/settings");
+  const dispatchActive = await isDispatchEnabled();
 
   const sku = String(product.sku ?? "XX");
 
@@ -112,7 +118,7 @@ export async function generateBatch(input: GenerateBatchInput) {
         ? smallStart + totalSmalls - 1
         : productStart + totalProducts - 1;
 
-  const batch = await QrBatch.create({
+  const batch = (await QrBatch.create({
     orgId: input.orgId,
     productId: product._id,
     createdBy: input.createdBy,
@@ -124,8 +130,8 @@ export async function generateBatch(input: GenerateBatchInput) {
     serialEnd: topEnd,
     qrSizes: input.qrSizes,
     sheetConfig: input.sheetConfig,
-    status: "in_warehouse",
-  });
+    status: (dispatchActive ? "in_warehouse" : "active") as "active" | "in_warehouse" | "archived",
+  })) as any;
 
   const meta = {
     orgId: input.orgId,
@@ -135,7 +141,8 @@ export async function generateBatch(input: GenerateBatchInput) {
     mrp: product.mrp,
     salesPrice: product.salesPrice,
     rewardPoints: product.rewardPoints,
-    status: "inactive" as QrStatus,
+    counterRewardPoints: product.counterRewardPoints ?? 0,
+    status: (dispatchActive ? "inactive" : "active") as QrStatus,
   };
 
   const docs: Record<string, unknown>[] = [];

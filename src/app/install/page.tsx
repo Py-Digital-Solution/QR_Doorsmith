@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import InstallClient from "./InstallClient";
+import { getCompanyBranding } from "@/services/branding";
 
 export const metadata: Metadata = {
-  title: "Install DoorSmith Karigar Rewards App",
-  description: "Download and install the DoorSmith app on your mobile device to scan QR codes, track, and redeem reward points instantly.",
-  applicationName: "DoorSmith Karigar Rewards",
+  title: "Install Karigar Rewards App",
+  description: "Download and install the app on your mobile device to scan QR codes, track, and redeem reward points instantly.",
+  applicationName: "Karigar Rewards",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "DoorSmith",
+    title: "Rewards",
   },
   openGraph: {
-    title: "Install DoorSmith App",
-    description: "Scan product QR codes and earn reward points with the DoorSmith Karigar Rewards app.",
+    title: "Install Rewards App",
+    description: "Scan product QR codes and earn reward points with the app.",
     type: "website",
     images: [
       {
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function InstallPage() {
-  return <InstallClient />;
+export default async function InstallPage() {
+  const branding = await getCompanyBranding();
+  return <InstallClient companyName={branding.name} logo={branding.logo} phone={branding.phone} />;
 }

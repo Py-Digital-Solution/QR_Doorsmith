@@ -17,19 +17,33 @@ const TYPES: PtType[] = [
   "manual_adjustment",
 ];
 
+import { isCounterRewardsEnabled, isReturnsEnabled } from "@/services/settings";
+
 export default async function LedgerDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; pageSize?: string; q?: string; type?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; q?: string; type?: string; userType?: string }>;
 }) {
   const session = await auth();
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";
-  const type = (TYPES.includes(sp.type as PtType) ? sp.type : undefined) as PtType | undefined;
+
+  const [counterRewardsEnabled, returnsEnabled] = await Promise.all([
+    isCounterRewardsEnabled(),
+    isReturnsEnabled(),
+  ]);
+
+  const activeTypes = TYPES.filter((t) => {
+    if (t === "return_reversal" && !returnsEnabled) return false;
+    return true;
+  });
+
+  const type = (activeTypes.includes(sp.type as PtType) ? sp.type : undefined) as PtType | undefined;
+  let userType = (sp.userType === "khati" || (sp.userType === "counter" && counterRewardsEnabled) ? sp.userType : "all") as "khati" | "counter" | "all";
 
   const orgIdFilter = session?.user?.role === "super_admin" ? undefined : session?.user?.orgId;
-  const filter = { search: q || undefined, type, orgId: orgIdFilter };
+  const filter = { search: q || undefined, type, userType, orgId: orgIdFilter };
   const [page, summary] = await Promise.all([
     listPointTransactions(filter, pagination),
     summarizePointTransactions(filter),
@@ -38,13 +52,23 @@ export default async function LedgerDashboard({
   const baseParams = new URLSearchParams();
   if (q) baseParams.set("q", q);
   if (type) baseParams.set("type", type);
+  if (userType !== "all") baseParams.set("userType", userType);
   baseParams.set("pageSize", String(pagination.pageSize));
   const basePath = `/admin/dashboards/ledger?${baseParams.toString()}`;
+
+  function userTabHref(ut: "all" | "khati" | "counter") {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (type) p.set("type", type);
+    if (ut !== "all") p.set("userType", ut);
+    return `/admin/dashboards/ledger?${p.toString()}`;
+  }
 
   function pillHref(t?: PtType) {
     const p = new URLSearchParams();
     if (q) p.set("q", q);
     if (t) p.set("type", t);
+    if (userType !== "all") p.set("userType", userType);
     return `/admin/dashboards/ledger?${p.toString()}`;
   }
 
@@ -54,6 +78,42 @@ export default async function LedgerDashboard({
         title="Points Ledger"
         description="Every point movement across the network  scans, returns, and redemptions."
       />
+
+      {/* User Category Tabs */}
+      <div className="flex border-b border-gray-200">
+        <Link
+          href={userTabHref("all")}
+          className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            userType === "all"
+              ? "border-brand text-brand"
+              : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+          }`}
+        >
+          All Ledgers
+        </Link>
+        <Link
+          href={userTabHref("khati")}
+          className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            userType === "khati"
+              ? "border-brand text-brand"
+              : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+          }`}
+        >
+          Karigar Points
+        </Link>
+        {counterRewardsEnabled && (
+          <Link
+            href={userTabHref("counter")}
+            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              userType === "counter"
+                ? "border-brand text-brand"
+                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+            }`}
+          >
+            Counter Points
+          </Link>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Points Earned" value={summary.totalEarned} icon="trending-up" tone="green" />
@@ -71,9 +131,9 @@ export default async function LedgerDashboard({
               !type ? "bg-brand text-white ring-brand" : "bg-white text-gray-600 ring-gray-300 hover:bg-gray-50"
             }`}
           >
-            All
+            All Types
           </Link>
-          {TYPES.map((t) => (
+          {activeTypes.map((t) => (
             <Link
               key={t}
               href={pillHref(t)}
@@ -88,6 +148,7 @@ export default async function LedgerDashboard({
 
         <form method="get" className="flex gap-2">
           {type && <input type="hidden" name="type" value={type} />}
+          {userType !== "all" && <input type="hidden" name="userType" value={userType} />}
           <input
             type="search"
             name="q"

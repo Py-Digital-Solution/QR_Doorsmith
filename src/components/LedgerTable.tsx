@@ -32,7 +32,7 @@ export function LedgerTable({ items }: { items: LedgerEntry[] }) {
         <table className="min-w-full text-sm">
           <thead className="border-b border-gray-100 bg-gray-50/50">
             <tr className="text-left text-xs font-semibold uppercase text-gray-500">
-              <th className="px-4 py-2.5">Karigar</th>
+              <th className="px-4 py-2.5">User</th>
               <th className="px-4 py-2.5">Type</th>
               <th className="px-4 py-2.5">Detail</th>
               <th className="px-4 py-2.5 text-right">Points</th>
@@ -43,7 +43,14 @@ export function LedgerTable({ items }: { items: LedgerEntry[] }) {
           <tbody className="divide-y divide-gray-100">
             {items.map((e) => (
               <tr key={e.id} className="hover:bg-gray-50/50">
-                <td className="px-4 py-2.5 font-medium text-gray-900">{e.khatiName}</td>
+                <td className="px-4 py-2.5">
+                  <span className="font-medium text-gray-900">{e.khatiName}</span>
+                  {e.userRole && (
+                    <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 capitalize">
+                      {e.userRole === "khati" ? "Karigar" : e.userRole}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-2.5">{typeBadge(e.type)}</td>
                 <td className="px-4 py-2.5 text-gray-500">
                   {e.serialNo ? <span className="font-mono text-xs">{e.serialNo}</span> : e.description || "—"}

@@ -9,11 +9,19 @@ export function welcomeEmailHtml({
   name,
   role,
   password,
+  companyName = "Rewards Platform",
+  logoUrl = "",
+  loginUrl = "/login",
+  address = "",
 }: {
   to: string;
   name: string;
   role: string;
   password: string;
+  companyName?: string;
+  logoUrl?: string;
+  loginUrl?: string;
+  address?: string;
 }): string {
   return `<!DOCTYPE html>
 <html>
@@ -24,16 +32,16 @@ export function welcomeEmailHtml({
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
         <tr>
           <td style="background:#ffffff;padding:32px 40px 28px;text-align:center;border-bottom:3px solid #f6821f">
-            <img src="https://app.doorsmith.in/logo.png" alt="DoorSmith" style="height:44px;margin-bottom:18px;display:inline-block" />
-            <h1 style="margin:0;color:#f6821f;font-size:26px;font-weight:700">Welcome to DoorSmith!</h1>
-            <p style="margin:8px 0 0;color:#9ca3af;font-size:14px">Your Karigar Rewards Platform</p>
+            ${logoUrl ? `<img src="${logoUrl}" alt="${companyName}" style="height:44px;margin-bottom:18px;display:inline-block;object-contain:fit" />` : ""}
+            <h1 style="margin:0;color:#f6821f;font-size:26px;font-weight:700">Welcome to ${companyName}!</h1>
+            <p style="margin:8px 0 0;color:#9ca3af;font-size:14px">Rewards Platform</p>
           </td>
         </tr>
         <tr>
           <td style="padding:40px">
             <p style="margin:0 0 16px;color:#374151;font-size:16px">Hi <strong>${name}</strong>,</p>
             <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6">
-              You have been invited to join <strong>DoorSmith</strong> as a <strong style="color:#f6821f">${role}</strong>.
+              You have been invited to join <strong>${companyName}</strong> as a <strong style="color:#f6821f">${role}</strong>.
               Your account has been created and is ready to use.
             </p>
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8f3;border:1px solid #fde8d4;border-radius:8px;margin-bottom:28px">
@@ -57,8 +65,8 @@ export function welcomeEmailHtml({
             </table>
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px">
               <tr><td align="center">
-                <a href="https://app.doorsmith.in/login" style="display:inline-block;background:#f6821f;color:#ffffff;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none">
-                  Login to DoorSmith →
+                <a href="${loginUrl}" style="display:inline-block;background:#f6821f;color:#ffffff;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none">
+                  Login to ${companyName} →
                 </a>
               </td></tr>
             </table>
@@ -69,8 +77,8 @@ export function welcomeEmailHtml({
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 40px;text-align:center">
-            <p style="margin:0 0 4px;font-size:12px;color:#9ca3af">DoorSmith Karigar Rewards Platform</p>
-            <p style="margin:0;font-size:12px;color:#d1d5db">LR Enterprises · Hisar, Haryana</p>
+            <p style="margin:0 0 4px;font-size:12px;color:#9ca3af">${companyName} Rewards Platform</p>
+            ${address ? `<p style="margin:0;font-size:12px;color:#d1d5db">${address}</p>` : ""}
           </td>
         </tr>
       </table>

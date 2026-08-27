@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Check, X } from "lucide-react";
+import { Check, X, Image as ImageIcon, Keyboard } from "lucide-react";
 import { QrScanner } from "./QrScanner";
 import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
 
 type ScanState =
   | { phase: "scanning" }
@@ -13,6 +14,9 @@ type ScanState =
 
 export function KhatiScanPanel() {
   const [state, setState] = useState<ScanState>({ phase: "scanning" });
+  const [manualCode, setManualCode] = useState("");
+  const [showManual, setShowManual] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isProcessing = useRef(false);
   // After a scan the camera may still see the same code. Ignore it for 5 s so
   // the user has time to move away before the next scan is accepted.
@@ -56,14 +60,50 @@ export function KhatiScanPanel() {
     // Keep isProcessing true  only reset when user taps "Scan next" / "Try again".
   }, []);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { default: QrScannerLib } = await import("qr-scanner");
+      QrScannerLib.WORKER_PATH = "/qr-scanner-worker.min.js";
+      const result = await QrScannerLib.scanImage(file, { returnDetailedScanResult: true });
+      if (result?.data) {
+        handleScan(result.data);
+      } else {
+        setState({ phase: "error", message: "No QR code could be detected in this photo. Please try another image or type the serial number." });
+      }
+    } catch {
+      setState({ phase: "error", message: "Could not read QR from photo. Please enter the serial number manually." });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualCode.trim()) return;
+    handleScan(manualCode.trim());
+  };
+
   function reset() {
     isProcessing.current = false;
     lastSeen.current = null; // clear cooldown so same code can be re-scanned immediately
+    setManualCode("");
     setState({ phase: "scanning" });
   }
 
   return (
     <div className="flex flex-col items-center gap-4">
+      {/* Hidden file input for photo QR scanning */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
       {/* Camera  always mounted so it stays warm; overlay covers it on result */}
       <div className="relative w-full max-w-xs">
         <QrScanner onScan={handleScan} />
@@ -119,9 +159,54 @@ export function KhatiScanPanel() {
       </div>
 
       {state.phase === "scanning" && (
-        <p className="text-center text-xs text-gray-400">
-          Point the camera at a product or small box QR code
-        </p>
+        <div className="w-full max-w-xs space-y-3">
+          <p className="text-center text-xs text-gray-400">
+            Point the camera at a product or small box QR code
+          </p>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="focus-ring flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white py-2 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+            >
+              <ImageIcon className="size-4 text-gray-500" aria-hidden />
+              Upload photo
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowManual((v) => !v)}
+              className={`focus-ring flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-medium shadow-sm transition ${
+                showManual
+                  ? "border-brand bg-brand/5 text-brand-dark"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Keyboard className="size-4 text-gray-500" aria-hidden />
+              {showManual ? "Hide manual" : "Enter code"}
+            </button>
+          </div>
+
+          {showManual && (
+            <form onSubmit={handleManualSubmit} className="space-y-2 rounded-lg border border-gray-200 bg-white p-3 shadow-card">
+              <label className="block text-xs font-medium text-gray-700">Enter QR Serial Number</label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="e.g. S-2026-..."
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  className="font-mono text-xs uppercase"
+                  autoCapitalize="characters"
+                  required
+                />
+                <Button type="submit" size="sm">
+                  Claim
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       )}
     </div>
   );

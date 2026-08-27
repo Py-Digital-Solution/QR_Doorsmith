@@ -2,13 +2,17 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getMyProfile } from "@/services/profile";
 import { Avatar } from "@/components/Avatar";
-import { NameForm, PhotoForm, PasswordForm } from "@/components/ProfileForms";
+import { ProfileInfoForm, PhotoForm, PasswordForm } from "@/components/ProfileForms";
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value, placeholder }: { label: string; value: string; placeholder?: string }) {
   return (
-    <div className="flex justify-between border-b border-gray-100 py-2 text-sm last:border-0">
+    <div className="flex justify-between border-b border-gray-100 py-2.5 text-sm last:border-0">
       <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-900">{value || ""}</span>
+      {value ? (
+        <span className="font-medium text-gray-900">{value}</span>
+      ) : (
+        <span className="text-xs italic text-gray-400">{placeholder || "Not provided"}</span>
+      )}
     </div>
   );
 }
@@ -30,20 +34,20 @@ export default async function ProfilePage() {
         <div className="flex items-center gap-4">
           <Avatar name={profile.name || profile.email} photoUrl={profile.photoUrl} size={56} />
           <div>
-            <p className="font-medium text-gray-900">{profile.name || ""}</p>
-            <span className="mt-0.5 inline-flex items-center rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
-              {profile.role}
+            <p className="font-medium text-gray-900">{profile.name || "Administrator"}</p>
+            <span className="mt-0.5 inline-flex items-center rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium capitalize text-brand-dark">
+              {profile.role.replace("_", " ")}
             </span>
           </div>
         </div>
         <div className="mt-4">
           <Detail label="Email" value={profile.email} />
-          <Detail label="Phone" value={profile.phone} />
+          <Detail label="Phone" value={profile.phone} placeholder="No mobile number set" />
           <Detail label="Status" value={profile.status} />
         </div>
       </div>
 
-      <NameForm defaultName={profile.name} />
+      <ProfileInfoForm defaultName={profile.name} defaultPhone={profile.phone} />
       <PhotoForm />
       {isStaff && <PasswordForm />}
     </div>

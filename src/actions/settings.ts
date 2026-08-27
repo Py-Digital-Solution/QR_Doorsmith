@@ -22,21 +22,37 @@ export async function setNotificationEmailAction(
   }
 }
 
-export async function setDistributorEnabledAction(
+export async function setFeatureToggleAction(
+  key: string,
   enabled: boolean,
 ): Promise<ActionState> {
   const session = await auth();
-  if (session?.user?.role !== "admin") return { error: "Not authorized." };
+  if (session?.user?.role !== "admin" && session?.user?.role !== "super_admin") {
+    return { error: "Not authorized." };
+  }
+  const allowedKeys = [
+    "distributor_enabled",
+    "dispatch_enabled",
+    "returns_enabled",
+    "redemptions_enabled",
+    "counter_rewards_enabled",
+  ];
+  if (!allowedKeys.includes(key)) {
+    return { error: "Invalid setting key." };
+  }
   try {
-    await setSetting(
-      "distributor_enabled",
-      enabled,
-      "SOW 1.2  Distributor role on/off (admin controlled).",
-    );
+    await setSetting(key, enabled, `Feature toggle: ${key}`);
     revalidatePath("/admin/settings");
-    revalidatePath("/admin/users");
+    revalidatePath("/admin");
+    revalidatePath("/counter");
     return { ok: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to update setting." };
   }
+}
+
+export async function setDistributorEnabledAction(
+  enabled: boolean,
+): Promise<ActionState> {
+  return setFeatureToggleAction("distributor_enabled", enabled);
 }

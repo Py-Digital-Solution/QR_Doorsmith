@@ -8,12 +8,18 @@ import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterBar } from "@/components/ui/FilterBar";
 
+import { redirect } from "next/navigation";
+import { isDispatchEnabled } from "@/services/settings";
+
 export default async function DispatchPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
   const session = await auth();
+  if (!(await isDispatchEnabled())) {
+    redirect("/admin/dashboards/overview");
+  }
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";

@@ -24,11 +24,10 @@ export function GenerateBatchForm({
     generateBatchAction,
     {},
   );
-  // Stored as strings so the fields can be cleared (empty) instead of snapping
-  // back to 0. Numeric values are derived below for the totals.
-  const [m, setM] = useState("1");
-  const [s, setS] = useState("");
-  const [p, setP] = useState("");
+  // Default Small and Master to 0 as requested
+  const [m, setM] = useState("0");
+  const [s, setS] = useState("0");
+  const [p, setP] = useState("10");
 
   const layout = useSheetLayoutFields();
 
@@ -90,16 +89,16 @@ export function GenerateBatchForm({
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {numField("Master boxes", "masterCount", m, setM)}
-          {numField(mn > 0 ? "Small / master" : "Total smalls", "smallPerMaster", s, setS)}
           {numField(mn === 0 && sn === 0 ? "Total products" : "Products / small", "productPerSmall", p, setP)}
+          {numField(mn > 0 ? "Small / master" : "Total smalls", "smallPerMaster", s, setS)}
+          {numField("Master", "masterCount", m, setM)}
         </div>
 
         <div className="rounded-md border border-brand/20 bg-brand-light px-3 py-2 text-sm text-brand-dark">
           Total codes to generate: <span className="font-semibold">{total}</span>
           <span className="text-gray-500">
             {" "}
-            ({totalMasters} master + {totalSmalls} small + {totalProducts} product{totalProducts === 1 ? "" : "s"})
+            ({totalProducts} product{totalProducts === 1 ? "" : "s"} + {totalSmalls} small + {totalMasters} master)
           </span>
         </div>
 
@@ -109,13 +108,13 @@ export function GenerateBatchForm({
           </summary>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <Label>Master QR size (mm)</Label>
+              <Label>Product QR size (mm)</Label>
               <Input
-                name="masterQrSize"
+                name="productQrSize"
                 type="number"
                 min={10}
-                value={layout.masterQrSize}
-                onChange={(e) => layout.setMasterQrSize(e.target.value.replace(/[^0-9]/g, ""))}
+                value={layout.productQrSize}
+                onChange={(e) => layout.setProductQrSize(e.target.value.replace(/[^0-9]/g, ""))}
               />
             </div>
             <div>
@@ -129,13 +128,13 @@ export function GenerateBatchForm({
               />
             </div>
             <div>
-              <Label>Product QR size (mm)</Label>
+              <Label>Master QR size (mm)</Label>
               <Input
-                name="productQrSize"
+                name="masterQrSize"
                 type="number"
                 min={10}
-                value={layout.productQrSize}
-                onChange={(e) => layout.setProductQrSize(e.target.value.replace(/[^0-9]/g, ""))}
+                value={layout.masterQrSize}
+                onChange={(e) => layout.setMasterQrSize(e.target.value.replace(/[^0-9]/g, ""))}
               />
             </div>
           </div>
@@ -161,18 +160,16 @@ export function GenerateBatchForm({
               </Select>
             </div>
 
-            {/* Independent column counts per type  each sized to the page
-                width rather than sharing one column count, so small codes
-                don't waste sheet space sized for master boxes. */}
+            {/* Independent column counts per type */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <ColumnField
-                label="Master columns"
-                name="masterColumns"
-                value={layout.masterColumns}
-                onChange={layout.setMasterColumns}
-                recommended={layout.recMaster}
-                touched={layout.masterTouched}
-                onReset={layout.resetMasterColumns}
+                label="Product columns"
+                name="productColumns"
+                value={layout.productColumns}
+                onChange={layout.setProductColumns}
+                recommended={layout.recProduct}
+                touched={layout.productTouched}
+                onReset={layout.resetProductColumns}
               />
               <ColumnField
                 label="Small columns"
@@ -184,13 +181,13 @@ export function GenerateBatchForm({
                 onReset={layout.resetSmallColumns}
               />
               <ColumnField
-                label="Product columns"
-                name="productColumns"
-                value={layout.productColumns}
-                onChange={layout.setProductColumns}
-                recommended={layout.recProduct}
-                touched={layout.productTouched}
-                onReset={layout.resetProductColumns}
+                label="Master columns"
+                name="masterColumns"
+                value={layout.masterColumns}
+                onChange={layout.setMasterColumns}
+                recommended={layout.recMaster}
+                touched={layout.masterTouched}
+                onReset={layout.resetMasterColumns}
               />
             </div>
           </div>

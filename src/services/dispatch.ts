@@ -184,7 +184,15 @@ export type DispatchBill = {
   createdAt: string;
   unitCount: number;
   totalCodes: number;
-  units: { serialNo: string; type: string; sku: string }[];
+  totalKarigarPoints: number;
+  totalCounterPoints: number;
+  units: {
+    serialNo: string;
+    type: string;
+    sku: string;
+    karigarPoints: number;
+    counterPoints: number;
+  }[];
 };
 
 export async function getDispatchBill(id: string): Promise<DispatchBill | null> {
@@ -199,9 +207,34 @@ export async function getDispatchBill(id: string): Promise<DispatchBill | null> 
 
   const rootIds = d.rootQrIds?.length ? d.rootQrIds : d.masterQrIds;
   const units = await QrCode.find({ _id: { $in: rootIds } })
-    .select("serialNo type sku")
+    .select("serialNo type sku rewardPoints productId")
     .sort({ serialNo: 1 })
     .lean();
+
+  const { Product } = await import("@/models/Product");
+  const productIds = units.map((u) => u.productId).filter(Boolean);
+  const products = await Product.find({ _id: { $in: productIds } })
+    .select("rewardPoints counterRewardPoints")
+    .lean();
+  const prodMap = new Map(products.map((p) => [String(p._id), p]));
+
+  let totalKarigarPoints = 0;
+  let totalCounterPoints = 0;
+
+  const mappedUnits = units.map((m) => {
+    const prod = m.productId ? prodMap.get(String(m.productId)) : null;
+    const karigarPoints = Number(m.rewardPoints ?? prod?.rewardPoints ?? 0);
+    const counterPoints = Number(prod?.counterRewardPoints ?? 0);
+    totalKarigarPoints += karigarPoints;
+    totalCounterPoints += counterPoints;
+    return {
+      serialNo: m.serialNo,
+      type: String(m.type),
+      sku: m.sku ?? "",
+      karigarPoints,
+      counterPoints,
+    };
+  });
 
   const c = d.counterId as { _id?: unknown; name?: string; email?: string; phone?: string } | null;
   return {
@@ -212,11 +245,9 @@ export async function getDispatchBill(id: string): Promise<DispatchBill | null> 
     createdAt: (d.createdAt as Date)?.toISOString() ?? "",
     unitCount: d.rootCount ?? d.masterCount ?? 0,
     totalCodes: d.totalCodes ?? 0,
-    units: units.map((m) => ({
-      serialNo: m.serialNo,
-      type: String(m.type),
-      sku: m.sku ?? "",
-    })),
+    totalKarigarPoints,
+    totalCounterPoints,
+    units: mappedUnits,
   };
 }
 

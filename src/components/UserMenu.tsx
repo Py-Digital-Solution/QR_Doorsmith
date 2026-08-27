@@ -8,6 +8,7 @@ import { Avatar } from "./Avatar";
 import type { UserRole } from "@/lib/roles";
 
 const ROLE_LABEL: Record<string, string> = {
+  super_admin: "Super Admin",
   admin: "Admin",
   sales_rep: "Sales Rep",
   distributor: "Distributor",

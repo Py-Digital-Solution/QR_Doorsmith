@@ -23,6 +23,7 @@ import {
   MobileCardList,
 } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { isDispatchEnabled } from "@/services/settings";
 
 const FILTER_LABELS: Record<CodeFilter, string> = {
   all: "All",
@@ -49,11 +50,15 @@ export default async function BatchDetailPage({
   const batch = await getBatch(id);
   if (!batch) notFound();
 
-  const [codes, products] = await Promise.all([
+  const [codes, products, dispatchEnabled] = await Promise.all([
     listBatchCodes(id, pagination, filter, q || undefined),
     listActiveProducts(),
+    isDispatchEnabled(),
   ]);
   const productOptions = products.map((p) => ({ id: p.id, sku: p.sku, name: p.name }));
+  const visibleFilters = dispatchEnabled
+    ? CODE_FILTERS
+    : CODE_FILTERS.filter((f) => f !== "warehouse" && f !== "dispatched");
 
   const fp = new URLSearchParams();
   if (q) fp.set("q", q);
@@ -81,35 +86,39 @@ export default async function BatchDetailPage({
             {batch.masterCount}×{batch.smallPerMaster}×{batch.productPerSmall} ·{" "}
             <span className="font-medium">{batch.total} codes</span> · {batch.status}
           </p>
-          <p className="mt-0.5 text-xs">
-            <span className="text-amber-700">{batch.warehouseCount} in warehouse</span>
-            {" · "}
-            <span className="text-green-700">{batch.dispatchedCount} dispatched</span>
-          </p>
+          {dispatchEnabled && (
+            <p className="mt-0.5 text-xs">
+              <span className="text-amber-700">{batch.warehouseCount} in warehouse</span>
+              {" · "}
+              <span className="text-green-700">{batch.dispatchedCount} dispatched</span>
+            </p>
+          )}
         </div>
         <BatchActions batch={batch} products={productOptions} redirectOnDelete />
       </div>
 
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-1.5">
-        {CODE_FILTERS.map((f) => {
-          const active = f === filter;
-          const href = f === "all" ? `/admin/qr/${id}` : `/admin/qr/${id}?status=${f}`;
-          return (
-            <Link
-              key={f}
-              href={href}
-              className={`focus-ring rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                active
-                  ? "bg-brand text-white shadow-card"
-                  : "border border-gray-300 bg-white text-gray-600 hover:border-brand/40 hover:text-brand-dark"
-              }`}
-            >
-              {FILTER_LABELS[f]}
-            </Link>
-          );
-        })}
-      </div>
+      {visibleFilters.length > 1 && (
+        <div className="flex flex-wrap gap-1.5">
+          {visibleFilters.map((f) => {
+            const active = f === filter;
+            const href = f === "all" ? `/admin/qr/${id}` : `/admin/qr/${id}?status=${f}`;
+            return (
+              <Link
+                key={f}
+                href={href}
+                className={`focus-ring rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-brand text-white shadow-card"
+                    : "border border-gray-300 bg-white text-gray-600 hover:border-brand/40 hover:text-brand-dark"
+                }`}
+              >
+                {FILTER_LABELS[f]}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <FilterBar
         placeholder="Search by serial or SKU…"
@@ -142,9 +151,11 @@ export default async function BatchDetailPage({
                   {c.sku || "—"} · {c.status}
                   {c.parentSerial ? ` · parent ${c.parentSerial}` : ""}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {c.counterLabel ? `→ ${c.counterLabel}` : "In warehouse"}
-                </p>
+                {dispatchEnabled && (
+                  <p className="text-xs text-gray-500">
+                    {c.counterLabel ? `→ ${c.counterLabel}` : "In warehouse"}
+                  </p>
+                )}
                 <div className="mt-2 border-t border-gray-100 pt-2">
                   <QrCodeActions code={c} batchId={id} />
                 </div>
@@ -161,7 +172,7 @@ export default async function BatchDetailPage({
                 <TH>Parent</TH>
                 <TH>SKU</TH>
                 <TH>Status</TH>
-                <TH>Counter</TH>
+                {dispatchEnabled && <TH>Counter</TH>}
                 <TH align="right">Actions</TH>
               </THead>
               <tbody>
@@ -176,9 +187,11 @@ export default async function BatchDetailPage({
                     <TD>
                       <Badge tone={statusTone(c.status)}>{c.status}</Badge>
                     </TD>
-                    <TD className="text-xs text-gray-600">
-                      {c.counterLabel ?? "—"}
-                    </TD>
+                    {dispatchEnabled && (
+                      <TD className="text-xs text-gray-600">
+                        {c.counterLabel ?? "—"}
+                      </TD>
+                    )}
                     <TD>
                       <QrCodeActions code={c} batchId={id} />
                     </TD>

@@ -22,6 +22,19 @@ const ROLE_LABEL: Record<string, string> = {
 /** Max primary tabs shown in the bottom bar; the rest move into "More". */
 const MAX_TABS = 4;
 
+function isNavActive(pathname: string, itemHref: string, allItems: NavItem[]): boolean {
+  if (pathname === itemHref) return true;
+  if (!pathname.startsWith(itemHref + "/")) return false;
+  // If another item matches more specifically (longer href), this item is not the active one
+  const betterMatch = allItems.some(
+    (other) =>
+      other.href !== itemHref &&
+      other.href.length > itemHref.length &&
+      (pathname === other.href || pathname.startsWith(other.href + "/")),
+  );
+  return !betterMatch;
+}
+
 /**
  * Mobile bottom navigation for staff roles  same pattern as the Khati app:
  * a fixed bottom tab bar (first few nav items) plus a "More" bottom sheet that
@@ -54,7 +67,7 @@ export function MobileNav({
       <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden">
         <div className="flex">
           {tabs.map((it) => {
-            const active = pathname === it.href || pathname.startsWith(it.href + "/");
+            const active = isNavActive(pathname, it.href, items);
             const Icon = ICONS[it.icon];
             return (
               <Link
@@ -107,7 +120,7 @@ export function MobileNav({
             <div className="max-h-[55vh] overflow-y-auto py-2">
               {/* Overflow nav items */}
               {overflow.map((it) => {
-                const active = pathname === it.href || pathname.startsWith(it.href + "/");
+                const active = isNavActive(pathname, it.href, items);
                 const Icon = ICONS[it.icon];
                 return (
                   <Link

@@ -1,8 +1,8 @@
-import { isDistributorEnabled, getSetting } from "@/services/settings";
+import { getFeatureSettings, getSetting } from "@/services/settings";
 import { getCompanyBranding } from "@/services/branding";
 import { getBannerSettings } from "@/services/banner";
 import { listWaLogs } from "@/services/walog";
-import { DistributorToggle } from "@/components/DistributorToggle";
+import { FeatureTogglesList } from "@/components/FeatureToggles";
 import { MinPointsForm } from "@/components/MinPointsForm";
 import { BannerForm } from "@/components/BannerForm";
 import { WhatsAppPanel } from "@/components/WhatsAppPanel";
@@ -43,15 +43,18 @@ export default async function SettingsPage({
 }
 
 async function GeneralTab() {
-  const [distributorEnabled, minPoints, banner] = await Promise.all([
-    isDistributorEnabled(),
+  const [features, minPoints, banner] = await Promise.all([
+    getFeatureSettings(),
     getSetting<number>("min_redemption_points", 0),
     getBannerSettings(),
   ]);
   return (
-    <div className="space-y-3">
-      <DistributorToggle initial={distributorEnabled} />
-      <MinPointsForm initial={minPoints} />
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-sm font-semibold text-gray-900 mb-2">Platform Features & Modules</h2>
+        <FeatureTogglesList features={features} />
+      </div>
+      {features.redemptions_enabled && <MinPointsForm initial={minPoints} />}
 
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-card sm:p-5">
         <p className="text-sm font-medium text-gray-900">Karigar app banner</p>
@@ -77,7 +80,8 @@ async function BrandingTab() {
 }
 
 async function WhatsAppTab({ waPage }: { waPage: number }) {
-  const [notificationEmail, logsData] = await Promise.all([
+  const [branding, notificationEmail, logsData] = await Promise.all([
+    getCompanyBranding(),
     getSetting<string>("notification_email", ""),
     listWaLogs(waPage, 20),
   ]);
@@ -94,7 +98,7 @@ async function WhatsAppTab({ waPage }: { waPage: number }) {
         <WhatsAppPanel />
       </div>
 
-      <TestWhatsAppForm />
+      <TestWhatsAppForm companyName={branding.name} />
 
       <NotificationEmailForm initial={notificationEmail} />
 

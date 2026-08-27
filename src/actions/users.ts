@@ -168,9 +168,13 @@ export async function resendRegistrationLinkAction(userId: string): Promise<Acti
     const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
     const appUrl = `${proto}://${host}`;
 
+    const { getCompanyBranding } = await import("@/services/branding");
+    const branding = await getCompanyBranding();
+    const companyName = branding.name || "GatiQ";
+
     await waSend(
       user.phone,
-      `🔗 *DoorSmith पंजीकरण लिंक | Registration Link*\n\nनमस्ते *${user.name}*, आपका DoorSmith पंजीकरण लिंक नीचे है:\nHi *${user.name}*, here is your DoorSmith registration link:\n\n${appUrl}/register/${token}\n\nअपना खाता सक्रिय करने के लिए पंजीकरण पूरा करें।\nPlease complete your registration to activate your account.`,
+      `🔗 *${companyName} पंजीकरण लिंक | Registration Link*\n\nनमस्ते *${user.name}*, आपका ${companyName} पंजीकरण लिंक नीचे है:\nHi *${user.name}*, here is your ${companyName} registration link:\n\n${appUrl}/register/${token}\n\nअपना खाता सक्रिय करने के लिए पंजीकरण पूरा करें।\nPlease complete your registration to activate your account.`,
       "welcome",
     );
 
@@ -197,5 +201,17 @@ export async function deleteUserAction(id: string): Promise<ActionState> {
     return { ok: true };
   } catch (e) {
     return { error: safeError(e, "Failed to delete user.") };
+  }
+}
+
+export async function sendMagicLinkAction(userId: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user) return { error: "Not authenticated." };
+  try {
+    const { createAndSendMagicLink } = await import("@/services/magic-link");
+    await createAndSendMagicLink(userId);
+    return { ok: true };
+  } catch (e) {
+    return { error: safeError(e, "Failed to send magic login link.") };
   }
 }

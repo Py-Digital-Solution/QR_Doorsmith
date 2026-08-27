@@ -5,7 +5,13 @@ export const metadata: Metadata = {
   description: "How GGPL collects, uses, and protects your personal information.",
 };
 
-export default function PrivacyPage() {
+import { getCompanyBranding } from "@/services/branding";
+
+export default async function PrivacyPage() {
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "GGPL";
+  const contactEmail = branding.email || "support@doorsmith.in";
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="mx-auto max-w-3xl px-6">
@@ -35,12 +41,12 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="mb-2 text-xl font-semibold">5. Your Rights</h2>
-            <p>You have the right to access, correct, or delete your personal data. Contact us at support@doorsmith.in to exercise these rights.</p>
+            <p>You have the right to access, correct, or delete your personal data. Contact us at {contactEmail} to exercise these rights.</p>
           </section>
 
           <section>
             <h2 className="mb-2 text-xl font-semibold">6. Contact Us</h2>
-            <p>For privacy-related questions, contact us at: <a href="mailto:support@doorsmith.in" className="text-orange-600 hover:underline">support@doorsmith.in</a></p>
+            <p>For privacy-related questions, contact {companyName} at: <a href={`mailto:${contactEmail}`} className="text-brand hover:underline">{contactEmail}</a></p>
           </section>
         </div>
       </div>

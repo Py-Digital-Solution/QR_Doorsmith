@@ -58,7 +58,7 @@ export default async function UsersPage({
 
       {/* Role bubble filters */}
       <div className="flex flex-wrap gap-2">
-        {ROLE_FILTERS.map((f) => {
+        {ROLE_FILTERS.filter((f) => distributorEnabled || f.value !== "distributor").map((f) => {
           const active = role === f.value;
           const href = f.value
             ? `/admin/users?role=${f.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`

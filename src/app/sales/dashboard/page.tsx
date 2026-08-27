@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import Link from "next/link";
 import { getSalesDashboard } from "@/services/analytics";
+import { isRedemptionsEnabled, isReturnsEnabled } from "@/services/settings";
 import { ICONS } from "@/components/ui/icons";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -33,7 +34,11 @@ function timeAgo(date: Date): string {
 
 export default async function SalesDashboard() {
   const session = await auth();
-  const d = await getSalesDashboard(session!.user.id);
+  const [d, redemptionsEnabled, returnsEnabled] = await Promise.all([
+    getSalesDashboard(session!.user.id),
+    isRedemptionsEnabled(),
+    isReturnsEnabled(),
+  ]);
 
   const TrendingUp = ICONS["trending-up"];
   const UsersIcon = ICONS["users"];
@@ -46,7 +51,7 @@ export default async function SalesDashboard() {
   const AlertIcon = ICONS["clock"];
   const CoinsIcon = ICONS["coins"];
 
-  const pendingActions = d.pendingApprovals + d.pendingRedemptions;
+  const pendingActions = d.pendingApprovals + (redemptionsEnabled ? d.pendingRedemptions : 0);
 
   return (
     <div className="space-y-6">
@@ -116,7 +121,7 @@ export default async function SalesDashboard() {
               </p>
               <p className={`mt-2 text-4xl font-bold ${pendingActions > 0 ? "text-yellow-700" : "text-gray-900"}`}>{pendingActions}</p>
               <p className={`mt-1 text-xs ${pendingActions > 0 ? "text-yellow-600" : "text-gray-500"}`}>
-                {d.pendingApprovals} KYC · {d.pendingRedemptions} redemptions
+                {d.pendingApprovals} KYC {redemptionsEnabled ? `· ${d.pendingRedemptions} redemptions` : ""}
               </p>
             </div>
             <span className={`flex size-10 items-center justify-center rounded-xl ${pendingActions > 0 ? "bg-yellow-100 text-yellow-600" : "bg-gray-100 text-gray-500"}`}>
@@ -127,7 +132,7 @@ export default async function SalesDashboard() {
       </div>
 
       {/* ── Action alerts ── */}
-      {(d.pendingApprovals > 0 || d.pendingRedemptions > 0) && (
+      {(d.pendingApprovals > 0 || (redemptionsEnabled && d.pendingRedemptions > 0)) && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {d.pendingApprovals > 0 && (
             <div className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
@@ -148,7 +153,7 @@ export default async function SalesDashboard() {
               </Link>
             </div>
           )}
-          {d.pendingRedemptions > 0 && (
+          {redemptionsEnabled && d.pendingRedemptions > 0 && (
             <div className="flex items-center justify-between rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className="flex size-9 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
@@ -156,7 +161,7 @@ export default async function SalesDashboard() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-orange-800">{d.pendingRedemptions} redemption{d.pendingRedemptions > 1 ? "s" : ""} pending</p>
-                  <p className="text-xs text-orange-600">Across your counters  awaiting approval</p>
+                  <p className="text-xs text-orange-600">Across your counters awaiting approval</p>
                 </div>
               </div>
               <Link
@@ -217,7 +222,7 @@ export default async function SalesDashboard() {
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div className="flex items-center gap-2">
               <UsersIcon className="size-4 text-gray-400" aria-hidden />
-              <h2 className="text-sm font-semibold text-gray-900">Recent Registrations</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Recent Karigars</h2>
             </div>
             <Link href="/sales" className="text-xs font-medium text-brand-dark hover:underline">
               All counters →
@@ -265,14 +270,14 @@ export default async function SalesDashboard() {
       </div>
 
       {/* ── Bottom row: Top counters + Quick stats ── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-6 ${redemptionsEnabled || returnsEnabled ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
 
         {/* Top counters */}
-        <div className="rounded-xl border border-gray-200 bg-white shadow-card lg:col-span-2">
+        <div className={`rounded-xl border border-gray-200 bg-white shadow-card ${redemptionsEnabled || returnsEnabled ? "lg:col-span-2" : "lg:col-span-1"}`}>
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div className="flex items-center gap-2">
               <StoreIcon className="size-4 text-gray-400" aria-hidden />
-              <h2 className="text-sm font-semibold text-gray-900">Top Counters (7-day scans)</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Top Counters by Scans</h2>
             </div>
             <Link href="/sales" className="text-xs font-medium text-brand-dark hover:underline">
               Manage →
@@ -291,7 +296,7 @@ export default async function SalesDashboard() {
                     <th className="pb-2">#</th>
                     <th className="pb-2">Counter</th>
                     <th className="pb-2 text-right">Karigars</th>
-                    <th className="pb-2 text-right">Scans (7d)</th>
+                    <th className="pb-2 text-right">Scans</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -321,78 +326,84 @@ export default async function SalesDashboard() {
         </div>
 
         {/* Quick stats sidebar */}
-        <div className="space-y-3">
-          {/* Redemptions breakdown */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
-            <div className="mb-3 flex items-center gap-2">
-              <GiftIcon className="size-4 text-gray-400" aria-hidden />
-              <h3 className="text-sm font-semibold text-gray-900">Redemptions</h3>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span className="size-2 rounded-full bg-yellow-400" /> Pending
-                </span>
-                <span className="text-sm font-bold text-gray-800">{d.pendingRedemptions}</span>
+        {(redemptionsEnabled || returnsEnabled) && (
+          <div className="space-y-3">
+            {/* Redemptions breakdown */}
+            {redemptionsEnabled && (
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+                <div className="mb-3 flex items-center gap-2">
+                  <GiftIcon className="size-4 text-gray-400" aria-hidden />
+                  <h3 className="text-sm font-semibold text-gray-900">Redemptions</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <span className="size-2 rounded-full bg-yellow-400" /> Pending
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">{d.pendingRedemptions}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <span className="size-2 rounded-full bg-green-500" /> Approved
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">{d.redemptionsApproved}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <span className="size-2 rounded-full bg-red-400" /> Rejected
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">{d.redemptionsRejected}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span className="size-2 rounded-full bg-green-500" /> Approved
-                </span>
-                <span className="text-sm font-bold text-gray-800">{d.redemptionsApproved}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span className="size-2 rounded-full bg-red-400" /> Rejected
-                </span>
-                <span className="text-sm font-bold text-gray-800">{d.redemptionsRejected}</span>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Returns */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
-            <div className="mb-3 flex items-center gap-2">
-              <UndoIcon className="size-4 text-gray-400" aria-hidden />
-              <h3 className="text-sm font-semibold text-gray-900">Returns</h3>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Today</span>
-                <span className="text-sm font-bold text-gray-800">{d.returnsToday}</span>
+            {/* Returns */}
+            {returnsEnabled && (
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+                <div className="mb-3 flex items-center gap-2">
+                  <UndoIcon className="size-4 text-gray-400" aria-hidden />
+                  <h3 className="text-sm font-semibold text-gray-900">Returns</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Today</span>
+                    <span className="text-sm font-bold text-gray-800">{d.returnsToday}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Last 7 days</span>
+                    <span className="text-sm font-bold text-gray-800">{d.returnsWeek}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Last 7 days</span>
-                <span className="text-sm font-bold text-gray-800">{d.returnsWeek}</span>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Quick actions */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900">Quick Actions</h3>
-            <div className="space-y-1">
-              {[
-                { href: "/sales", label: "Manage counters", icon: "store" as const },
-                { href: "/approvals", label: "Review approvals", icon: "user-check" as const },
-                { href: "/sales/ledger", label: "Points ledger", icon: "receipt" as const },
-                { href: "/sales?create=1", label: "Create counter", icon: "users" as const },
-              ].map((item) => {
-                const Icon = ICONS[item.icon];
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <Icon className="size-3.5 text-gray-400" aria-hidden />
-                    {item.label}
-                  </Link>
-                );
-              })}
+            {/* Quick actions */}
+            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+              <h3 className="mb-3 text-sm font-semibold text-gray-900">Quick Actions</h3>
+              <div className="space-y-1">
+                {[
+                  { href: "/sales", label: "Manage counters", icon: "store" as const },
+                  { href: "/approvals", label: "Review approvals", icon: "user-check" as const },
+                  { href: "/sales/ledger", label: "Points ledger", icon: "receipt" as const },
+                  { href: "/sales?create=1", label: "Create counter", icon: "users" as const },
+                ].map((item) => {
+                  const Icon = ICONS[item.icon];
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                    >
+                      <Icon className="size-3.5 text-gray-400" aria-hidden />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

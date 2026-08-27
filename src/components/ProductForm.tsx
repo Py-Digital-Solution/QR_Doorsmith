@@ -16,9 +16,11 @@ import { Alert } from "./ui/Alert";
 
 export function ProductForm({
   product,
+  counterRewardsEnabled = true,
   onSuccess,
 }: {
   product?: ProductDTO;
+  counterRewardsEnabled?: boolean;
   onSuccess?: () => void;
 }) {
   const action = product ? updateProductAction : createProductAction;
@@ -30,12 +32,15 @@ export function ProductForm({
   // Controlled fields so form data survives server action submissions
   const [sku, setSku] = useState(product?.sku ?? "");
   const [name, setName] = useState(product?.name ?? "");
-  const [mrp, setMrp] = useState(product?.mrp?.toString() ?? "");
+  const [mrp, setMrp] = useState(product?.mrp?.toString() ?? "0");
   const [salesPrice, setSalesPrice] = useState(
-    product?.salesPrice?.toString() ?? "",
+    product?.salesPrice?.toString() ?? "0",
   );
   const [rewardPoints, setRewardPoints] = useState(
     product?.rewardPoints?.toString() ?? "",
+  );
+  const [counterRewardPoints, setCounterRewardPoints] = useState(
+    product?.counterRewardPoints?.toString() ?? "0",
   );
   const [description, setDescription] = useState(product?.description ?? "");
   const [status, setStatus] = useState<ProductStatus>(product?.status ?? "active");
@@ -119,7 +124,7 @@ export function ProductForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${counterRewardsEnabled !== false ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <div>
           <Label>MRP (₹)</Label>
           <Input
@@ -129,7 +134,7 @@ export function ProductForm({
             step="0.01"
             value={mrp}
             onChange={(e) => setMrp(e.target.value)}
-            required
+            placeholder="0"
           />
         </div>
         <div>
@@ -141,11 +146,11 @@ export function ProductForm({
             step="0.01"
             value={salesPrice}
             onChange={(e) => setSalesPrice(e.target.value)}
-            required
+            placeholder="0"
           />
         </div>
         <div>
-          <Label>Reward points</Label>
+          <Label>Karigar Points</Label>
           <Input
             name="rewardPoints"
             type="number"
@@ -154,8 +159,25 @@ export function ProductForm({
             value={rewardPoints}
             onChange={(e) => setRewardPoints(e.target.value)}
             required
+            placeholder="0"
           />
         </div>
+        {counterRewardsEnabled !== false ? (
+          <div>
+            <Label>Counter Points</Label>
+            <Input
+              name="counterRewardPoints"
+              type="number"
+              min={0}
+              step="1"
+              value={counterRewardPoints}
+              onChange={(e) => setCounterRewardPoints(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+        ) : (
+          <input type="hidden" name="counterRewardPoints" value="0" />
+        )}
       </div>
 
       <div>

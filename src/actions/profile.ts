@@ -2,24 +2,33 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { updateMyName, changeMyPassword, setMyPhoto } from "@/services/profile";
+import { updateMyName, updateMyProfile, changeMyPassword, setMyPhoto } from "@/services/profile";
 import { uploadAvatar } from "@/lib/storage";
 
 export type ActionState = { error?: string; ok?: boolean };
 
-export async function updateNameAction(
+export async function updateProfileAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const session = await auth();
   if (!session?.user) return { error: "Not authenticated." };
   try {
-    await updateMyName(session.user.id, String(formData.get("name") ?? ""));
+    const name = String(formData.get("name") ?? "");
+    const phone = String(formData.get("phone") ?? "");
+    await updateMyProfile(session.user.id, name, phone);
     revalidatePath("/profile");
     return { ok: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to update name." };
+    return { error: e instanceof Error ? e.message : "Failed to update profile." };
   }
+}
+
+export async function updateNameAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return updateProfileAction(_prev, formData);
 }
 
 export async function changePasswordAction(

@@ -7,6 +7,7 @@ import { Redemption } from "@/models/Redemption";
 import { PointTransaction } from "@/models/PointTransaction";
 import { waSend } from "@/services/whatsapp";
 import { istStartOfToday } from "@/lib/datetime";
+import { getCompanyBranding } from "@/services/branding";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ export async function GET(req: Request) {
   }
 
   await connectDB();
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "Rewards";
   const todayStart = istStartOfToday();
 
   // ── Load the people graph ───────────────────────────────────────────────
@@ -90,13 +93,13 @@ export async function GET(req: Request) {
     const balance = k.points ?? 0;
     if (todayPoints === 0 && balance === 0) continue; // avoid spam
     await send(k.phone,
-      `📊 *DoorSmith दैनिक सारांश | Daily Summary*\n\n` +
+      `📊 *${companyName} दैनिक सारांश | Daily Summary*\n\n` +
       `नमस्ते *${k.name}*! आज की रिपोर्ट:\n` +
       `Hello *${k.name}*! Here is your daily report:\n\n` +
       `🌟 *आज अर्जित अंक | Points earned today:* ${todayPoints}\n` +
       `💰 *कुल अंक शेष | Total balance:* ${balance}\n\n` +
-      `अपने अंक रिडीम करने के लिए DoorSmith खोलें। 🎁\n` +
-      `Open DoorSmith to redeem your points.`,
+      `अपने अंक रिडीम करने के लिए ${companyName} खोलें। 🎁\n` +
+      `Open ${companyName} to redeem your points.`,
       "nightly_summary");
   }
 
@@ -117,7 +120,7 @@ export async function GET(req: Request) {
 
     if (scans === 0 && returns === 0 && pending === 0 && pendingKyc === 0) continue;
     await send(c.phone,
-      `📊 *DoorSmith काउंटर सारांश | Counter Summary*\n\n` +
+      `📊 *${companyName} काउंटर सारांश | Counter Summary*\n\n` +
       `नमस्ते *${c.name}*! आज की गतिविधि:\n` +
       `Hello *${c.name}*! Today's activity:\n\n` +
       `🔢 *आज स्कैन | Scans today:* ${scans}\n` +
@@ -140,7 +143,7 @@ export async function GET(req: Request) {
     const numCounters = counterCountBySales.get(id) ?? 0;
     if (agg.scans === 0 && agg.returns === 0 && agg.pending === 0) continue;
     await send(rep.phone,
-      `📊 *DoorSmith नेटवर्क सारांश | Network Summary*\n\n` +
+      `📊 *${companyName} नेटवर्क सारांश | Network Summary*\n\n` +
       `नमस्ते *${rep.name}*! आज आपके नेटवर्क की रिपोर्ट:\n` +
       `Hello *${rep.name}*! Today's network report:\n\n` +
       `🏪 *काउंटर | Counters:* ${numCounters}\n` +
@@ -159,7 +162,7 @@ export async function GET(req: Request) {
   const totalPendingKyc = [...pendingKycByCounter.values()].reduce((a, b) => a + b, 0);
   for (const admin of admins) {
     await send(admin.phone,
-      `📊 *DoorSmith प्रबंधन सारांश | Admin Summary*\n\n` +
+      `📊 *${companyName} प्रबंधन सारांश | Admin Summary*\n\n` +
       `नमस्ते *${admin.name}*! आज का पूरा सारांश:\n` +
       `Hello *${admin.name}*! Today's full summary:\n\n` +
       `👷 *सक्रिय कारीगर | Active karigars:* ${khatis.length}\n` +

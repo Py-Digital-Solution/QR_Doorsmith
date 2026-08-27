@@ -17,6 +17,7 @@ export type ProductDTO = {
   mrp: number;
   salesPrice: number;
   rewardPoints: number;
+  counterRewardPoints: number;
   description: string;
   videoLinks: string[];
   status: ProductStatus;
@@ -28,6 +29,7 @@ export type ProductInput = {
   mrp: number;
   salesPrice: number;
   rewardPoints: number;
+  counterRewardPoints?: number;
   description?: string;
   videoLinks?: string[];
   status?: ProductStatus;
@@ -36,15 +38,33 @@ export type ProductInput = {
 
 async function generateSku(orgId?: string): Promise<string> {
   const year = new Date().getFullYear();
-  // Only match auto-generated SKUs for this year (4-digit SNO): SKU-20260001
+  // Find all auto-generated SKUs for this year and org
   const filter: Record<string, unknown> = { sku: new RegExp(`^SKU-${year}\\d{4}$`) };
   if (orgId) filter.orgId = orgId;
-  const last = await Product.findOne(filter)
-    .sort({ sku: -1 })
-    .select("sku")
-    .lean();
-  const next = last?.sku ? parseInt(last.sku.slice(8), 10) + 1 : 1;
-  return `SKU-${year}${String(next).padStart(4, "0")}`;
+  
+  const existing = await Product.find(filter).select("sku").lean();
+  let maxNum = 0;
+  for (const p of existing) {
+    if (p.sku) {
+      const match = p.sku.match(/^SKU-\d{4}(\d{4})$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (!isNaN(n) && n > maxNum) {
+          maxNum = n;
+        }
+      }
+    }
+  }
+
+  let next = maxNum + 1;
+  let candidate = `SKU-${year}${String(next).padStart(4, "0")}`;
+  
+  // Guarantee candidate doesn't clash with any existing product
+  while (await Product.findOne({ sku: candidate, ...(orgId ? { orgId } : {}) })) {
+    next++;
+    candidate = `SKU-${year}${String(next).padStart(4, "0")}`;
+  }
+  return candidate;
 }
 
 /** Trim, drop blanks, and validate each video link is a real http(s) URL. */
@@ -65,6 +85,7 @@ function assertValid(input: ProductInput) {
     ["MRP", input.mrp],
     ["Sales price", input.salesPrice],
     ["Reward points", input.rewardPoints],
+    ["Counter reward points", input.counterRewardPoints ?? 0],
   ] as const) {
     if (!Number.isFinite(v) || v < 0) throw new Error(`${k} must be a number ≥ 0.`);
   }
@@ -84,6 +105,7 @@ export async function createProduct(input: ProductInput) {
       mrp: input.mrp,
       salesPrice: input.salesPrice,
       rewardPoints: input.rewardPoints,
+      counterRewardPoints: input.counterRewardPoints ?? 0,
       description: input.description?.trim(),
       videoLinks: cleanVideoLinks(input.videoLinks),
       status: input.status ?? "active",
@@ -114,6 +136,7 @@ export async function updateProduct(id: string, input: ProductInput) {
   product.mrp = input.mrp;
   product.salesPrice = input.salesPrice;
   product.rewardPoints = input.rewardPoints;
+  product.counterRewardPoints = input.counterRewardPoints ?? 0;
   product.description = input.description?.trim();
   product.videoLinks = cleanVideoLinks(input.videoLinks);
   if (input.status) product.status = input.status;
@@ -137,6 +160,7 @@ function toDTO(d: {
   mrp?: number;
   salesPrice?: number;
   rewardPoints?: number;
+  counterRewardPoints?: number;
   description?: string | null;
   videoLinks?: string[] | null;
   status?: string;
@@ -148,6 +172,7 @@ function toDTO(d: {
     mrp: d.mrp ?? 0,
     salesPrice: d.salesPrice ?? 0,
     rewardPoints: d.rewardPoints ?? 0,
+    counterRewardPoints: d.counterRewardPoints ?? 0,
     description: d.description ?? "",
     videoLinks: d.videoLinks ?? [],
     status: (d.status as ProductStatus) ?? "active",

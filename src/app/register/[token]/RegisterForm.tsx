@@ -73,7 +73,21 @@ async function compressImage(file: File): Promise<File> {
   });
 }
 
-export function RegisterForm({ token, role }: { token: string; role: "khati" | "counter" }) {
+export function RegisterForm({
+  token,
+  role,
+  companyName,
+  instagramUrl,
+  facebookUrl,
+  youtubeUrl,
+}: {
+  token: string;
+  role: "khati" | "counter";
+  companyName?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  youtubeUrl?: string;
+}) {
   const [state, action, pending] = useActionState<KycActionState, FormData>(
     submitRegistrationAction,
     {},
@@ -242,7 +256,14 @@ export function RegisterForm({ token, role }: { token: string; role: "khati" | "
         </div>
       )}
 
-      <SocialFollowConsent checked={agreed} onChange={setAgreed} />
+      <SocialFollowConsent
+        checked={agreed}
+        onChange={setAgreed}
+        companyName={companyName}
+        instagramUrl={instagramUrl}
+        facebookUrl={facebookUrl}
+        youtubeUrl={youtubeUrl}
+      />
 
       {state.error && <Alert variant="error">{state.error}</Alert>}
 

@@ -18,12 +18,18 @@ import {
 } from "@/components/ui/Table";
 import { Store } from "lucide-react";
 
+import { redirect } from "next/navigation";
+import { isReturnsEnabled } from "@/services/settings";
+
 export default async function CounterReturnsPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
   const session = await auth();
+  if (!(await isReturnsEnabled())) {
+    redirect("/counter/dashboard");
+  }
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";

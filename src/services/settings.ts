@@ -21,7 +21,40 @@ export async function setSetting(
   );
 }
 
-/** Convenience: is the Distributor role enabled? (SOW 1.2  off by default.) */
+/** Convenience feature toggles */
 export function isDistributorEnabled(): Promise<boolean> {
   return getSetting<boolean>("distributor_enabled", false);
+}
+
+export function isDispatchEnabled(): Promise<boolean> {
+  return getSetting<boolean>("dispatch_enabled", false);
+}
+
+export function isReturnsEnabled(): Promise<boolean> {
+  return getSetting<boolean>("returns_enabled", false);
+}
+
+export function isRedemptionsEnabled(): Promise<boolean> {
+  return getSetting<boolean>("redemptions_enabled", true);
+}
+
+export function isCounterRewardsEnabled(): Promise<boolean> {
+  return getSetting<boolean>("counter_rewards_enabled", true);
+}
+
+export async function getFeatureSettings() {
+  const [distributor, dispatch, returns, redemptions, counterRewards] = await Promise.all([
+    isDistributorEnabled(),
+    isDispatchEnabled(),
+    isReturnsEnabled(),
+    isRedemptionsEnabled(),
+    isCounterRewardsEnabled(),
+  ]);
+  return {
+    distributor_enabled: distributor,
+    dispatch_enabled: dispatch,
+    returns_enabled: returns,
+    redemptions_enabled: redemptions,
+    counter_rewards_enabled: counterRewards,
+  };
 }

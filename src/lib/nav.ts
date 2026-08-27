@@ -38,7 +38,6 @@ export const NAV: Record<UserRole, NavItem[]> = {
   counter: [
     { href: "/counter/dashboard", label: "Dashboard", icon: "bar-chart" },
     { href: "/counter", label: "Karigars", icon: "users" },
-    { href: "/counter/inventory", label: "Inventory", icon: "boxes" },
     { href: "/counter/dispatches", label: "Dispatches", icon: "truck" },
     { href: "/counter/redemptions", label: "Redemptions", icon: "gift" },
     { href: "/counter/returns", label: "Returns", icon: "undo" },
@@ -48,6 +47,31 @@ export const NAV: Record<UserRole, NavItem[]> = {
     { href: "/khati/scan", label: "Scan QR", icon: "scan" },
     { href: "/khati/history", label: "History", icon: "history" },
     { href: "/khati/redemptions", label: "Redeem", icon: "coins" },
-    { href: "/khati/products", label: "Products", icon: "play-circle" },
   ],
 };
+
+export function getNavForRole(
+  role: UserRole,
+  features?: {
+    dispatch_enabled?: boolean;
+    returns_enabled?: boolean;
+    redemptions_enabled?: boolean;
+  },
+): NavItem[] {
+  let items = [...(NAV[role] ?? [])];
+  if (features) {
+    if (features.returns_enabled === false) {
+      items = items.filter((i) => !i.href.includes("/returns") && !i.href.includes("/return"));
+    }
+    if (features.dispatch_enabled === false) {
+      items = items.filter((i) => !i.href.includes("/dispatch") && !i.href.includes("/dispatches"));
+    }
+    if (features.redemptions_enabled === false) {
+      items = items.filter((i) => !i.href.includes("/redemptions") && !i.href.includes("/settlements"));
+    }
+  } else {
+    // Default returns to OFF as requested by client
+    items = items.filter((i) => !i.href.includes("/returns") && !i.href.includes("/return"));
+  }
+  return items;
+}

@@ -5,6 +5,19 @@ import { usePathname } from "next/navigation";
 import type { NavItem } from "@/lib/nav";
 import { ICONS } from "./ui/icons";
 
+function isNavActive(pathname: string, itemHref: string, allItems: NavItem[]): boolean {
+  if (pathname === itemHref) return true;
+  if (!pathname.startsWith(itemHref + "/")) return false;
+  // If another item matches more specifically (longer href), this item is not the active one
+  const betterMatch = allItems.some(
+    (other) =>
+      other.href !== itemHref &&
+      other.href.length > itemHref.length &&
+      (pathname === other.href || pathname.startsWith(other.href + "/")),
+  );
+  return !betterMatch;
+}
+
 export function NavLinks({
   items,
   onNavigate,
@@ -16,7 +29,7 @@ export function NavLinks({
   return (
     <nav className="space-y-1">
       {items.map((it) => {
-        const active = pathname === it.href;
+        const active = isNavActive(pathname, it.href, items);
         const Icon = ICONS[it.icon];
         return (
           <Link

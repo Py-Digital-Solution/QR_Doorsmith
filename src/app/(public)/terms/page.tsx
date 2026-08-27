@@ -5,7 +5,13 @@ export const metadata: Metadata = {
   description: "Terms and conditions for using the GGPL platform.",
 };
 
-export default function TermsPage() {
+import { getCompanyBranding } from "@/services/branding";
+
+export default async function TermsPage() {
+  const branding = await getCompanyBranding();
+  const companyName = branding.name || "GGPL";
+  const contactEmail = branding.email || "support@doorsmith.in";
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="mx-auto max-w-3xl px-6">
@@ -15,7 +21,7 @@ export default function TermsPage() {
         <div className="space-y-6 text-gray-700">
           <section>
             <h2 className="mb-2 text-xl font-semibold">1. Acceptance of Terms</h2>
-            <p>By accessing or using the GGPL platform, you agree to be bound by these Terms of Service. If you do not agree, please discontinue use immediately.</p>
+            <p>By accessing or using the {companyName} platform, you agree to be bound by these Terms of Service. If you do not agree, please discontinue use immediately.</p>
           </section>
 
           <section>
@@ -30,12 +36,12 @@ export default function TermsPage() {
 
           <section>
             <h2 className="mb-2 text-xl font-semibold">4. Intellectual Property</h2>
-            <p>All content and technology on this platform is the property of GGPL and is protected by applicable intellectual property laws.</p>
+            <p>All content and technology on this platform is the property of {companyName} and is protected by applicable intellectual property laws.</p>
           </section>
 
           <section>
             <h2 className="mb-2 text-xl font-semibold">5. Limitation of Liability</h2>
-            <p>GGPL shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform.</p>
+            <p>{companyName} shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform.</p>
           </section>
 
           <section>
@@ -45,7 +51,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="mb-2 text-xl font-semibold">7. Contact</h2>
-            <p>Questions about these terms? Contact us at: <a href="mailto:legal@doorsmith.in" className="text-orange-600 hover:underline">legal@doorsmith.in</a></p>
+            <p>Questions about these terms? Contact us at: <a href={`mailto:${contactEmail}`} className="text-brand hover:underline">{contactEmail}</a></p>
           </section>
         </div>
       </div>

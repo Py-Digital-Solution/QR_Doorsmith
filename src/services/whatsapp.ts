@@ -21,6 +21,7 @@ function base(path: string) {
 function headers() {
   return {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
     ...(env.WA_SERVICE_SECRET
       ? { Authorization: `Bearer ${env.WA_SERVICE_SECRET}` }
       : {}),

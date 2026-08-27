@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { approveRedemption, rejectRedemption } from "@/services/redemption";
 import { logAudit } from "@/services/audit";
 
+import { isRedemptionsEnabled } from "@/services/settings";
+
 export const runtime = "nodejs";
 
 export async function POST(
@@ -12,6 +14,10 @@ export async function POST(
   const session = await auth();
   if (session?.user?.role !== "counter") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!(await isRedemptionsEnabled())) {
+    return NextResponse.json({ error: "Redemptions are currently disabled." }, { status: 400 });
   }
 
   const { id } = await params;

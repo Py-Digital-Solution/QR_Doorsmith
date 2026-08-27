@@ -21,12 +21,18 @@ import {
 } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
 
+import { redirect } from "next/navigation";
+import { isRedemptionsEnabled } from "@/services/settings";
+
 export default async function CounterRedemptionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string; status?: string }>;
 }) {
   const session = await auth();
+  if (!(await isRedemptionsEnabled())) {
+    redirect("/counter/dashboard");
+  }
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";

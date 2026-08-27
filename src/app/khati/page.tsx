@@ -9,12 +9,15 @@ import { StatCard } from "@/components/ui/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { KhatiHomeProducts } from "@/components/KhatiHomeProducts";
 
+import { isRedemptionsEnabled } from "@/services/settings";
+
 export default async function KhatiHome() {
   const session = await auth();
-  const [stats, scans, productsResult] = await Promise.all([
+  const [stats, scans, productsResult, redemptionsEnabled] = await Promise.all([
     getKhatiDashboard(session!.user.id),
     listKhatiScans(session!.user.id, { page: 1, pageSize: 5 }),
-    listProducts({ page: 1, pageSize: 6 }, undefined, "active"),
+    listProducts({ page: 1, pageSize: 6 }, undefined, "active", session?.user?.orgId),
+    isRedemptionsEnabled(),
   ]);
 
   return (
@@ -42,16 +45,18 @@ export default async function KhatiHome() {
       </div>
 
       {/* My stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className={`grid gap-3 ${redemptionsEnabled ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-1 sm:grid-cols-3"}`}>
         <StatCard label="Scans Today" value={stats.scansToday} icon="scan" tone="blue" />
         <StatCard label="Earned This Week" value={stats.earnedWeek} icon="trending-up" tone="green" />
         <StatCard label="Total Scans" value={stats.scansTotal} icon="qr-code" tone="brand" />
-        <StatCard label="Redeemed" value={stats.redeemedTotal} icon="gift" tone="brand"
-          hint={stats.redemptionsPending > 0 ? `${stats.redemptionsPending} pending` : undefined} />
+        {redemptionsEnabled && (
+          <StatCard label="Redeemed" value={stats.redeemedTotal} icon="gift" tone="brand"
+            hint={stats.redemptionsPending > 0 ? `${stats.redemptionsPending} pending` : undefined} />
+        )}
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${redemptionsEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
         <Link
           href="/khati/scan"
           className="focus-ring flex flex-col items-center gap-2 rounded-xl border-2 border-brand bg-white py-5 text-center shadow-card transition-shadow hover:shadow-card-hover"
@@ -60,13 +65,15 @@ export default async function KhatiHome() {
           <span className="text-sm font-semibold text-brand">Scan QR</span>
         </Link>
 
-        <Link
-          href="/khati/redemptions"
-          className="focus-ring flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white py-5 text-center shadow-card transition-shadow hover:shadow-card-hover"
-        >
-          <Coins className="size-8 text-gray-500" strokeWidth={1.5} aria-hidden />
-          <span className="text-sm font-semibold text-gray-700">Redeem</span>
-        </Link>
+        {redemptionsEnabled && (
+          <Link
+            href="/khati/redemptions"
+            className="focus-ring flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white py-5 text-center shadow-card transition-shadow hover:shadow-card-hover"
+          >
+            <Coins className="size-8 text-gray-500" strokeWidth={1.5} aria-hidden />
+            <span className="text-sm font-semibold text-gray-700">Redeem</span>
+          </Link>
+        )}
       </div>
 
       {/* Product tutorials */}

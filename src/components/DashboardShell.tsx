@@ -5,6 +5,7 @@ import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 import { HeaderTitle } from "./HeaderTitle";
 import { PoweredBy } from "./PoweredBy";
+import { PromotionalBanner } from "./PromotionalBanner";
 import type { NavItem } from "@/lib/nav";
 import type { UserRole } from "@/lib/roles";
 
@@ -12,15 +13,17 @@ export function DashboardShell({
   navItems,
   user,
   branding,
+  banner,
   children,
 }: {
   navItems: NavItem[];
   user: { name?: string; email?: string; role: UserRole };
   branding?: { name: string; logo: string };
+  banner?: { image: string; enabled: boolean } | null;
   children: ReactNode;
 }) {
-  const companyName = branding?.name || "DoorSmith";
-  const logoUrl = branding?.logo || "/logo.png";
+  const companyName = branding?.name || "GatiQ";
+  const logoUrl = branding?.logo || "";
 
   return (
     <div className="flex h-dvh overflow-hidden bg-gray-50">
@@ -49,6 +52,9 @@ export function DashboardShell({
         </header>
 
         <main className="flex-1 overflow-y-auto">
+          {/* Promotional banner floating at the top of content, dismissible per device */}
+          <PromotionalBanner banner={banner} />
+
           {/* pb-24 on mobile clears the fixed bottom nav */}
           <div className="w-full p-4 pb-24 sm:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}

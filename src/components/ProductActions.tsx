@@ -10,7 +10,13 @@ import { Alert } from "./ui/Alert";
 import { deleteProductAction } from "@/actions/products";
 import type { ProductDTO } from "@/services/products";
 
-export function ProductActions({ product }: { product: ProductDTO }) {
+export function ProductActions({
+  product,
+  counterRewardsEnabled = true,
+}: {
+  product: ProductDTO;
+  counterRewardsEnabled?: boolean;
+}) {
   const [edit, setEdit] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +55,7 @@ export function ProductActions({ product }: { product: ProductDTO }) {
       </button>
 
       <SlideOver open={edit} onClose={() => setEdit(false)} title="Edit product">
-        <ProductForm product={product} onSuccess={() => setEdit(false)} />
+        <ProductForm product={product} counterRewardsEnabled={counterRewardsEnabled} onSuccess={() => setEdit(false)} />
       </SlideOver>
 
       <Modal

@@ -1,7 +1,8 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getKhatiStats } from "@/services/khati";
 import { listKhatiRedemptions } from "@/services/redemption";
-import { getSetting } from "@/services/settings";
+import { getSetting, isRedemptionsEnabled } from "@/services/settings";
 import { formatISTDate } from "@/lib/datetime";
 import { parsePageParams } from "@/lib/pagination";
 import { Pagination } from "@/components/Pagination";
@@ -16,6 +17,10 @@ export default async function KhatiRedemptionsPage({
   searchParams: Promise<{ page?: string; pageSize?: string; q?: string }>;
 }) {
   const session = await auth();
+  if (!(await isRedemptionsEnabled())) {
+    redirect("/khati");
+  }
+
   const sp = await searchParams;
   const pagination = parsePageParams(sp);
   const q = sp.q ?? "";

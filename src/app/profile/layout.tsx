@@ -4,7 +4,10 @@ import { auth } from "@/auth";
 import { getCounterKycState } from "@/services/kyc";
 import { DashboardShell } from "@/components/DashboardShell";
 import { KhatiShell } from "@/components/KhatiShell";
-import { NAV } from "@/lib/nav";
+import { NAV, getNavForRole } from "@/lib/nav";
+import { getCompanyBranding } from "@/services/branding";
+import { getFeatureSettings } from "@/services/settings";
+import { getBannerSettings } from "@/services/banner";
 
 export default async function ProfileLayout({ children }: { children: ReactNode }) {
   const session = await auth();
@@ -22,13 +25,25 @@ export default async function ProfileLayout({ children }: { children: ReactNode 
     role: user.role,
   };
 
+  const [branding, features, banner] = await Promise.all([
+    getCompanyBranding(),
+    getFeatureSettings(),
+    getBannerSettings(),
+  ]);
+  const activeBanner = banner.enabled && banner.image ? banner : null;
+
   // Khatis use the mobile-first shell (bottom nav) everywhere, including here.
   if (user.role === "khati") {
-    return <KhatiShell user={shellUser}>{children}</KhatiShell>;
+    return <KhatiShell user={shellUser} banner={activeBanner}>{children}</KhatiShell>;
   }
 
   return (
-    <DashboardShell navItems={NAV[user.role]} user={shellUser}>
+    <DashboardShell
+      navItems={getNavForRole(user.role, features)}
+      user={shellUser}
+      branding={branding}
+      banner={activeBanner}
+    >
       {children}
     </DashboardShell>
   );
