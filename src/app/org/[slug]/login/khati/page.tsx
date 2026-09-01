@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { OrgLoginTabs } from "./OrgLoginTabs";
+import { OrgLoginTabs } from "../OrgLoginTabs";
 import { PwaInstallBanner } from "@/components/PwaInstallBanner";
 import { connectDB } from "@/db/mongoose";
 import { Organization } from "@/models/Organization";
 import { getCompanyBranding } from "@/services/branding";
 
-export default async function OrgLoginPage({
+export default async function OrgKhatiLoginPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -44,7 +44,7 @@ export default async function OrgLoginPage({
         <h1 className="text-xl font-bold tracking-tight text-gray-900">
           Welcome to {companyName}
         </h1>
-        <p className="text-xs text-gray-500 mt-1">Rewards & Loyalty Portal</p>
+        <p className="text-xs text-gray-500 mt-1">Karigar & Counter Rewards Portal</p>
       </div>
 
       <OrgLoginTabs initialTab="khati" />

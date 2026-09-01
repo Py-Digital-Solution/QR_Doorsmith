@@ -81,9 +81,20 @@ export async function getCompanyBranding(explicitOrgId?: string): Promise<Compan
     youtubeUrl: youtubeUrl || "",
   };
 
-  const targetOrgId = explicitOrgId || session?.user?.orgId;
+  let targetOrgId = explicitOrgId || session?.user?.orgId;
 
-  // If user belongs to an organization or explicitOrgId is provided, override default branding with tenant org branding
+  // If no org is explicitly passed or found in session, fallback to the first active tenant organization
+  if (!targetOrgId) {
+    try {
+      await connectDB();
+      const defaultOrg = await Organization.findOne({ status: "active" }).sort({ createdAt: 1 }).lean();
+      if (defaultOrg) {
+        targetOrgId = String(defaultOrg._id);
+      }
+    } catch {}
+  }
+
+  // If user belongs to an organization or explicitOrgId / defaultOrg is provided, apply tenant org branding
   if (targetOrgId) {
     try {
       await connectDB();
