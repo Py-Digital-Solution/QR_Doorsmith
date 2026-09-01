@@ -3,20 +3,16 @@ import Link from "next/link";
 import { ScanLine, Coins, ChevronRight } from "lucide-react";
 import { listKhatiScans } from "@/services/khati";
 import { getKhatiDashboard } from "@/services/analytics";
-import { listProducts } from "@/services/products";
 import { formatISTDate } from "@/lib/datetime";
 import { StatCard } from "@/components/ui/StatCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { KhatiHomeProducts } from "@/components/KhatiHomeProducts";
-
 import { isRedemptionsEnabled } from "@/services/settings";
 
 export default async function KhatiHome() {
   const session = await auth();
-  const [stats, scans, productsResult, redemptionsEnabled] = await Promise.all([
+  const [stats, scans, redemptionsEnabled] = await Promise.all([
     getKhatiDashboard(session!.user.id),
     listKhatiScans(session!.user.id, { page: 1, pageSize: 5 }),
-    listProducts({ page: 1, pageSize: 6 }, undefined, "active", session?.user?.orgId),
     isRedemptionsEnabled(),
   ]);
 
@@ -75,25 +71,6 @@ export default async function KhatiHome() {
           </Link>
         )}
       </div>
-
-      {/* Product tutorials */}
-      {productsResult.items.length > 0 && (
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">Product tutorials & guides</h2>
-            {productsResult.total > 6 && (
-              <Link
-                href="/khati/products"
-                className="inline-flex items-center gap-0.5 text-xs font-medium text-brand-dark hover:underline"
-              >
-                View all
-                <ChevronRight className="size-3.5" aria-hidden />
-              </Link>
-            )}
-          </div>
-          <KhatiHomeProducts products={productsResult.items} />
-        </div>
-      )}
 
       {/* Recent scans */}
       <div>
