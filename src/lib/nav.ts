@@ -20,6 +20,7 @@ export const NAV: Record<UserRole, NavItem[]> = {
     { href: "/admin/returns", label: "Returns", icon: "undo" },
     { href: "/admin/settlements", label: "Settle up", icon: "wallet" },
     { href: "/approvals", label: "Approvals", icon: "user-check" },
+    { href: "/admin/links", label: "Portal Links", icon: "link" },
     { href: "/admin/promotions", label: "Promotions", icon: "megaphone" },
     { href: "/admin/audit", label: "Audit Log", icon: "history" },
     { href: "/admin/settings", label: "Settings", icon: "settings" },
