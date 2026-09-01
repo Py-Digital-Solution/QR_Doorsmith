@@ -146,12 +146,15 @@ export async function createUser(input: CreateUserInput) {
         status: khatiStatus 
       });
       const appUrl = await currentAppUrl();
+      const { Organization } = await import("@/models/Organization");
+      const org = input.orgId ? await Organization.findById(input.orgId).select("name slug").lean() : null;
       const { getCompanyBranding } = await import("@/services/branding");
       const branding = await getCompanyBranding(input.orgId);
-      const companyName = branding.name || "Rewards Platform";
+      const companyName = branding.name || org?.name || "Rewards Platform";
+      const loginUrl = org?.slug ? `${appUrl}/org/${org.slug}/login` : `${appUrl}/login/khati`;
       waSend(
         phone,
-        `🎉 *${companyName} में आपका स्वागत है, ${input.name.trim()}! | Welcome to ${companyName}, ${input.name.trim()}!*\n\nआपका कारीगर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour karigar account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/login/khati\nAfter registration, log in here: ${appUrl}/login/khati\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+        `🎉 *${companyName} में आपका स्वागत है, ${input.name.trim()}! | Welcome to ${companyName}, ${input.name.trim()}!*\n\nआपका कारीगर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour karigar account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${loginUrl}\nAfter registration, log in here: ${loginUrl}\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
         "welcome",
       ).catch((err) => console.error("[wa] Welcome message failed:", err));
       return newKhati;
@@ -181,12 +184,15 @@ export async function createUser(input: CreateUserInput) {
         registrationTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
       });
       const appUrl = await currentAppUrl();
+      const { Organization } = await import("@/models/Organization");
+      const org = input.orgId ? await Organization.findById(input.orgId).select("name slug").lean() : null;
       const { getCompanyBranding } = await import("@/services/branding");
       const branding = await getCompanyBranding(input.orgId);
-      const companyName = branding.name || "Rewards Platform";
+      const companyName = branding.name || org?.name || "Rewards Platform";
+      const loginUrl = org?.slug ? `${appUrl}/org/${org.slug}/login` : `${appUrl}/login`;
       waSend(
         phone,
-        `🎉 *${companyName} में आपका स्वागत है, ${input.name.trim()}! | Welcome to ${companyName}, ${input.name.trim()}!*\n\nआपका काउंटर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour counter account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/login\nAfter registration, log in here: ${appUrl}/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+        `🎉 *${companyName} में आपका स्वागत है, ${input.name.trim()}! | Welcome to ${companyName}, ${input.name.trim()}!*\n\nआपका काउंटर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour counter account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${loginUrl}\nAfter registration, log in here: ${loginUrl}\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
         "welcome",
       ).catch((err) => console.error("[wa] Counter welcome message failed:", err));
       return newCounter;

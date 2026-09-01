@@ -295,14 +295,18 @@ async function getAppBaseUrl(): Promise<string> {
 }
 
   if (khati.phone) {
+    const { Organization } = await import("@/models/Organization");
+    const org = khati.orgId ? await Organization.findById(khati.orgId).select("name slug").lean() : null;
     const [branding, appUrl] = await Promise.all([
-      getCompanyBranding(),
+      getCompanyBranding(khati.orgId ? String(khati.orgId) : undefined),
       getAppBaseUrl(),
     ]);
-    const companyName = branding.name || "Rewards Platform";
+    const companyName = branding.name || org?.name || "Rewards Platform";
+    const loginUrl = org?.slug ? `${appUrl}/org/${org.slug}/login` : `${appUrl}/login/khati`;
+
     waSend(
       khati.phone,
-      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका ${companyName} पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour ${companyName} registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\n${appUrl}/login/khati\n\nआपका कारीगर खाता तैयार है! 🚀\nYour karigar account is ready!`,
+      `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका ${companyName} पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour ${companyName} registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\n${loginUrl}\n\nआपका कारीगर खाता तैयार है! 🚀\nYour karigar account is ready!`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
   }
