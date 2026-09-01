@@ -151,7 +151,7 @@ export async function sendCustomEmail({
   text?: string;
 }): Promise<void> {
   const transport = getTransport();
-  const from = env.SMTP_FROM ?? "No Reply <no-reply@doorsmith.app>";
+  const from = env.SMTP_FROM ?? "Py Mail <noreply@pydigitalsolution.me>";
 
   if (!transport) {
     console.log(`\n[EMAIL][dev] Custom email to ${to}: ${subject}\n${text || html}\n`);

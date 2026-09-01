@@ -126,23 +126,31 @@ export default async function OrgLoginLayout({
         </div>
 
         <p className="relative text-xs text-gray-400">
-          © 2026 {companyName} · Powered by{" "}
-          <span className="font-medium text-gray-300">Gati Growth Labs</span>
-          {" · "}
-          Support:{" "}
-          <a
-            href={`tel:${supportPhone.replace(/\s+/g, "")}`}
-            className="font-medium text-gray-300 transition-colors hover:text-white hover:underline"
-          >
-            {supportPhone}
-          </a>
+          © {new Date().getFullYear()} {companyName}
+          {supportPhone && (
+            <>
+              {" · "}
+              Support:{" "}
+              <a
+                href={`tel:${supportPhone.replace(/\s+/g, "")}`}
+                className="font-medium text-gray-300 transition-colors hover:text-white hover:underline"
+              >
+                {supportPhone}
+              </a>
+            </>
+          )}
         </p>
       </aside>
 
       {/* Right  form */}
       <main className="flex w-full flex-col items-center justify-center gap-8 bg-gray-50 p-6 lg:w-1/2">
         <div className="w-full max-w-sm">{children}</div>
-        <PoweredBy className="lg:hidden" />
+        <PoweredBy
+          className="lg:hidden"
+          companyName={companyName}
+          supportPhone={supportPhone}
+          supportEmail={org.branding?.email}
+        />
       </main>
     </div>
   );

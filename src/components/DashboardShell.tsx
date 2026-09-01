@@ -18,7 +18,7 @@ export function DashboardShell({
 }: {
   navItems: NavItem[];
   user: { name?: string; email?: string; role: UserRole };
-  branding?: { name: string; logo: string };
+  branding?: { name: string; logo: string; phone?: string; email?: string };
   banner?: { image: string; enabled: boolean } | null;
   children: ReactNode;
 }) {
@@ -58,7 +58,12 @@ export function DashboardShell({
           {/* pb-24 on mobile clears the fixed bottom nav */}
           <div className="w-full p-4 pb-24 sm:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}
-            <PoweredBy className="mt-8" />
+            <PoweredBy
+              className="mt-8"
+              companyName={companyName}
+              supportPhone={branding?.phone}
+              supportEmail={branding?.email}
+            />
           </div>
         </main>
       </div>

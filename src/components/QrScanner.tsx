@@ -76,6 +76,20 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
     };
   }, [attempt]);
 
+  async function handleRetry() {
+    try {
+      if (navigator?.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices
+          .getUserMedia({ video: { facingMode: { ideal: "environment" } } })
+          .catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    } catch (err) {
+      console.warn("Permission retry check:", err);
+    }
+    setAttempt((n) => n + 1);
+  }
+
   if (cameraError) {
     return (
       <div className="flex min-h-[260px] w-full max-w-xs flex-col items-center justify-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-center">
@@ -87,7 +101,7 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
           {cameraError !== "insecure_context" && (
             <button
               type="button"
-              onClick={() => setAttempt((n) => n + 1)}
+              onClick={handleRetry}
               className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
             >
               <RotateCcw className="size-3.5" aria-hidden />

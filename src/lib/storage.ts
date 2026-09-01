@@ -3,7 +3,7 @@ import { Readable } from "stream";
 import * as Minio from "minio";
 import { env } from "@/lib/env";
 
-const BUCKET = env.S3_BUCKET || "doorsmith";
+const BUCKET = env.S3_BUCKET || "rewards";
 
 function getClient(): Minio.Client {
   if (!env.S3_ENDPOINT || !env.S3_ACCESS_KEY || !env.S3_SECRET_KEY) {

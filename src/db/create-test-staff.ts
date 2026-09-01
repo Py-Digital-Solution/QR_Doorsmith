@@ -10,8 +10,8 @@ import { hashPassword } from "../lib/password";
  * Delete the two accounts afterwards (emails below) if not needed.
  */
 const PASSWORD = "Test@1234";
-const SALES_EMAIL = "salesrep.test@doorsmith.local";
-const COUNTER_EMAIL = "counter.test@doorsmith.local";
+const SALES_EMAIL = "salesrep.test@rewards.local";
+const COUNTER_EMAIL = "counter.test@rewards.local";
 
 async function ensure(
   email: string,

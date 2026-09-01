@@ -92,7 +92,7 @@ async function startSocket() {
     auth: state,
     logger,
     printQRInTerminal: true,
-    browser: ["DoorSmith", "Chrome", "1.0.0"],
+    browser: ["GatiQ Rewards Platform", "Chrome", "1.0.0"],
   });
 
   sock.ev.on("creds.update", saveCreds);

@@ -6,9 +6,9 @@ import { getCompanyBranding } from "@/services/branding";
 
 export default async function LoginLayout({ children }: { children: ReactNode }) {
   const branding = await getCompanyBranding();
-  const companyName = branding.name || "GGPL";
+  const companyName = branding.name || "GatiQ Rewards Platform";
   const logoUrl = branding.logo || "";
-  const supportPhone = branding.phone || "+91 89504 83393";
+  const supportPhone = branding.phone || "";
 
   return (
     <div className="flex min-h-screen">
@@ -62,16 +62,19 @@ export default async function LoginLayout({ children }: { children: ReactNode })
         </div>
 
         <p className="relative text-xs text-gray-400">
-          © 2026 {companyName} · Powered by{" "}
-          <span className="font-medium text-gray-300">Gati Growth Labs</span>
-          {" · "}
-          Support:{" "}
-          <a
-            href={`tel:${supportPhone.replace(/\s+/g, "")}`}
-            className="font-medium text-gray-300 transition-colors hover:text-white hover:underline"
-          >
-            {supportPhone}
-          </a>
+          © {new Date().getFullYear()} {companyName}
+          {supportPhone && (
+            <>
+              {" · "}
+              Support:{" "}
+              <a
+                href={`tel:${supportPhone.replace(/\s+/g, "")}`}
+                className="font-medium text-gray-300 transition-colors hover:text-white hover:underline"
+              >
+                {supportPhone}
+              </a>
+            </>
+          )}
         </p>
       </aside>
 
@@ -79,7 +82,12 @@ export default async function LoginLayout({ children }: { children: ReactNode })
       <main className="flex w-full flex-col items-center justify-center gap-8 bg-gray-50 p-6 lg:w-1/2">
         <div className="w-full max-w-sm">{children}</div>
         {/* Mobile credit (the left panel + its footer are hidden on small screens) */}
-        <PoweredBy className="lg:hidden" />
+        <PoweredBy
+          className="lg:hidden"
+          companyName={companyName}
+          supportPhone={supportPhone}
+          supportEmail={branding.email}
+        />
       </main>
     </div>
   );

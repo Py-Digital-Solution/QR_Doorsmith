@@ -17,6 +17,7 @@ export type KycStatus =
 
 export type KhatiProfileDTO = {
   id: string;
+  orgId?: string;
   role: "khati" | "counter";
   name: string;
   phone: string;
@@ -54,6 +55,7 @@ export async function getKhatiByToken(token: string): Promise<KhatiProfileDTO | 
   if (!user) return null;
   return {
     id: String(user._id),
+    orgId: user.orgId ? String(user.orgId) : undefined,
     role: user.role as "khati" | "counter",
     name: user.name ?? "",
     phone: user.phone ?? "",

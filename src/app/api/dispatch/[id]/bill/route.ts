@@ -64,7 +64,7 @@ export async function GET(
     textStartX = M + logoW + 12;
   }
 
-  const companyName = branding.name || "DoorSmith";
+  const companyName = branding.name || "GatiQ Rewards Platform";
   text(companyName, textStartX, y, 18, bold);
   if (branding.tagline) text(branding.tagline, textStartX, y - 16, 9, font, gray);
 

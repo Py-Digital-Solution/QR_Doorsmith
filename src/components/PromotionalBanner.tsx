@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { X } from "lucide-react";
 
 export function PromotionalBanner({
@@ -10,7 +10,7 @@ export function PromotionalBanner({
 }) {
   const [showBanner, setShowBanner] = useState(false);
   const bannerKey = banner?.image
-    ? `promo_banner_session_${banner.image.length}_${banner.image.slice(-12)}`
+    ? `promo_banner_session_${banner.image.length}_${banner.image.slice(-16)}`
     : null;
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function PromotionalBanner({
       setShowBanner(false);
       return;
     }
-    // Clean up any legacy localStorage keys to ensure new sessions always show banner
+    // Clean up legacy localStorage keys
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -28,7 +28,7 @@ export function PromotionalBanner({
       }
     } catch {}
 
-    // Check sessionStorage (resets on every new login session / tab restart)
+    // Check sessionStorage (shows on every new session)
     try {
       const dismissed = sessionStorage.getItem(bannerKey);
       setShowBanner(!dismissed);
@@ -37,35 +37,57 @@ export function PromotionalBanner({
     }
   }, [bannerKey, banner?.enabled, banner?.image]);
 
-  function dismissBanner() {
+  const dismissBanner = useCallback(() => {
     if (bannerKey) {
       try {
         sessionStorage.setItem(bannerKey, "1");
       } catch {}
     }
     setShowBanner(false);
-  }
+  }, [bannerKey]);
+
+  // Handle escape key to dismiss popup
+  useEffect(() => {
+    if (!showBanner) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") dismissBanner();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showBanner, dismissBanner]);
 
   if (!showBanner || !banner?.image || !banner?.enabled) return null;
 
   return (
-    <div className="sticky top-0 z-20 w-full animate-in fade-in slide-in-from-top-2 duration-300">
-      <div className="relative overflow-hidden bg-gray-900 shadow-md">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={banner.image}
-          alt="Promotional Announcement"
-          className="max-h-60 w-full object-cover sm:max-h-72"
-        />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) dismissBanner();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="relative max-h-[90vh] max-w-lg w-full overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 border border-white/20 sm:max-w-xl md:max-w-2xl">
+        {/* Close Button */}
         <button
           type="button"
           onClick={dismissBanner}
-          className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-all hover:bg-black/80 hover:scale-105"
+          className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur-md transition-all hover:bg-black hover:scale-110 active:scale-95 focus:outline-none"
           aria-label="Close announcement"
           title="Close announcement"
         >
-          <X className="size-4" aria-hidden />
+          <X className="size-5" strokeWidth={2.5} aria-hidden />
         </button>
+
+        {/* Banner image with contained aspect ratio */}
+        <div className="flex items-center justify-center bg-black/5 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={banner.image}
+            alt="Promotional Announcement"
+            className="max-h-[82vh] w-full object-contain"
+          />
+        </div>
       </div>
     </div>
   );

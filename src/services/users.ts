@@ -147,8 +147,8 @@ export async function createUser(input: CreateUserInput) {
       });
       const appUrl = await currentAppUrl();
       const { getCompanyBranding } = await import("@/services/branding");
-      const branding = await getCompanyBranding();
-      const companyName = branding.name || "GatiQ";
+      const branding = await getCompanyBranding(input.orgId);
+      const companyName = branding.name || "Rewards Platform";
       waSend(
         phone,
         `🎉 *${companyName} में आपका स्वागत है, ${input.name.trim()}! | Welcome to ${companyName}, ${input.name.trim()}!*\n\nआपका कारीगर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour karigar account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/khati/login\nAfter registration, log in here: ${appUrl}/khati/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
@@ -182,8 +182,8 @@ export async function createUser(input: CreateUserInput) {
       });
       const appUrl = await currentAppUrl();
       const { getCompanyBranding } = await import("@/services/branding");
-      const branding = await getCompanyBranding();
-      const companyName = branding.name || "GatiQ";
+      const branding = await getCompanyBranding(input.orgId);
+      const companyName = branding.name || "Rewards Platform";
       waSend(
         phone,
         `🎉 *${companyName} में आपका स्वागत है, ${input.name.trim()}! | Welcome to ${companyName}, ${input.name.trim()}!*\n\nआपका काउंटर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें — इसमें केवल एक मिनट लगेगा।\nYour counter account has been created. Complete your registration using the link below — it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/login\nAfter registration, log in here: ${appUrl}/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,

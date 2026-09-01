@@ -10,7 +10,7 @@ export const runtime = "nodejs";
  * POST /api/admin/sync-indexes
  * Sync all MongoDB indexes. Admin only.
  * Can be called from dashboard or via curl:
- * curl -X POST https://app.doorsmith.in/api/admin/sync-indexes \
+ * curl -X POST https://your-domain.com/api/admin/sync-indexes \
  *   -H "Authorization: Bearer {ADMIN_TOKEN}"
  */
 export async function POST(req: Request) {

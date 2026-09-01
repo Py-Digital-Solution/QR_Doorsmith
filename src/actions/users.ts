@@ -169,8 +169,8 @@ export async function resendRegistrationLinkAction(userId: string): Promise<Acti
     const appUrl = `${proto}://${host}`;
 
     const { getCompanyBranding } = await import("@/services/branding");
-    const branding = await getCompanyBranding();
-    const companyName = branding.name || "GatiQ";
+    const branding = await getCompanyBranding(session.user.orgId || (user.orgId ? String(user.orgId) : undefined));
+    const companyName = branding.name || "Rewards Platform";
 
     await waSend(
       user.phone,

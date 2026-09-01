@@ -9,8 +9,8 @@ import { getCompanyBranding } from "@/services/branding";
 
 export default async function PrivacyPage() {
   const branding = await getCompanyBranding();
-  const companyName = branding.name || "GGPL";
-  const contactEmail = branding.email || "support@doorsmith.in";
+  const companyName = branding.name || "GatiQ Rewards Platform";
+  const contactEmail = branding.email || "support@pydigitalsolution.me";
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">

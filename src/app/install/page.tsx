@@ -20,7 +20,7 @@ export const metadata: Metadata = {
         url: "/logo.png",
         width: 1200,
         height: 630,
-        alt: "DoorSmith PWA App",
+        alt: "GatiQ Rewards App",
       },
     ],
   },

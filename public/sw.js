@@ -1,4 +1,4 @@
-const CACHE = "doorsmith-khati-v1";
+const CACHE = "gatiq-rewards-v1";
 
 const PRECACHE = [
   "/icons/icon-192.png",

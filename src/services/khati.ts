@@ -45,8 +45,21 @@ export async function processQrScan(
 ): Promise<ScanResult> {
   await connectDB();
 
-  const code = await QrCode.findOne({ serialNo: serialNo.trim() }).lean();
-  if (!code) throw new Error("QR code not found.");
+  let cleanSerial = String(serialNo ?? "").trim();
+  // Strip URL if the scanned value is a link
+  if (cleanSerial.includes("/")) {
+    cleanSerial = cleanSerial.split("/").filter(Boolean).pop() || cleanSerial;
+  }
+  if (cleanSerial.includes("?")) {
+    cleanSerial = cleanSerial.split("?")[0];
+  }
+  cleanSerial = cleanSerial.trim().toUpperCase();
+
+  const code = await QrCode.findOne({
+    serialNo: { $regex: new RegExp(`^${cleanSerial.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
+  }).lean();
+
+  if (!code) throw new Error(`QR code "${cleanSerial}" not found.`);
   if (code.type === "master") throw new Error("Master box QR codes cannot be scanned for points.");
   if (code.type !== "product" && code.type !== "small") throw new Error("Only product or small box QR codes earn points.");
   if (code.status === "scanned") throw new Error("This QR code has already been scanned.");

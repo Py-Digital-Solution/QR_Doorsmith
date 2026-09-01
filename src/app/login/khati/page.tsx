@@ -6,12 +6,12 @@ import { getCompanyBranding } from "@/services/branding";
 
 export default async function KhatiLoginPage() {
   const branding = await getCompanyBranding();
-  const companyName = branding.name || "DoorSmith";
-  const logoUrl = branding.logo || "/logo.png";
+  const companyName = branding.name || "GatiQ Rewards Platform";
+  const logoUrl = branding.logo || "";
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-overlay">
-      {logoUrl.startsWith("data:") || logoUrl.startsWith("http") || logoUrl.startsWith("/") ? (
+      {logoUrl && (logoUrl.startsWith("data:") || logoUrl.startsWith("http") || logoUrl.startsWith("/")) ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={logoUrl}

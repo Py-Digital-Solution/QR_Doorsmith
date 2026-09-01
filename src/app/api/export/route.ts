@@ -52,7 +52,7 @@ async function buildTablePdf(
   // ── Company header block ─────────────────────────────────────────
   ensure(52);
   const headerH = 48;
-  const companyName = branding.name || "DoorSmith";
+  const companyName = branding.name || "GatiQ Rewards Platform";
 
   let textX = margin;
   if (logoImg) {
@@ -131,7 +131,7 @@ function toXlsx(
   rows: string[][],
   branding: CompanyBranding,
 ): Buffer {
-  const companyName = branding.name || "DoorSmith";
+  const companyName = branding.name || "GatiQ Rewards Platform";
   const contactLine = [branding.phone, branding.email, branding.website].filter(Boolean).join("  |  ");
 
   // Company header rows before the data

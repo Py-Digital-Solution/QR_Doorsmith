@@ -122,14 +122,14 @@ async function seedDemoUsers() {
 
   const counter1 = await ensureCounter({
     name: "Sharma Hardware",
-    email: "counter1@doorsmith.in",
+    email: "counter1@rewards.local",
     password: "Counter@123",
     address: "12 MG Road, Indore, MP",
     createdBy: adminId,
   });
   const counter2 = await ensureCounter({
     name: "Verma Timber Mart",
-    email: "counter2@doorsmith.in",
+    email: "counter2@rewards.local",
     password: "Counter@123",
     address: "5 Station Road, Bhopal, MP",
     createdBy: adminId,

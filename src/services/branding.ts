@@ -23,7 +23,7 @@ export type CompanyBranding = {
   youtubeUrl?: string;
 };
 
-export async function getCompanyBranding(): Promise<CompanyBranding> {
+export async function getCompanyBranding(explicitOrgId?: string): Promise<CompanyBranding> {
   const session = await auth().catch(() => null);
 
   const [
@@ -63,7 +63,7 @@ export async function getCompanyBranding(): Promise<CompanyBranding> {
   ]);
 
   let result: CompanyBranding = {
-    name: name || "GatiQ",
+    name: name || "GatiQ Rewards Platform",
     logo,
     favicon,
     brandColor: brandColorSetting || "#F97316",
@@ -81,29 +81,31 @@ export async function getCompanyBranding(): Promise<CompanyBranding> {
     youtubeUrl: youtubeUrl || "",
   };
 
-  // If user belongs to an organization, override default branding with tenant org branding
-  if (session?.user?.orgId) {
+  const targetOrgId = explicitOrgId || session?.user?.orgId;
+
+  // If user belongs to an organization or explicitOrgId is provided, override default branding with tenant org branding
+  if (targetOrgId) {
     try {
       await connectDB();
-      const org = await Organization.findById(session.user.orgId).lean();
+      const org = await Organization.findById(targetOrgId).lean();
       if (org) {
         result = {
           name: org.name || result.name,
-          logo: org.branding?.logo || result.logo,
-          favicon: org.branding?.favicon || result.favicon,
+          logo: org.branding?.logo || "",
+          favicon: org.branding?.favicon || "",
           brandColor: org.branding?.brandColor || result.brandColor,
           brandSecondary: org.branding?.brandSecondary || result.brandSecondary,
           brandDark: org.branding?.brandDark || result.brandDark,
           brandLight: org.branding?.brandLight || result.brandLight,
           fontFamily: org.branding?.fontFamily || result.fontFamily,
-          tagline: org.branding?.tagline || result.tagline,
-          phone: org.branding?.phone || result.phone,
-          email: org.branding?.email || result.email,
-          address: org.branding?.address || result.address,
-          website: org.branding?.website || result.website,
-          instagramUrl: org.branding?.instagramUrl || result.instagramUrl,
-          facebookUrl: org.branding?.facebookUrl || result.facebookUrl,
-          youtubeUrl: org.branding?.youtubeUrl || result.youtubeUrl,
+          tagline: org.branding?.tagline || "",
+          phone: org.branding?.phone || "",
+          email: org.branding?.email || "",
+          address: org.branding?.address || "",
+          website: org.branding?.website || "",
+          instagramUrl: org.branding?.instagramUrl || "",
+          facebookUrl: org.branding?.facebookUrl || "",
+          youtubeUrl: org.branding?.youtubeUrl || "",
         };
       }
     } catch {

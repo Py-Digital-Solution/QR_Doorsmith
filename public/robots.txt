@@ -8,4 +8,4 @@ Disallow: /sales/
 Allow: /org/
 Allow: /register/
 
-Sitemap: https://doorsmith.in/sitemap.xml
+Sitemap: https://ggpl-demo.vercel.app/sitemap.xml

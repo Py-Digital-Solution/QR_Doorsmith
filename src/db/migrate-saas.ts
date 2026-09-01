@@ -23,7 +23,7 @@ async function main() {
   }
 
   // 2. Ensure Super Admin exists
-  const superAdminEmail = "superadmin@doorsmith.in";
+  const superAdminEmail = "superadmin@pydigitalsolution.me";
   let superAdmin = await User.findOne({ email: superAdminEmail });
   if (!superAdmin) {
     const passwordHash = await hashPassword("SuperAdmin@123");

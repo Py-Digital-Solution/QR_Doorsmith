@@ -6,14 +6,49 @@ import { saveBannerAction, type BannerActionState } from "@/actions/banner";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
-
-function readAsDataUrl(file: File): Promise<string> {
+async function processImageFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Could not read file"));
     reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // Cap maximum dimension to 1920px for crisp display while keeping payload optimal
+        const MAX_DIM = 1920;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(img.src);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        try {
+          const dataUrl = canvas.toDataURL("image/webp", 0.88);
+          if (dataUrl.startsWith("data:image/webp")) {
+            resolve(dataUrl);
+            return;
+          }
+        } catch {}
+
+        const jpegUrl = canvas.toDataURL("image/jpeg", 0.88);
+        resolve(jpegUrl);
+      };
+      img.onerror = () => reject(new Error("Failed to decode image"));
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
   });
 }
 
@@ -38,23 +73,19 @@ export function BannerForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!["image/png", "image/jpeg", "image/gif", "image/webp"].includes(file.type)) {
-      setUploadError("Only PNG, JPEG, GIF, or WebP files are supported.");
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      setUploadError("Banner must be under 2 MB.");
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select a valid image file (PNG, JPEG, WebP, GIF, etc.).");
       return;
     }
 
     setUploadError("");
     setConverting(true);
     try {
-      const dataUrl = await readAsDataUrl(file);
+      const dataUrl = await processImageFile(file);
       setImage(dataUrl);
       setEnabled(true);
     } catch {
-      setUploadError("Could not read the file. Please try again.");
+      setUploadError("Could not process the image. Please try another file.");
     } finally {
       setConverting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -121,7 +152,7 @@ export function BannerForm({
           )}
           {converting ? "Reading…" : image ? "Replace banner" : "Upload banner"}
         </label>
-        <p className="text-xs text-gray-400">PNG · JPEG · GIF · WebP · max 2 MB</p>
+        <p className="text-xs text-gray-400">PNG · JPEG · GIF · WebP · Auto-optimized (Any size supported)</p>
       </div>
 
       {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}

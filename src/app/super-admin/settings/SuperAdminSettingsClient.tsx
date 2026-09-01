@@ -116,7 +116,7 @@ export default function SuperAdminSettingsClient({
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. DoorSmith SaaS"
+                placeholder="e.g. GatiQ Rewards Platform"
                 required
               />
             </Field>
@@ -287,7 +287,7 @@ export default function SuperAdminSettingsClient({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="support@doorsmith.in"
+                  placeholder="support@pydigitalsolution.me"
                 />
               </Field>
             </div>

@@ -3,7 +3,7 @@ import { Organization } from "@/models/Organization";
 import type { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL ?? "https://doorsmith.in";
+  const baseUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://ggpl-demo.vercel.app";
 
   try {
     await connectDB();

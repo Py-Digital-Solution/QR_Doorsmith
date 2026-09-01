@@ -52,7 +52,7 @@ export async function GET(
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const black = rgb(0, 0, 0);
   const gray = rgb(0.5, 0.5, 0.5);
-  const footerText = [branding.name, branding.website].filter(Boolean).join("  ·  ") || "DoorSmith";
+  const footerText = [branding.name, branding.website].filter(Boolean).join("  ·  ") || "GatiQ Rewards Platform";
 
   const CAPTION_GAP = 9; // space under each QR for its serial caption
   const PARENT_LINE_H = 6; // extra space for the "S:"/"M:" parent-serial line, when present

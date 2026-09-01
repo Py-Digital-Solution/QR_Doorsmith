@@ -13,7 +13,7 @@ export const runtime = "nodejs";
  * Admin only. Requires confirmation via X-Confirm header.
  *
  * Usage:
- * curl -X POST https://app.doorsmith.in/api/admin/reset-seed \
+ * curl -X POST https://your-domain.com/api/admin/reset-seed \
  *   -H "X-Confirm: I understand this will clear the database" \
  *   -H "Content-Type: application/json"
  */
@@ -47,13 +47,13 @@ export async function POST(req: Request) {
     }
 
     // Create admin user
-    const adminPassword = "DoorSmith@123"; // Change this!
+    const adminPassword = "Admin@123"; // Change this!
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
     const admin = await User.create({
       role: "admin",
-      name: "DoorSmith Admin",
-      email: "admin@doorsmith.in",
+      name: "GatiQ Admin",
+      email: "admin@pydigitalsolution.me",
       passwordHash,
       status: "active",
       displayId: "AD-0001",

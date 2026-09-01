@@ -7,10 +7,8 @@ import { CheckCircle2, XCircle, Clock } from "lucide-react";
 
 export default async function RegisterPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const [khati, branding] = await Promise.all([
-    getKhatiByToken(token),
-    getCompanyBranding(),
-  ]);
+  const khati = await getKhatiByToken(token);
+  const branding = await getCompanyBranding(khati?.orgId);
 
   const companyName = branding.name || "Rewards Platform";
 
@@ -128,21 +126,27 @@ export default async function RegisterPage({ params }: { params: Promise<{ token
 
 function Shell({ children, branding }: { children: React.ReactNode; branding?: CompanyBranding }) {
   const logo = branding?.logo;
-  const name = branding?.name || "Logo";
+  const name = branding?.name || "Rewards Platform";
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-start justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg sm:p-8">
-        <div className="mb-6 flex justify-center">
+        <div className="mb-6 flex justify-center text-center">
           {/* Logo / brand mark */}
-          {logo ? (
-            <img src={logo} alt={name} className="h-8 max-w-[200px] object-contain" />
+          {logo && (logo.startsWith("data:") || logo.startsWith("http") || logo.startsWith("/")) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt={name} className="h-10 max-w-[220px] object-contain" />
           ) : (
-            <Image src="/logo.png" alt={name} width={156} height={26} priority className="h-7 w-auto" />
+            <span className="text-2xl font-bold tracking-tight text-gray-900">{name}</span>
           )}
         </div>
         {children}
-        <PoweredBy className="mt-6" />
+        <PoweredBy
+          className="mt-6"
+          companyName={branding?.name}
+          supportPhone={branding?.phone}
+          supportEmail={branding?.email}
+        />
       </div>
     </div>
   );

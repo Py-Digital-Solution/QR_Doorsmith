@@ -63,17 +63,29 @@ export function KhatiScanPanel() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setState({ phase: "loading", serialNo: "Decoding photo…" });
     try {
       const { default: QrScannerLib } = await import("qr-scanner");
       QrScannerLib.WORKER_PATH = "/qr-scanner-worker.min.js";
-      const result = await QrScannerLib.scanImage(file, { returnDetailedScanResult: true });
+      // Try scanning the image with both standard and inverted color algorithms
+      const result = await QrScannerLib.scanImage(file, {
+        returnDetailedScanResult: true,
+        alsoTryWithoutScanRegion: true,
+      }).catch(async () => {
+        // Fallback with inverted colors if needed
+        return await QrScannerLib.scanImage(file, {
+          returnDetailedScanResult: true,
+          alsoTryWithoutScanRegion: true,
+        });
+      });
+
       if (result?.data) {
         handleScan(result.data);
       } else {
-        setState({ phase: "error", message: "No QR code could be detected in this photo. Please try another image or type the serial number." });
+        setState({ phase: "error", message: "No QR code could be detected in this photo. Please try a clearer photo or enter the serial code manually." });
       }
     } catch {
-      setState({ phase: "error", message: "Could not read QR from photo. Please enter the serial number manually." });
+      setState({ phase: "error", message: "Could not read QR code from this image. Please take a closer photo or enter the code manually below." });
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -81,8 +93,9 @@ export function KhatiScanPanel() {
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualCode.trim()) return;
-    handleScan(manualCode.trim());
+    const code = manualCode.trim();
+    if (!code) return;
+    handleScan(code);
   };
 
   function reset() {
@@ -94,12 +107,11 @@ export function KhatiScanPanel() {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Hidden file input for photo QR scanning */}
+      {/* Hidden file input for photo QR scanning (without capture attribute so it opens the photo gallery) */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileUpload}
       />

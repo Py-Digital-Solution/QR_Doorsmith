@@ -17,21 +17,22 @@ export default async function CounterKycPage() {
 
   const [state, branding] = await Promise.all([
     getCounterKycState(user.id),
-    getCompanyBranding(),
+    getCompanyBranding(user.orgId),
   ]);
   if (state.completed) redirect("/counter/dashboard");
 
   const logo = branding?.logo;
-  const name = branding?.name || "Logo";
+  const name = branding?.name || "Rewards Platform";
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-lg sm:p-8">
-        <div className="mb-6 flex justify-center">
-          {logo ? (
-            <img src={logo} alt={name} className="h-8 max-w-[200px] object-contain" />
+        <div className="mb-6 flex justify-center text-center">
+          {logo && (logo.startsWith("data:") || logo.startsWith("http") || logo.startsWith("/")) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt={name} className="h-10 max-w-[220px] object-contain" />
           ) : (
-            <Image src="/logo.png" alt={name} width={156} height={26} priority className="h-7 w-auto" />
+            <span className="text-2xl font-bold tracking-tight text-gray-900">{name}</span>
           )}
         </div>
 
@@ -46,7 +47,12 @@ export default async function CounterKycPage() {
           finish setting up your account before continuing.
         </p>
 
-        <PoweredBy className="mt-6" />
+        <PoweredBy
+          className="mt-6"
+          companyName={branding?.name}
+          supportPhone={branding?.phone}
+          supportEmail={branding?.email}
+        />
       </div>
     </div>
   );

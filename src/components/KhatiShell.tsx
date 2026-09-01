@@ -57,14 +57,18 @@ export function KhatiShell({
   banner,
   navItems,
   redemptionsEnabled = true,
+  branding,
 }: {
   user: { name?: string; email?: string; role: UserRole };
   children: ReactNode;
   banner?: { image: string; enabled: boolean } | null;
   navItems?: NavItem[];
   redemptionsEnabled?: boolean;
+  branding?: { name: string; logo: string; phone?: string; email?: string };
 }) {
   const pathname = usePathname() ?? "";
+  const companyName = branding?.name || "GatiQ";
+  const logoUrl = branding?.logo || "";
   const [moreOpen, setMoreOpen] = useState(false);
   const [subPanel, setSubPanel] = useState<"help" | "about" | "ios-install" | null>(null);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -108,7 +112,7 @@ export function KhatiShell({
     <div className="flex h-dvh overflow-hidden bg-gray-50">
 
       {/* ── Desktop sidebar (hidden on mobile) ─────────────────────────── */}
-      <Sidebar items={sidebarItems} className="hidden md:flex" />
+      <Sidebar items={sidebarItems} branding={branding} className="hidden md:flex" />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
@@ -121,8 +125,14 @@ export function KhatiShell({
 
         {/* ── Mobile header (hidden on desktop) ──────────────────────────── */}
         <header className="z-40 flex h-14 shrink-0 items-center border-b border-gray-100 bg-white/95 px-4 shadow-card backdrop-blur-sm md:hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Gati Growth Labs" className="h-6 w-auto object-contain" />
+          {logoUrl && (logoUrl.startsWith("data:") || logoUrl.startsWith("http") || logoUrl.startsWith("/")) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={companyName} className="h-6 w-auto object-contain" />
+          ) : (
+            <span className="text-base font-bold tracking-tight text-brand">
+              {companyName}
+            </span>
+          )}
         </header>
 
         <main className="flex-1 overflow-y-auto">
@@ -131,7 +141,12 @@ export function KhatiShell({
 
           <div className="mx-auto w-full max-w-6xl p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
             {children}
-            <PoweredBy className="mt-8" />
+            <PoweredBy
+              className="mt-8"
+              companyName={companyName}
+              supportPhone={branding?.phone}
+              supportEmail={branding?.email}
+            />
           </div>
         </main>
       </div>

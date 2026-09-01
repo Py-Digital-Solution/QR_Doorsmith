@@ -16,7 +16,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* DoorSmith brand palette (sampled from the logo) */
+/* GatiQ brand palette (customizable per tenant organization) */
 @theme {
   --color-brand: var(--brand-color, #f6821f); /* primary brand color */
   --color-brand-dark: var(--brand-dark, #d96d10); /* hover accent */
