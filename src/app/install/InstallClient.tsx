@@ -26,11 +26,15 @@ type Platform = "ios" | "android" | "desktop";
 export default function InstallClient({
   companyName = "Rewards",
   logo,
-  phone = "+91 89504 83393",
+  phone = "",
+  loginUrl = "/login/khati",
+  staffLoginUrl = "/login",
 }: {
   companyName?: string;
   logo?: string;
   phone?: string;
+  loginUrl?: string;
+  staffLoginUrl?: string;
 }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [platform, setPlatform] = useState<Platform>("android");
@@ -126,7 +130,7 @@ export default function InstallClient({
           </span>
         </Link>
         <Link 
-          href="/login" 
+          href={loginUrl} 
           className="text-sm font-medium bg-white/10 hover:bg-white/15 active:bg-white/20 px-4 py-2 rounded-full border border-white/15 transition-all focus-ring"
           id="btn-nav-login"
         >
@@ -444,10 +448,10 @@ export default function InstallClient({
             ) : null}
           </p>
           <div className="flex items-center gap-6 text-sm text-gray-400">
-            <Link href="/login" className="hover:text-white transition-colors">
+            <Link href={staffLoginUrl} className="hover:text-white transition-colors">
               Staff Portal
             </Link>
-            <Link href="/login/khati" className="hover:text-white transition-colors">
+            <Link href={loginUrl} className="hover:text-white transition-colors">
               Karigar Portal
             </Link>
           </div>
