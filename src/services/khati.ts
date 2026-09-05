@@ -1,6 +1,7 @@
 import "server-only";
 import { connectDB } from "@/db/mongoose";
 import { QrCode } from "@/models/QrCode";
+import { QrBatch } from "@/models/QrBatch";
 import { User } from "@/models/User";
 import { Return } from "@/models/Return";
 import { PointTransaction } from "@/models/PointTransaction";
@@ -75,13 +76,16 @@ export async function processQrScan(
       counterId: code.counterId, // never assign a child re-dispatched elsewhere
     }).lean();
 
+    const batch = await QrBatch.findById(code.batchId).select("productPerSmall").lean();
+    const isBoxOnlyBatch = batch?.productPerSmall === 0;
+    const hasProductChildren = await QrCode.exists({ parentQrId: code._id, type: "product" });
+
     if (productCodes.length === 0) {
       // Distinguish "this box never had product-level QR codes" (batch generated
       // with productPerSmall: 0  the box itself is the scannable unit, worth its
       // own snapshotted points) from "it had them but they're all used up"
       // (genuine already-scanned case).
-      const everHadChildren = await QrCode.exists({ parentQrId: code._id, type: "product" });
-      if (everHadChildren) {
+      if (hasProductChildren && !isBoxOnlyBatch) {
         throw new Error("No unscanned products remain in this small box.");
       }
 
