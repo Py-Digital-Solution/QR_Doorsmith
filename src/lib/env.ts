@@ -49,7 +49,10 @@ const envSchema = z.object({
     .default("development"),
 });
 
-const skip = process.env.SKIP_ENV_VALIDATION === "1";
+const skip =
+  process.env.SKIP_ENV_VALIDATION === "1" ||
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.npm_lifecycle_event === "build";
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success && !skip) {
