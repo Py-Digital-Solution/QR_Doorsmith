@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import {
   signInWithPhoneNumber,
+  signInWithCredential,
+  PhoneAuthProvider,
   RecaptchaVerifier,
   type ConfirmationResult,
 } from "firebase/auth";
@@ -15,6 +17,66 @@ import { Alert } from "@/components/ui/Alert";
 const FIREBASE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 // Debug mode: force the magic-code (1111) login even when Firebase is configured.
 const OTP_DEV_MODE = process.env.NEXT_PUBLIC_OTP_DEV_MODE === "true";
+const OTP_TTL_MS = 5 * 60 * 1000;
+const OTP_STORAGE_KEY = "doorsmith:phone-login-otp";
+
+type PersistedOtpState = {
+  phone: string;
+  channel: "whatsapp" | "sms";
+  requestedAt: number;
+  firebaseVerificationId?: string;
+};
+
+function clearPersistedOtpState() {
+  try {
+    sessionStorage.removeItem(OTP_STORAGE_KEY);
+  } catch {
+    // Storage can be unavailable in private browsing. React state still works.
+  }
+}
+
+function readPersistedOtpState(): PersistedOtpState | null {
+  try {
+    const raw = sessionStorage.getItem(OTP_STORAGE_KEY);
+    if (!raw) return null;
+
+    const saved = JSON.parse(raw) as Partial<PersistedOtpState>;
+    if (
+      typeof saved.phone !== "string" ||
+      !/^\d{10}$/.test(saved.phone) ||
+      (saved.channel !== "whatsapp" && saved.channel !== "sms") ||
+      typeof saved.requestedAt !== "number" ||
+      saved.requestedAt > Date.now() ||
+      (saved.channel === "sms" && typeof saved.firebaseVerificationId !== "string")
+    ) {
+      clearPersistedOtpState();
+      return null;
+    }
+
+    if (Date.now() - saved.requestedAt >= OTP_TTL_MS) {
+      clearPersistedOtpState();
+      return null;
+    }
+
+    return {
+      phone: saved.phone,
+      channel: saved.channel,
+      requestedAt: saved.requestedAt,
+      firebaseVerificationId: saved.firebaseVerificationId,
+    };
+  } catch {
+    clearPersistedOtpState();
+    return null;
+  }
+}
+
+function savePersistedOtpState(state: PersistedOtpState) {
+  try {
+    sessionStorage.setItem(OTP_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage can be unavailable in private browsing. React state still works.
+  }
+}
 
 // ─── Dev-mode form (no Firebase) ────────────────────────────────────────────
 
@@ -115,11 +177,13 @@ function OtpLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [requestedAt, setRequestedAt] = useState<number | null>(null);
 
   // Which channel actually delivered the code, so verification uses the right path.
   const [channel, setChannel] = useState<"whatsapp" | "sms" | null>(null);
 
   const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const firebaseVerificationIdRef = useRef<string | null>(null);
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
   const recaptchaContainerId = "recaptcha-container";
 
@@ -130,6 +194,51 @@ function OtpLoginForm() {
     return () => { recaptchaRef.current?.clear(); recaptchaRef.current = null; };
   }, []);
 
+  // Mobile browsers may discard or remount this page while the user is reading
+  // WhatsApp. Restore the short-lived OTP session so returning users can enter
+  // the code they already received instead of starting over.
+  useEffect(() => {
+    const saved = readPersistedOtpState();
+    if (!saved) return;
+
+    setPhone(saved.phone);
+    setChannel(saved.channel);
+    setRequestedAt(saved.requestedAt);
+    setStep("otp");
+
+    // Firebase's ConfirmationResult cannot be serialized, but its verification
+    // id can be restored and turned back into a credential after a reload.
+    if (saved.channel === "sms") {
+      firebaseVerificationIdRef.current = saved.firebaseVerificationId ?? null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!requestedAt || !channel || !phone) return;
+
+    const remaining = OTP_TTL_MS - (Date.now() - requestedAt);
+    if (remaining <= 0) {
+      clearPersistedOtpState();
+      setRequestedAt(null);
+      setChannel(null);
+      setStep("phone");
+      setCode("");
+      setError("Your OTP has expired. Please request a new code.");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      clearPersistedOtpState();
+      setRequestedAt(null);
+      setChannel(null);
+      setStep("phone");
+      setCode("");
+      setError("Your OTP has expired. Please request a new code.");
+    }, remaining);
+
+    return () => window.clearTimeout(timer);
+  }, [channel, phone, requestedAt]);
+
   async function sendOtp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -137,7 +246,10 @@ function OtpLoginForm() {
     if (!trimmed) { setError("Enter your phone number."); return; }
     setSending(true);
     setChannel(null);
+    setRequestedAt(null);
     confirmationRef.current = null;
+    firebaseVerificationIdRef.current = null;
+    clearPersistedOtpState();
 
     const normalized = `+91${trimmed}`;
 
@@ -158,8 +270,11 @@ function OtpLoginForm() {
     }
 
     if (waOk) {
+      const sentAt = Date.now();
       setChannel("whatsapp");
+      setRequestedAt(sentAt);
       setStep("otp");
+      savePersistedOtpState({ phone: trimmed, channel: "whatsapp", requestedAt: sentAt });
       setSending(false);
       return;
     }
@@ -176,10 +291,23 @@ function OtpLoginForm() {
         recaptchaRef.current,
       );
       confirmationRef.current = confirmation;
+      firebaseVerificationIdRef.current = confirmation.verificationId;
+      const sentAt = Date.now();
       setChannel("sms");
+      setRequestedAt(sentAt);
       setStep("otp");
+      savePersistedOtpState({
+        phone: trimmed,
+        channel: "sms",
+        requestedAt: sentAt,
+        firebaseVerificationId: confirmation.verificationId,
+      });
     } catch {
       confirmationRef.current = null;
+      firebaseVerificationIdRef.current = null;
+      clearPersistedOtpState();
+      setRequestedAt(null);
+      setChannel(null);
       recaptchaRef.current?.clear();
       recaptchaRef.current = null;
       setError("WhatsApp is unavailable and SMS could not be sent. Please try again in a moment.");
@@ -202,7 +330,11 @@ function OtpLoginForm() {
           code: code.trim(),
           redirect: false,
         });
-        if (res && !res.error) { window.location.href = "/"; return; }
+        if (res && !res.error) {
+          clearPersistedOtpState();
+          window.location.href = "/";
+          return;
+        }
         setError("Wrong or expired code. Check your WhatsApp and try again.");
         return;
       }
@@ -213,7 +345,31 @@ function OtpLoginForm() {
           const result = await confirmationRef.current.confirm(code.trim());
           const idToken = await result.user.getIdToken();
           const res = await signIn("khati-otp", { idToken, redirect: false });
-          if (res && !res.error) { window.location.href = "/"; return; }
+          if (res && !res.error) {
+            clearPersistedOtpState();
+            window.location.href = "/";
+            return;
+          }
+        } catch {
+          // wrong / expired SMS code  fall through to the generic error
+        }
+        setError("Wrong or expired code. Check your SMS and try again.");
+        return;
+      }
+
+      // After a mobile browser reload, the Firebase ConfirmationResult is gone
+      // but its short-lived verification id can recreate the same credential.
+      if (channel === "sms" && firebaseVerificationIdRef.current) {
+        try {
+          const credential = PhoneAuthProvider.credential(firebaseVerificationIdRef.current, code.trim());
+          const result = await signInWithCredential(getFirebaseAuth(), credential);
+          const idToken = await result.user.getIdToken();
+          const res = await signIn("khati-otp", { idToken, redirect: false });
+          if (res && !res.error) {
+            clearPersistedOtpState();
+            window.location.href = "/";
+            return;
+          }
         } catch {
           // wrong / expired SMS code  fall through to the generic error
         }
@@ -282,7 +438,16 @@ function OtpLoginForm() {
           </Button>
           <button
             type="button"
-            onClick={() => { setStep("phone"); setCode(""); setError(null); }}
+            onClick={() => {
+              clearPersistedOtpState();
+              confirmationRef.current = null;
+              firebaseVerificationIdRef.current = null;
+              setRequestedAt(null);
+              setChannel(null);
+              setStep("phone");
+              setCode("");
+              setError(null);
+            }}
             className="w-full text-sm text-gray-500 hover:underline"
           >
             ← Change number
