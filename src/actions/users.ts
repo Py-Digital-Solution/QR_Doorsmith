@@ -13,6 +13,8 @@ import { connectDB } from "@/db/mongoose";
 import { User } from "@/models/User";
 import type { UserRole, UserStatus } from "@/models/User";
 import { normalizePhone } from "@/lib/phone";
+import { createKhatiAccessToken } from "@/lib/khati-access";
+import { notifyKhatiAccessLink } from "@/services/wa-notify";
 
 export type ActionState = { error?: string; ok?: boolean };
 
@@ -143,7 +145,7 @@ export async function resendRegistrationLinkAction(userId: string): Promise<Acti
     if (!user || (user.role !== "khati" && user.role !== "counter")) {
       return { error: "User not found." };
     }
-    if (user.role === "khati" && user.kycStatus === "approved") {
+    if (user.role === "khati" && user.kycStatus === "approved" && user.status !== "active") {
       return { error: "This karigar is already approved." };
     }
     if (user.role === "counter" && user.counterKycCompletedAt) {
@@ -163,6 +165,17 @@ export async function resendRegistrationLinkAction(userId: string): Promise<Acti
     const proto = hdrs.get("x-forwarded-proto") ?? "https";
     const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
     const appUrl = `${proto}://${host}`;
+
+    if (user.role === "khati" && user.status === "active") {
+      const access = createKhatiAccessToken();
+      user.accessTokenHash = access.tokenHash;
+      user.accessTokenExpiresAt = access.expiresAt;
+      user.accessTokenUsedAt = undefined;
+      await user.save();
+      notifyKhatiAccessLink(user.phone, user.name, `${appUrl}/carpenter/access/${access.token}`);
+      revalidatePath("/admin/users");
+      return { ok: true };
+    }
 
     await waSend(
       user.phone,

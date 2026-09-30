@@ -9,7 +9,8 @@ import { isDistributorEnabled } from "@/services/settings";
 import { Sequence } from "@/models/Sequence";
 import { QrCode } from "@/models/QrCode";
 import { waSend } from "@/services/whatsapp";
-import { notifyStaffWelcome, notifyKarigarLinked, notifyAccountStatus } from "@/services/wa-notify";
+import { notifyStaffWelcome, notifyKarigarLinked, notifyKhatiAccessLink, notifyAccountStatus } from "@/services/wa-notify";
+import { createKhatiAccessToken } from "@/lib/khati-access";
 import {
   DEFAULT_PAGE_SIZE,
   paginated,
@@ -125,17 +126,32 @@ export async function createUser(input: CreateUserInput) {
     }
 
     try {
-      const registrationToken = randomBytes(24).toString("base64url");
       // Admin-created khatis are active immediately; counter-created khatis
       // stay pending until they complete registration via the WhatsApp link.
       const khatiStatus = input.actorRole === "admin" ? ("active" as const) : ("pending" as const);
-      const newKhati = await User.create({ ...base, phone, counterId, counterIds: [counterId], registrationToken, status: khatiStatus });
-      const appUrl = await currentAppUrl();
-      waSend(
+      const registrationToken = khatiStatus === "pending" ? randomBytes(24).toString("base64url") : undefined;
+      const access = khatiStatus === "active" ? createKhatiAccessToken() : null;
+      const newKhati = await User.create({
+        ...base,
         phone,
-        `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका कारीगर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें  इसमें केवल एक मिनट लगेगा।\nYour karigar account has been created. Complete your registration using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/khati/login\nAfter registration, log in here: ${appUrl}/khati/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
-        "welcome",
-      ).catch((err) => console.error("[wa] Welcome message failed:", err));
+        counterId,
+        counterIds: [counterId],
+        registrationToken,
+        kycStatus: khatiStatus === "active" ? "approved" : "not_submitted",
+        accessTokenHash: access?.tokenHash,
+        accessTokenExpiresAt: access?.expiresAt,
+        status: khatiStatus,
+      });
+      const appUrl = await currentAppUrl();
+      if (access) {
+        notifyKhatiAccessLink(phone, input.name.trim(), `${appUrl}/carpenter/access/${access.token}`);
+      } else {
+        waSend(
+          phone,
+          `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका कारीगर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके अपना पंजीकरण पूरा करें  इसमें केवल एक मिनट लगेगा।\nYour karigar account has been created. Complete your registration using the link below  it only takes a minute.\n\n${appUrl}/register/${registrationToken}\n\nपंजीकरण के बाद, यहाँ लॉग इन करें: ${appUrl}/khati/login\nAfter registration, log in here: ${appUrl}/khati/login\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+          "welcome",
+        ).catch((err) => console.error("[wa] Welcome message failed:", err));
+      }
       return newKhati;
     } catch (e) {
       if (isDuplicateKeyError(e)) throw new Error("A user with this phone already exists.");

@@ -69,8 +69,8 @@ export function UserActions({
     });
   }
 
-  const isKhatiPending =
-    (user.role === "khati" && user.kycStatus !== "approved") ||
+  const canSendKhatiLink =
+    (user.role === "khati" && (user.status === "active" || user.kycStatus !== "approved")) ||
     (user.role === "counter" && Boolean(user.hasRegistrationToken));
 
   const btn =
@@ -81,11 +81,11 @@ export function UserActions({
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${size === "md" ? "justify-start" : "justify-end"}`}>
-      {isKhatiPending && (
+      {canSendKhatiLink && (
         <button
           onClick={onResend}
           disabled={resendState === "sending" || resendState === "sent"}
-          title={resendState === "sent" ? "Link sent!" : "Resend registration link via WhatsApp"}
+          title={resendState === "sent" ? "Link sent!" : user.role === "khati" && user.status === "active" ? "Send direct access link via WhatsApp" : "Resend registration link via WhatsApp"}
           className={`${btn} ${
             resendState === "sent"
               ? "text-green-600 hover:bg-green-50"

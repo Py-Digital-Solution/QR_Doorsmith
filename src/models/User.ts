@@ -58,6 +58,11 @@ const userSchema = new Schema(
     counterKycCompletedAt: { type: Date },
     // One-time token included in the WhatsApp registration link; cleared on approval
     registrationToken: { type: String, sparse: true, unique: true },
+    // Separate one-time direct-access token for active Carpenters. Only the
+    // hash is stored; the raw token exists only in the outgoing message.
+    accessTokenHash: { type: String, sparse: true, unique: true, index: true },
+    accessTokenExpiresAt: { type: Date, default: null, index: true },
+    accessTokenUsedAt: { type: Date, default: null },
     // Human-readable role-scoped ID (e.g. KH-0001, SR-0001, CN-0001)
     displayId: { type: String, unique: true, sparse: true },
   },

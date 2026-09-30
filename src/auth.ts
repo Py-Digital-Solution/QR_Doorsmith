@@ -6,6 +6,7 @@ import { User, type UserRole } from "@/models/User";
 import { verifyPassword } from "@/lib/password";
 import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import { isDistributorEnabled } from "@/services/settings";
+import { hashKhatiAccessToken } from "@/lib/khati-access";
 
 /**
  * Full auth instance (Node runtime  uses Mongoose + bcrypt).
@@ -131,6 +132,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user._id.toString(),
           name: user.name ?? undefined,
           role: user.role as UserRole,
+        };
+      },
+    }),
+    Credentials({
+      id: "khati-access",
+      name: "Carpenter Access Link",
+      credentials: { token: {} },
+      authorize: async (creds) => {
+        const token = String(creds.token ?? "").trim();
+        if (!/^[A-Za-z0-9_-]{40,80}$/.test(token)) return null;
+
+        await connectDB();
+        const user = await User.findOneAndUpdate(
+          {
+            role: "khati",
+            status: "active",
+            accessTokenHash: hashKhatiAccessToken(token),
+            accessTokenExpiresAt: { $gt: new Date() },
+            accessTokenUsedAt: null,
+          },
+          { $set: { accessTokenUsedAt: new Date() } },
+          { new: true },
+        ).select("_id name role").lean();
+
+        if (!user) return null;
+        return {
+          id: String(user._id),
+          name: user.name ?? undefined,
+          role: "khati" as UserRole,
         };
       },
     }),

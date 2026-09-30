@@ -109,6 +109,19 @@ export function notifyKarigarLinked(phone: string | null | undefined, name: stri
   );
 }
 
+/** One-time direct access link for an active Carpenter. */
+export function notifyKhatiAccessLink(
+  phone: string | null | undefined,
+  name: string | null | undefined,
+  accessUrl: string,
+) {
+  fire(
+    phone,
+    `🔗 *DoorSmith सीधा लॉगिन लिंक | Direct Access Link*\n\nनमस्ते ${nm(name)}, आपका DoorSmith कारीगर खाता तैयार है। नीचे दिए लिंक पर क्लिक करके सीधे अपना कारीगर ऐप खोलें:\nHi ${nm(name)}, your DoorSmith Carpenter account is ready. Tap the link below to open your Carpenter app directly:\n\n${accessUrl}\n\nयह सुरक्षित लिंक एक बार इस्तेमाल किया जा सकता है और 7 दिनों में समाप्त हो जाएगा। इसे किसी के साथ साझा न करें।\nThis secure link can be used once and expires in 7 days. Do not share it with anyone.`,
+    "welcome",
+  );
+}
+
 /** 10. Account suspended or reactivated → the user. */
 export function notifyAccountStatus(phone: string | null | undefined, name: string | null | undefined, status: string) {
   if (status === "suspended") {

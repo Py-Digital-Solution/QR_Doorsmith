@@ -5,6 +5,7 @@ import { waSend } from "@/services/whatsapp";
 import { notifyCounterKycToAdmin } from "@/services/wa-notify";
 import { uploadAvatar, toPhotoUrl } from "@/lib/storage";
 import { hashPassword } from "@/lib/password";
+import { createKhatiAccessToken } from "@/lib/khati-access";
 
 export type KycStatus =
   | "not_submitted"
@@ -245,18 +246,41 @@ export async function approveKyc(actorId: string, actorRole: string, khatiId: st
   const pendingStatuses = ["pending_counter", "pending_sales_rep", "pending_admin"];
   if (!pendingStatuses.includes(khati.kycStatus as string)) throw new Error("Already processed.");
 
+  const access = createKhatiAccessToken();
   khati.kycStatus = "approved";
   khati.status = "active";
   khati.registrationToken = undefined;
+  khati.accessTokenHash = access.tokenHash;
+  khati.accessTokenExpiresAt = access.expiresAt;
+  khati.accessTokenUsedAt = undefined;
   await khati.save();
 
   if (khati.phone) {
+    const appUrl = await currentAppUrl();
+    waSend(
+      khati.phone,
+      `🔗 *DoorSmith सीधा लॉगिन लिंक | Direct Access Link*\n\nनमस्ते ${khati.name}, आपका कारीगर खाता तैयार है। नीचे दिए लिंक पर क्लिक करके सीधे अपना कारीगर ऐप खोलें।\nHi ${khati.name}, your Carpenter account is ready. Tap the link below to open your Carpenter app directly.\n\n${appUrl}/carpenter/access/${access.token}\n\nयह सुरक्षित लिंक एक बार इस्तेमाल किया जा सकता है और 7 दिनों में समाप्त हो जाएगा।\nThis secure link can be used once and expires in 7 days. Do not share it.`,
+      "welcome",
+    ).catch((err) => console.error("[kyc] Khati access link WA failed:", err));
+  }
+
+  // Legacy approval message retained only for older records that have no
+  // direct-access token. Newly approved users use the secure link above.
+  if (khati.phone && !khati.accessTokenHash) {
     waSend(
       khati.phone,
       `🎉 *बधाई हो, ${khati.name}! | Congratulations, ${khati.name}!*\n\nआपका DoorSmith पंजीकरण स्वीकृत हो गया है! अब आप लॉग इन करके QR स्कैन शुरू कर सकते हैं।\nYour DoorSmith registration has been approved! You can now log in and start scanning QR codes.\n\n🔗 लॉग इन करें | Log in:\nhttps://app.doorsmith.in/login/khati\n\nआपका कारीगर खाता तैयार है! 🚀\nYour karigar account is ready!`,
       "kyc",
     ).catch((err) => console.error("[kyc] Khati approval WA failed:", err));
   }
+}
+
+async function currentAppUrl(): Promise<string> {
+  const { headers } = await import("next/headers");
+  const hdrs = await headers();
+  const proto = hdrs.get("x-forwarded-proto") ?? "https";
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
+  return `${proto}://${host}`;
 }
 
 export async function rejectKyc(actorId: string, actorRole: string, khatiId: string, reason: string): Promise<void> {
