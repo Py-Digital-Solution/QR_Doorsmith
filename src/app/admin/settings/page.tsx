@@ -9,7 +9,7 @@ import { WhatsAppPanel } from "@/components/WhatsAppPanel";
 import { TestWhatsAppForm } from "@/components/TestWhatsAppForm";
 import { BrandingForm } from "@/components/BrandingForm";
 import { NotificationEmailForm } from "@/components/NotificationEmailForm";
-import { WaLogTable } from "@/components/WaLogTable";
+import { WaLogTable, type StatusFilter } from "@/components/WaLogTable";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TabNav } from "@/components/ui/Tabs";
 
@@ -79,12 +79,12 @@ async function BrandingTab() {
 async function WhatsAppTab({ waPage, waStatus }: { waPage: number; waStatus: string }) {
   const [notificationEmail, logsData, sentCount, failedCount] = await Promise.all([
     getSetting<string>("notification_email", ""),
-    listWaLogs(waPage, 20, waStatus === "all" || !waStatus ? undefined : waStatus),
+    listWaLogs(waPage, 20, waStatus === "all" || !waStatus ? undefined : (waStatus as "sent" | "failed")),
     listWaLogs(1, 20, "sent").then((d) => d.total),
     listWaLogs(1, 20, "failed").then((d) => d.total),
   ]);
 
-  const effectiveFilter = waStatus === "all" || !waStatus ? "all" : waStatus;
+  const effectiveFilter: StatusFilter = waStatus === "all" || !waStatus ? "all" : (waStatus as StatusFilter);
   const basePath = `/admin/settings?tab=whatsapp`;
 
   return (

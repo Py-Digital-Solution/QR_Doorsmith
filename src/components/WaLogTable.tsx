@@ -12,7 +12,7 @@ const TYPE_TONE: Record<string, "blue" | "green" | "gray"> = {
   welcome: "green",
 };
 
-type StatusFilter = "all" | "sent" | "failed";
+export type StatusFilter = "all" | "sent" | "failed";
 
 export function WaLogTable({
   items,
