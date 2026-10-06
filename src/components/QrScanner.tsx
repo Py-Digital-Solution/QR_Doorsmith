@@ -29,6 +29,7 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
   const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [cameraStarting, setCameraStarting] = useState(true);
 
   useEffect(() => {
     onScanRef.current = onScan;
@@ -76,6 +77,7 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
 
     const start = async () => {
       setCameraError(null);
+      setCameraStarting(true);
       stopStream();
 
       try {
@@ -138,6 +140,7 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
         };
 
         scanFrameRef.current = requestAnimationFrame(scan);
+        setCameraStarting(false);
       } catch (err) {
         if (cancelled) return;
         stopStream();
@@ -148,6 +151,7 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
           hasSelectedCamera: Boolean(selectedCameraId),
         });
         setCameraError(kind);
+        setCameraStarting(false);
       }
     };
 
@@ -171,12 +175,19 @@ export function QrScanner({ onScan }: { onScan: (text: string) => void }) {
       <div className="relative w-full">
         <video
           ref={videoRef}
-          className="w-full rounded-lg border border-gray-200 bg-black"
+          className="w-full object-cover rounded-lg border border-gray-200 bg-black"
           style={{ display: "block", aspectRatio: "4/3" }}
           autoPlay
           muted
           playsInline
         />
+
+        {cameraStarting && !cameraError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-gray-900/80 p-4 text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+            <p className="text-sm text-white/80">कैमरा शुरू हो रहा है... Starting camera...</p>
+          </div>
+        )}
 
         {cameraError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-center">

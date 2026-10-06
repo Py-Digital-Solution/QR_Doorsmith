@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircle2, XCircle, X, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { WaLogItem } from "@/services/walog";
@@ -11,20 +12,50 @@ const TYPE_TONE: Record<string, "blue" | "green" | "gray"> = {
   welcome: "green",
 };
 
+type StatusFilter = "all" | "sent" | "failed";
+
 export function WaLogTable({
   items,
   page,
   pageCount,
   total,
   basePath,
+  currentStatusFilter,
+  counts,
 }: {
   items: WaLogItem[];
   page: number;
   pageCount: number;
   total: number;
   basePath: string;
+  currentStatusFilter: StatusFilter;
+  counts: { all: number; sent: number; failed: number };
 }) {
   const [selected, setSelected] = useState<WaLogItem | null>(null);
+
+  const pageUrl = (p: number) => {
+    const sep = basePath.includes("?") ? "&" : "?";
+    const sf = currentStatusFilter !== "all" ? `&waStatus=${currentStatusFilter}` : "";
+    return `${basePath}${sep}waPage=${p}${sf}`;
+  };
+
+  const filterLink = (label: string, value: StatusFilter, count: number) => (
+    <Link
+      href={`${basePath}${value === "all" ? "" : `&waStatus=${value}`}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+        currentStatusFilter === value
+          ? "bg-brand text-white"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+    >
+      {label}
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+        currentStatusFilter === value ? "bg-white/20 text-white" : "bg-gray-200 text-gray-600"
+      }`}>
+        {count}
+      </span>
+    </Link>
+  );
 
   return (
     <>
@@ -34,6 +65,13 @@ export function WaLogTable({
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-card">
+          {/* Status filter */}
+          <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+            {filterLink("All", "all", counts.all)}
+            {filterLink("Sent", "sent", counts.sent)}
+            {filterLink("Failed", "failed", counts.failed)}
+          </div>
+
           <div className="divide-y divide-gray-100">
             {items.map((log) => (
               <button
@@ -69,7 +107,7 @@ export function WaLogTable({
             <p className="text-xs text-gray-500">{total} message{total !== 1 ? "s" : ""}</p>
             <div className="flex items-center gap-1">
               <a
-                href={`${basePath}&waPage=${page - 1}`}
+                href={pageUrl(page - 1)}
                 aria-disabled={page <= 1}
                 className={`flex size-7 items-center justify-center rounded border text-gray-600 transition-colors ${
                   page <= 1 ? "pointer-events-none opacity-40" : "border-gray-200 hover:bg-gray-50"
@@ -81,7 +119,7 @@ export function WaLogTable({
                 {page} / {pageCount}
               </span>
               <a
-                href={`${basePath}&waPage=${page + 1}`}
+                href={pageUrl(page + 1)}
                 aria-disabled={page >= pageCount}
                 className={`flex size-7 items-center justify-center rounded border text-gray-600 transition-colors ${
                   page >= pageCount ? "pointer-events-none opacity-40" : "border-gray-200 hover:bg-gray-50"

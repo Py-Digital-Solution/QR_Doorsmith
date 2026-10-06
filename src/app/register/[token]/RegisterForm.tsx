@@ -177,7 +177,7 @@ export function RegisterForm({ token, role }: { token: string; role: "khati" | "
           className="sr-only"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) applyFile(file);
+            if (file) { e.target.value = ""; applyFile(file); }
           }}
         />
 

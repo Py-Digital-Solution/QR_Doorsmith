@@ -21,10 +21,11 @@ export type WaLogPage = {
   pageCount: number;
 };
 
-export async function listWaLogs(page = 1, pageSize = 20): Promise<WaLogPage> {
+export async function listWaLogs(page = 1, pageSize = 20, status?: string): Promise<WaLogPage> {
   await connectDB();
-  const total = await WaLog.countDocuments();
-  const docs = await WaLog.find()
+  const query = status ? { status } : {};
+  const total = await WaLog.countDocuments(query);
+  const docs = await WaLog.find(query)
     .sort({ createdAt: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)

@@ -18,9 +18,9 @@ const BASE = "/admin/settings";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; waPage?: string }>;
+  searchParams: Promise<{ tab?: string; waPage?: string; waStatus?: string }>;
 }) {
-  const { tab = "general", waPage } = await searchParams;
+  const { tab = "general", waPage, waStatus } = await searchParams;
 
   const tabs = [
     { href: `${BASE}?tab=general`, label: "General", active: tab === "general" },
@@ -36,7 +36,7 @@ export default async function SettingsPage({
       <div className="max-w-2xl">
         {tab === "general" && <GeneralTab />}
         {tab === "branding" && <BrandingTab />}
-        {tab === "whatsapp" && <WhatsAppTab waPage={Number(waPage ?? "1") || 1} />}
+        {tab === "whatsapp" && <WhatsAppTab waPage={Number(waPage ?? "1") || 1} waStatus={waStatus ?? "all"} />}
       </div>
     </div>
   );
@@ -76,12 +76,15 @@ async function BrandingTab() {
   );
 }
 
-async function WhatsAppTab({ waPage }: { waPage: number }) {
-  const [notificationEmail, logsData] = await Promise.all([
+async function WhatsAppTab({ waPage, waStatus }: { waPage: number; waStatus: string }) {
+  const [notificationEmail, logsData, sentCount, failedCount] = await Promise.all([
     getSetting<string>("notification_email", ""),
-    listWaLogs(waPage, 20),
+    listWaLogs(waPage, 20, waStatus === "all" || !waStatus ? undefined : waStatus),
+    listWaLogs(1, 20, "sent").then((d) => d.total),
+    listWaLogs(1, 20, "failed").then((d) => d.total),
   ]);
 
+  const effectiveFilter = waStatus === "all" || !waStatus ? "all" : waStatus;
   const basePath = `/admin/settings?tab=whatsapp`;
 
   return (
@@ -106,6 +109,8 @@ async function WhatsAppTab({ waPage }: { waPage: number }) {
           pageCount={logsData.pageCount}
           total={logsData.total}
           basePath={basePath}
+          currentStatusFilter={effectiveFilter}
+          counts={{ all: logsData.total, sent: sentCount, failed: failedCount }}
         />
       </div>
     </div>
