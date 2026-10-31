@@ -47,6 +47,8 @@ next-env.d.ts
 # whatsapp microservice  ignore its own deps and lock file
 whatsapp-service/node_modules/
 whatsapp-service/package-lock.json
+whatsapp-service/auth_info/
+whatsapp-service/auth_info-messages/
 
 # scratch & temp scripts
 scratch/
