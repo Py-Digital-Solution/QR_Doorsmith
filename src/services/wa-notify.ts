@@ -5,9 +5,7 @@ import { waSend } from "@/services/whatsapp";
  * Bilingual (Hindi + English) WhatsApp notifications for app events.
  *
  * Every function here is FIRE-AND-FORGET: it never throws and never blocks the
- * calling operation. If WhatsApp is down a scan/return/redemption still succeeds;
- * the failure is logged (and surfaced via the existing WaLog + email alert path
- * inside waSend()).
+ * calling operation. Failures are logged by the shared WhatsApp sender.
  */
 
 const ROLE_LABEL: Record<string, string> = {
@@ -27,34 +25,7 @@ function fire(phone: string | null | undefined, message: string, type: string) {
 
 const nm = (name?: string | null) => (name ?? "").trim();
 
-/** 1. Karigar earned points on a scan. */
-export function notifyScanEarned(phone: string | null | undefined, name: string | null | undefined, points: number, balance: number) {
-  fire(
-    phone,
-    `🎉 *अंक मिले | Points earned*\n\nनमस्ते ${nm(name)}, आपको *${points}* अंक मिले हैं।\nHi ${nm(name)}, you earned *${points}* points.\n\n💰 *कुल शेष | Balance:* ${balance}`,
-    "scan",
-  );
-}
-
-/** 2. Points reversed from a karigar due to a return. */
-export function notifyReturnReversed(phone: string | null | undefined, name: string | null | undefined, points: number, balance: number, counterName: string) {
-  fire(
-    phone,
-    `↩️ *अंक वापस | Points reversed*\n\nनमस्ते ${nm(name)}, ${counterName} पर वापसी के कारण *${points}* अंक काटे गए।\nHi ${nm(name)}, *${points}* points were reversed due to a return at ${counterName}.\n\n💰 *कुल शेष | Balance:* ${balance}`,
-    "return",
-  );
-}
-
-/** 3. New redemption request → notify the counter. */
-export function notifyRedemptionRequested(counterPhone: string | null | undefined, counterName: string, khatiName: string, points: number) {
-  fire(
-    counterPhone,
-    `🎁 *नई रिडेम्पशन अनुरोध | New Redemption Request*\n\nनमस्ते ${nm(counterName)}, ${nm(khatiName)} ने *${points}* अंक रिडीम करने का अनुरोध किया है।\nHi ${nm(counterName)}, ${nm(khatiName)} has requested to redeem *${points}* points.\n\nकृपया DoorSmith पर समीक्षा करें।\nPlease review it on DoorSmith.`,
-    "redemption",
-  );
-}
-
-/** 4. Redemption OTP → karigar (to show to the counter). */
+/** Redemption OTP → karigar (to show to the counter). */
 export function notifyRedemptionOtp(phone: string | null | undefined, name: string | null | undefined, points: number, otp: string) {
   fire(
     phone,
@@ -63,25 +34,7 @@ export function notifyRedemptionOtp(phone: string | null | undefined, name: stri
   );
 }
 
-/** 5. Redemption approved/settled → karigar. */
-export function notifyRedemptionApproved(phone: string | null | undefined, name: string | null | undefined, points: number, balance: number) {
-  fire(
-    phone,
-    `✅ *रिडेम्पशन पूर्ण | Redemption Complete*\n\nनमस्ते ${nm(name)}, आपके *${points}* अंक सफलतापूर्वक रिडीम हो गए।\nHi ${nm(name)}, *${points}* points were successfully redeemed.\n\n💰 *शेष अंक | Balance:* ${balance}`,
-    "redemption",
-  );
-}
-
-/** 6. Redemption rejected → karigar. */
-export function notifyRedemptionRejected(phone: string | null | undefined, name: string | null | undefined, points: number) {
-  fire(
-    phone,
-    `❌ *रिडेम्पशन अस्वीकृत | Redemption Rejected*\n\nनमस्ते ${nm(name)}, आपका *${points}* अंक का रिडेम्पशन अनुरोध अस्वीकृत कर दिया गया।\nHi ${nm(name)}, your redemption request for *${points}* points was rejected.\n\nअधिक जानकारी के लिए अपने काउंटर से संपर्क करें।\nPlease contact your counter for details.`,
-    "redemption",
-  );
-}
-
-/** 7. Stock dispatched → counter. */
+/** Stock dispatched → counter. */
 export function notifyDispatchCreated(counterPhone: string | null | undefined, counterName: string | null | undefined, billNo: string, totalCodes: number) {
   fire(
     counterPhone,
@@ -90,7 +43,7 @@ export function notifyDispatchCreated(counterPhone: string | null | undefined, c
   );
 }
 
-/** 8. Staff account created → new staff member. */
+/** Staff account created → new staff member. */
 export function notifyStaffWelcome(phone: string | null | undefined, name: string | null | undefined, role: string, email: string) {
   const label = ROLE_LABEL[role] ?? "Staff";
   fire(
@@ -100,7 +53,7 @@ export function notifyStaffWelcome(phone: string | null | undefined, name: strin
   );
 }
 
-/** 9. Karigar linked to an additional counter → karigar. */
+/** Karigar linked to an additional counter → karigar. */
 export function notifyKarigarLinked(phone: string | null | undefined, name: string | null | undefined, counterName: string) {
   fire(
     phone,
@@ -122,24 +75,7 @@ export function notifyKhatiAccessLink(
   );
 }
 
-/** 10. Account suspended or reactivated → the user. */
-export function notifyAccountStatus(phone: string | null | undefined, name: string | null | undefined, status: string) {
-  if (status === "suspended") {
-    fire(
-      phone,
-      `⛔ *खाता निलंबित | Account Suspended*\n\nनमस्ते ${nm(name)}, आपका DoorSmith खाता निलंबित कर दिया गया है।\nHi ${nm(name)}, your DoorSmith account has been suspended.\n\nसहायता के लिए संपर्क करें।\nPlease contact support for assistance.`,
-      "account_status",
-    );
-  } else if (status === "active") {
-    fire(
-      phone,
-      `✅ *खाता सक्रिय | Account Active*\n\nनमस्ते ${nm(name)}, आपका DoorSmith खाता सक्रिय है। अब आप लॉग इन कर सकते हैं।\nHi ${nm(name)}, your DoorSmith account is active. You can log in now.`,
-      "account_status",
-    );
-  }
-}
-
-/** 11. Counter completed first-login KYC → notify admin. */
+/** Counter completed first-login KYC → notify admin. */
 export function notifyCounterKycToAdmin(adminPhone: string | null | undefined, counterName: string) {
   fire(
     adminPhone,

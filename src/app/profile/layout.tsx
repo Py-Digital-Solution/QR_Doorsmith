@@ -8,7 +8,7 @@ import { NAV } from "@/lib/nav";
 
 export default async function ProfileLayout({ children }: { children: ReactNode }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/khati");
   const user = session.user;
 
   // Counters must finish first-login KYC before reaching any in-app page.

@@ -4,12 +4,7 @@ import { Redemption } from "@/models/Redemption";
 import { User } from "@/models/User";
 import { PointTransaction } from "@/models/PointTransaction";
 import { getSetting } from "@/services/settings";
-import {
-  notifyRedemptionRequested,
-  notifyRedemptionOtp,
-  notifyRedemptionApproved,
-  notifyRedemptionRejected,
-} from "@/services/wa-notify";
+import { notifyRedemptionOtp } from "@/services/wa-notify";
 import { paginated, type Pagination, type Paginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 export type RedemptionDTO = {
@@ -63,9 +58,7 @@ export async function requestRedemption(
     otpExpiresAt,
   });
 
-  // Notify the counter of the new request, and send the OTP to the karigar.
-  const counter = await User.findById(registeredCounterId).select("phone name").lean();
-  notifyRedemptionRequested(counter?.phone, counter?.name ?? "", khati.name ?? "", points);
+  // Send the redemption OTP to the karigar for the counter to verify.
   notifyRedemptionOtp(khati.phone, khati.name, points, otp);
 
   return { id: String(r._id), otp };
@@ -196,8 +189,6 @@ export async function approveRedemption(id: string, counterId: string, otp: stri
     balanceAfter: result.points ?? 0,
     description: "Points redeemed",
   }).catch((e) => console.error("[pt] Failed to write redemption PointTransaction:", e));
-
-  notifyRedemptionApproved(result.phone, result.name, r.points, result.points ?? 0);
 }
 
 export async function rejectRedemption(id: string, counterId: string): Promise<void> {
@@ -207,7 +198,4 @@ export async function rejectRedemption(id: string, counterId: string): Promise<v
   await Redemption.findByIdAndUpdate(id, {
     $set: { status: "rejected", processedBy: counterId },
   });
-
-  const khati = await User.findById(r.khatiId).select("phone name").lean();
-  notifyRedemptionRejected(khati?.phone, khati?.name, r.points);
 }

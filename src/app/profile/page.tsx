@@ -15,9 +15,9 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 export default async function ProfilePage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/khati");
   const profile = await getMyProfile(session.user.id);
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/login/khati");
 
   const isStaff = profile.role !== "khati";
 

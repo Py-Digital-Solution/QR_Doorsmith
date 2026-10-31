@@ -5,7 +5,6 @@ import { QrBatch } from "@/models/QrBatch";
 import { User } from "@/models/User";
 import { Return } from "@/models/Return";
 import { PointTransaction } from "@/models/PointTransaction";
-import { notifyScanEarned, notifyReturnReversed } from "@/services/wa-notify";
 import { paginated, type Pagination, type Paginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 export type KhatiStats = {
@@ -54,7 +53,7 @@ export async function processQrScan(
   if (code.status !== "active") throw new Error("QR code is not active  it must be dispatched to a counter first.");
   if (!code.counterId) throw new Error("QR code has not been dispatched to a counter.");
 
-  const khati = await User.findById(khatiId).select("phone name").lean();
+  const khati = await User.findById(khatiId).select("_id").lean();
   if (!khati) throw new Error("Karigar account not found.");
   // A karigar may scan a product dispatched to ANY counter — points go into
   // their single shared wallet regardless of which counter owns the QR. The
@@ -115,8 +114,6 @@ export async function processQrScan(
         sku: code.sku, serialNo: code.serialNo,
       }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
 
-      notifyScanEarned(khati.phone, khati.name, pts, newBal);
-
       return {
         serialNo: code.serialNo,
         sku: code.sku ?? "",
@@ -163,8 +160,6 @@ export async function processQrScan(
       sku: code.sku, serialNo: code.serialNo,
     }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
 
-    notifyScanEarned(khati.phone, khati.name, totalPts, newBal);
-
     return {
       serialNo: code.serialNo,
       sku: code.sku ?? "",
@@ -203,8 +198,6 @@ export async function processQrScan(
     description: `Product scan`,
     sku: code.sku, serialNo: code.serialNo,
   }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
-
-  notifyScanEarned(khati.phone, khati.name, pts, newBalance);
 
   return {
     serialNo: code.serialNo,
@@ -250,7 +243,7 @@ export async function processQrReturn(
   const pts = code.rewardPoints ?? 0;
   const counterPts = code.counterRewardPoints ?? 0;
   const [khati, counter] = await Promise.all([
-    User.findById(code.scannedByKhatiId).select("name points phone").lean(),
+    User.findById(code.scannedByKhatiId).select("name").lean(),
     User.findById(counterId).select("name").lean(),
   ]);
   if (!khati) throw new Error("Karigar account not found.");
@@ -297,8 +290,6 @@ export async function processQrReturn(
     description: `Return reversal by ${counterName}`,
     sku: code.sku, serialNo: code.serialNo,
   }).catch((e) => console.error("[pt] Failed to write PointTransaction:", e));
-
-  notifyReturnReversed(khati.phone, khatiName, pts, updatedKhati?.points ?? 0, counterName);
 
   return {
     serialNo: code.serialNo,

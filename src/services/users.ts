@@ -9,7 +9,7 @@ import { isDistributorEnabled } from "@/services/settings";
 import { Sequence } from "@/models/Sequence";
 import { QrCode } from "@/models/QrCode";
 import { waSend } from "@/services/whatsapp";
-import { notifyStaffWelcome, notifyKarigarLinked, notifyKhatiAccessLink, notifyAccountStatus } from "@/services/wa-notify";
+import { notifyStaffWelcome, notifyKarigarLinked, notifyKhatiAccessLink } from "@/services/wa-notify";
 import { createKhatiAccessToken } from "@/lib/khati-access";
 import {
   DEFAULT_PAGE_SIZE,
@@ -146,9 +146,20 @@ export async function createUser(input: CreateUserInput) {
       if (access) {
         notifyKhatiAccessLink(phone, input.name.trim(), `${appUrl}/carpenter/access/${access.token}`);
       } else {
+        const registrationUrl = registrationToken
+          ? `${appUrl}/register/${registrationToken}`
+          : `${appUrl}/login/khati`;
         waSend(
           phone,
-          `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*\n\nआपका कारीगर खाता बना दिया गया है। नीचे दिए लिंक पर क्लिक करके सीधे लॉगिन करें:\nYour Carpenter account has been created. Tap the link below to sign in directly:\n\n${appUrl}/login/khati\n\nलॉगिन करने के बाद आप QR कोड स्कैन करके अंक कमा सकते हैं।\nAfter logging in, you can scan QR codes to earn points.\n\nयह लिंक केवल आपके लिए है। किसी के साथ साझा न करें।\nThis link is unique to you. Do not share it.`,
+          `🎉 *DoorSmith में आपका स्वागत है, ${input.name.trim()}! | Welcome to DoorSmith, ${input.name.trim()}!*
+
+आपका Carpenter खाता बन गया है। अपना पंजीकरण पूरा करने के लिए नीचे दिए लिंक पर क्लिक करें:
+Your Carpenter account has been created. Tap the link below to complete your registration:
+
+${registrationUrl}
+
+पंजीकरण पूरा होने और मंज़ूरी के बाद आप लॉग इन करके QR कोड स्कैन कर सकते हैं।
+After completing registration and approval, log in to scan QR codes and earn points.`,
           "welcome",
         ).catch((err) => console.error("[wa] Welcome message failed:", err));
       }
@@ -263,7 +274,6 @@ export async function updateUser(input: UpdateUserInput) {
     throw new Error("You are not allowed to edit this user.");
   }
 
-  const prevStatus = target.status;
   if (input.name !== undefined) target.name = input.name.trim();
   if (input.status) target.status = input.status;
 
@@ -276,10 +286,6 @@ export async function updateUser(input: UpdateUserInput) {
 
   await target.save();
 
-  // Tell the user when their account is suspended or reactivated.
-  if (input.status && input.status !== prevStatus) {
-    notifyAccountStatus(target.phone, target.name, input.status);
-  }
 }
 
 export async function deleteUser(input: {
@@ -407,7 +413,7 @@ export async function listCounterKhatis(
 
   // Membership: a counter's khatis are those it created OR was linked to (a
   // karigar can belong to multiple counters).
-  const membership = { $or: [{ createdBy: counterId }, { counterIds: counterId }] };
+  const membership = { $or: [{ createdBy: counterId }, { counterId }, { counterIds: counterId }] };
 
   // Rank map across ALL of this counter's khatis (independent of search/paging).
   const ranked = await User.find({ role: "khati", ...membership })

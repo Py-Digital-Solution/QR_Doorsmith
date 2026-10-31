@@ -42,7 +42,7 @@ S3_ENDPOINT=...
 S3_ACCESS_KEY=...
 S3_SECRET_KEY=...
 S3_BUCKET=doorsmith
-CRON_SECRET=...                             # protects /api/cron/nightly-summary
+CRON_SECRET=...                             # protects /api/cron/broadcast
 ```
 
 ---
@@ -166,19 +166,22 @@ Standard models. See `src/models/`.
 - 12-digit starting with `91` → `+91XXXXXXXXXX`
 - Already has `+` → unchanged
 
-### All Messages Are Bilingual (Hindi + English)
-Every WhatsApp message includes both languages. Messages sent:
-1. **OTP login code**  sent to khati on login
-2. **Welcome + registration link**  on khati account creation
-3. **Resend registration link**  manual resend from admin
-4. **Counter notification**  new khati submitted registration
-5. **Khati: counter approved**  WA to khati when counter approves
-6. **Sales rep notification**  counter approved, needs review
-7. **Khati: sales rep approved / final approval**  congratulations, account ready
-8. **Admin notification**  final approval needed
-9. **Rejection**  with reason
-10. **Nightly summary**  11:30 PM IST, points today + balance
+### WhatsApp Messages
 
+Automatic messages are bilingual (Hindi + English), except admin-authored promotions:
+1. Login OTP; Firebase SMS is the fallback when WhatsApp is unavailable.
+2. Carpenter welcome and one-time access link after approval.
+3. Pending Carpenter/Counter registration links, including resend.
+4. Counter onboarding registration link.
+5. Staff welcome and additional-Counter link for a Carpenter.
+6. Counter profile/KYC alerts to Admin; Carpenter profile submission to Admin.
+7. Carpenter KYC approval access link and rejection reason.
+8. Redemption OTP only.
+9. Stock dispatch notification with bill number and code count.
+10. Account status updates.
+11. Admin-authored promotions, optionally with an image.
+
+QR scan point alerts, return alerts, redemption request/approval/rejection alerts, and nightly summaries are disabled.
 ### Failure Handling
 - On send failure: logged to `WaLog` as `"failed"` + email alert to `notification_email` setting
 - On send success: logged to `WaLog` as `"sent"`
@@ -215,16 +218,14 @@ Three custom dashboards at `/admin/dashboards/`:
 
 ---
 
-## 8. Nightly Cron (`/api/cron/nightly-summary`)
+## 8. Broadcast Queue Backstop (`/api/cron/broadcast`)
 
-- **Schedule**: `0 18 * * *` UTC = 11:30 PM IST
-- **Config**: `vercel.json` at project root
-- **Auth**: `Authorization: Bearer {CRON_SECRET}` header (set env var)
-- **Logic**: Queries all active khatis → sums today's `PointTransaction` with `points > 0` → sends bilingual WA summary
-- **Skips** khatis with 0 today + 0 balance to avoid spam
+- **Schedule**: `0 1 * * *` UTC in `vercel.json`
+- **Auth**: `Authorization: Bearer {CRON_SECRET}`
+- **Logic**: drains queued admin broadcasts if no admin has the Promotions page open
+- Nightly WhatsApp summaries were removed.
 
 ---
-
 ## 9. Phone Scan Flow
 
 ```
@@ -316,7 +317,7 @@ All UI uses a custom Tailwind design system in `src/components/ui/`:
 | MongoDB TLS | Currently plain TCP, public IP  enable TLS before launch |
 | MinIO HTTPS | Plain HTTP  enable TLS |
 | Credential rotation | Secrets in `.env` files on Oracle VM  rotate before launch |
-| `CRON_SECRET` | Must be set in Vercel env vars for nightly cron protection |
+| `CRON_SECRET` | Must be set in Vercel env vars for the broadcast queue backstop |
 | WhatsApp service on Oracle VM | `whatsapp-service/`  deploy with PM2, set `.env` with `WA_SERVICE_PORT=3099` and `WA_SERVICE_SECRET` |
 
 ---
@@ -333,7 +334,7 @@ All UI uses a custom Tailwind design system in `src/components/ui/`:
 | Audit log helper | `src/services/audit.ts` → `logAudit()` |
 | Registration form | `src/app/register/[token]/RegisterForm.tsx` |
 | KYC card component | `src/components/KycCard.tsx` |
-| Nightly cron | `src/app/api/cron/nightly-summary/route.ts` |
+| Broadcast queue backstop | `src/app/api/cron/broadcast/route.ts` |
 | WA service | `whatsapp-service/index.mjs` |
 | WhatsApp bridge env | `whatsapp-service/.env` |
 

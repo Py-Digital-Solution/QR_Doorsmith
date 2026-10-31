@@ -30,7 +30,7 @@ Implementation plan for the QR-based khati rewards web application defined in
         │ (4 OCPU/24GB/200GB)│   └────────────────────────┘
         │ • MongoDB          │  ← single-node REPLICA SET (enables transactions)
         │ • MinIO (S3 files) │  ← khati photos, product PDFs, QR print PDFs
-        │ • system cron jobs │  ← 23:30 WhatsApp summary + nightly archive
+        │ • system cron jobs │  ← broadcast queue drainer + nightly archive
         │ • QR/PDF worker    │  ← heavy batch QR PDF generation
         └────────────────────┘
 ```
@@ -157,7 +157,7 @@ queries fast and backups small.
 | **5. Redemption** | Lock points, generate RDM token, counter verify view, admin settle | 1.5 |
 | **6. Returns & reactivation** | Scan return, reverse points, reactivate QR, return incentive, audit | 1.7 |
 | **7. Confidentiality & dashboards** | Service-layer access control, admin/sales dashboards + 3 custom | 1.6, 1.9 |
-| **8. Notifications** | 23:30 WhatsApp daily summary cron, in-app notifications | 1.4 |
+| **8. Notifications** | In-app notifications; nightly WhatsApp summary removed | 1.4 |
 | **9. PWA, test, launch** | Installable PWA polish, QA, go-live, 3-month hyper-care | 1.9 |
 
 ---

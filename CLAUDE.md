@@ -74,17 +74,16 @@ Route protection is **layout-level only** (no middleware.ts):
 
 - All messages are **bilingual** (Hindi + English)
 - Phone normalization runs on every `waSend()`: 10-digit → `+91XXXXXXXXXX`
-- Messages include: OTP login, registration link, approval notifications, nightly summary (11:30 PM IST)
+- Messages include: OTP login, registration link, approval notifications, stock dispatch, registration, KYC, OTP, account status, and admin promotions
 - Failures logged to `WaLog` as `"failed"` + email alert to `notification_email` setting
 - Logic in `src/services/whatsapp.ts`
 
-## Nightly Cron
+## Broadcast Queue Backstop
 
-- **Schedule**: `0 18 * * *` UTC = 11:30 PM IST (configured in `vercel.json`)
-- **Route**: `POST /api/cron/nightly-summary` with `Authorization: Bearer {CRON_SECRET}`
-- **Logic**: Sums today's `PointTransaction` for each active khati, sends bilingual WA summary
-- **Skips** khatis with 0 today + 0 balance to avoid spam
-
+- **Schedule**: configured in `vercel.json`
+- **Route**: `GET /api/cron/broadcast` with `Authorization: Bearer {CRON_SECRET}`
+- **Logic**: drains queued admin broadcasts if no admin has the Promotions page open
+- Nightly WhatsApp summaries were removed.
 ## Common Flows
 
 ### Phone Scan (Earn Points)
@@ -131,7 +130,7 @@ src/services/kyc.ts: approveKyc(khatiId, approverId)
 | Design system (UI components) | `src/components/ui/` |
 | Admin users CRUD | `src/app/admin/users/` |
 | KYC approval pages | `/counter/kyc` and `/approvals` |
-| Nightly cron job | `src/app/api/cron/nightly-summary/route.ts` |
+| Broadcast cron backstop | `src/app/api/cron/broadcast/route.ts` |
 | WhatsApp service (Express) | `whatsapp-service/index.mjs` |
 
 ## Important Gotchas
@@ -165,7 +164,7 @@ Required in `.env.local`:
 - `OTP_DEV_MODE` → false in production, true to use magic code 1111
 - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` → Firebase phone auth
 - `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` → MinIO config
-- `CRON_SECRET` → Protects `/api/cron/nightly-summary`
+- `CRON_SECRET` → Protects `/api/cron/broadcast`
 
 ## Pending Work (Not Yet Implemented)
 

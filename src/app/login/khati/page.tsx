@@ -23,9 +23,8 @@ export default function KhatiLoginPage() {
       <KhatiLoginForm />
 
       <p className="mt-6 text-center text-sm text-gray-500">
-        Admin / Sales rep?{" "}
         <Link href="/login" className="font-medium text-brand underline">
-          Sign in with email
+          Counter / Super Admin login
         </Link>
       </p>
     </div>

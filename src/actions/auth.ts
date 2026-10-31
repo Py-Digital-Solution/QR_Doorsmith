@@ -7,5 +7,5 @@ export async function signOutKhati() {
 }
 
 export async function signOutStaff() {
-  await signOut({ redirectTo: "/login" });
+  await signOut({ redirectTo: "/login/khati" });
 }

@@ -6,7 +6,7 @@ export default function KhatiScanPage() {
     <div className="space-y-4">
       <PageHeader
         title="Scan QR Code"
-        description="Point your camera at a product QR code to earn points."
+        description="Scan with your camera or upload a QR code photo to earn points."
       />
       <KhatiScanPanel />
     </div>

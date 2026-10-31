@@ -65,10 +65,15 @@ export function KhatiScanPanel() {
       const { default: QrScannerLib } = await import("qr-scanner");
 
       const imageBitmap = await createImageBitmap(file);
-      const result = await QrScannerLib.scanImage(imageBitmap, {
-        returnDetailedScanResult: true,
-      });
-      imageBitmap.close();
+      const result = await (async () => {
+        try {
+          return await QrScannerLib.scanImage(imageBitmap, {
+            returnDetailedScanResult: true,
+          });
+        } finally {
+          imageBitmap.close();
+        }
+      })();
 
       const text = typeof result === "string" ? result : result.data;
       if (text) {

@@ -10,7 +10,7 @@ import { ROLE_HOME, canAccessPath } from "@/lib/rbac";
 export const authConfig = {
   // Required on non-Vercel hosts (Netlify) so Auth.js trusts the request host.
   trustHost: true,
-  pages: { signIn: "/login" },
+  pages: { signIn: "/login/khati" },
   session: { strategy: "jwt" },
   providers: [],
   callbacks: {

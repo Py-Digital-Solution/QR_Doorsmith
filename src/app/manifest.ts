@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "DoorSmith Karigar Rewards",
     short_name: "DoorSmith",
     description: "Scan product QR codes and earn reward points",
-    start_url: "/khati",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
