@@ -74,7 +74,7 @@ Route protection is **layout-level only** (no middleware.ts):
 
 - All messages are **bilingual** (Hindi + English)
 - Phone normalization runs on every `waSend()`: 10-digit → `+91XXXXXXXXXX`
-- Messages include: OTP login, registration link, approval notifications, stock dispatch, registration, KYC, OTP, account status, and admin promotions
+- Messages include: OTP login, registration links, approval notifications, stock dispatch, KYC, and admin promotions
 - Failures logged to `WaLog` as `"failed"` + email alert to `notification_email` setting
 - Logic in `src/services/whatsapp.ts`
 

@@ -178,8 +178,7 @@ Automatic messages are bilingual (Hindi + English), except admin-authored promot
 7. Carpenter KYC approval access link and rejection reason.
 8. Redemption OTP only.
 9. Stock dispatch notification with bill number and code count.
-10. Account status updates.
-11. Admin-authored promotions, optionally with an image.
+10. Admin-authored promotions, optionally with an image.
 
 QR scan point alerts, return alerts, redemption request/approval/rejection alerts, and nightly summaries are disabled.
 ### Failure Handling
