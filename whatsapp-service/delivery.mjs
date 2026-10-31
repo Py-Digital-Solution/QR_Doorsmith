@@ -1,4 +1,4 @@
-import { generateMessageIDV2, generateWAMessage, getUrlInfo, proto } from "@whiskeysockets/baileys";
+import { WAProto, generateMessageIDV2, generateWAMessage, getUrlInfo } from "@whiskeysockets/baileys";
 
 export const DELIVERY_NAMES = ["error", "pending", "server_ack", "delivered", "read", "played"];
 
@@ -9,7 +9,7 @@ export function createDelivery({ store, session, logger, log = () => {}, generat
       try {
         const record = await store.update(session, key.id, { retry: true });
         log(record ? "retry content available" : "retry content missing or expired", key.id);
-        return record ? proto.Message.decode(record.content) : undefined;
+        return record ? WAProto.Message.decode(record.content) : undefined;
       } catch {
         log("retry content could not be read", key.id);
         return undefined;
@@ -18,7 +18,7 @@ export function createDelivery({ store, session, logger, log = () => {}, generat
 
     async remember(message) {
       if (message.key?.fromMe && message.key.id && message.message) {
-        await store.save(session, message.key.id, proto.Message.encode(message.message).finish());
+        await store.save(session, message.key.id, WAProto.Message.encode(message.message).finish());
       }
     },
 
@@ -51,7 +51,7 @@ export function createDelivery({ store, session, logger, log = () => {}, generat
       });
 
       // Save the exact protobuf before WhatsApp can request a retry.
-      await store.save(session, message.key.id, proto.Message.encode(message.message).finish());
+      await store.save(session, message.key.id, WAProto.Message.encode(message.message).finish());
       try {
         await socket.relayMessage(jid, message.message, { messageId: message.key.id });
       } catch (err) {
